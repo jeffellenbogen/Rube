@@ -1,0 +1,4 @@
+{"type":"server-started","port":58589,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:58589","screen_dir":"/Users/jellenbogen/claude/Rube/.superpowers/brainstorm/6857-1773945407"}
+{"type":"screen-added","file":"/Users/jellenbogen/claude/Rube/.superpowers/brainstorm/6857-1773945407/layout-overview.html"}
+{"type":"screen-added","file":"/Users/jellenbogen/claude/Rube/.superpowers/brainstorm/6857-1773945407/layout-overview-v2.html"}
+{"type":"server-stopped","reason":"owner process exited"}

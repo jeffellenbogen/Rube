@@ -1,0 +1,85 @@
+<h2>Page Layout Overview</h2>
+<p class="subtitle">Three-panel layout: component library (left), canvas (center), tracker (right)</p>
+
+<div class="cards">
+  <div class="card" style="cursor:default;">
+    <div class="card-image" style="padding:20px;background:#1a1a2e;">
+      <!-- Wireframe mockup -->
+      <div style="display:flex;gap:4px;height:340px;font-family:monospace;font-size:11px;color:#ccc;">
+        <!-- Left sidebar: Component Library -->
+        <div style="width:180px;flex-shrink:0;background:#16213e;border:1px solid #0f3460;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+          <div style="color:#e94560;font-weight:bold;font-size:12px;text-align:center;">COMPONENTS</div>
+          <div style="display:flex;gap:2px;">
+            <div style="flex:1;padding:5px;background:#0f3460;border-radius:4px;text-align:center;color:#4cc9f0;font-size:10px;border-bottom:2px solid #4cc9f0;">Machines</div>
+            <div style="flex:1;padding:5px;background:#1a1a2e;border-radius:4px;text-align:center;font-size:10px;">Materials</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;flex:1;">
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Lever</div>
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Pulley</div>
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Wedge</div>
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Wheel</div>
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Ramp</div>
+            <div style="background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:6px;font-size:9px;text-align:center;border:1px solid #4cc9f0;">Screw</div>
+          </div>
+        </div>
+        <!-- Center: Canvas -->
+        <div style="flex:1;background:linear-gradient(rgba(74,144,226,0.1) 1px, transparent 1px),linear-gradient(90deg,rgba(74,144,226,0.1) 1px, transparent 1px);background-size:24px 24px;background-color:#0a1628;border:1px solid #0f3460;border-radius:6px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);color:#4cc9f0;font-size:10px;opacity:0.6;">DESIGN CANVAS (scrollable)</div>
+          <!-- Start marker -->
+          <div style="position:absolute;top:60px;left:30px;background:#2d6a4f;border:2px solid #52b788;border-radius:6px;padding:6px 10px;font-size:10px;color:#95d5b2;">START</div>
+          <!-- Some components on canvas -->
+          <div style="position:absolute;top:55px;left:140px;background:#0f3460;border:2px solid #4cc9f0;border-radius:6px;padding:8px;font-size:9px;text-align:center;color:#4cc9f0;">Ramp<br><span style="font-size:7px;color:#888;">ball rolls down...</span></div>
+          <!-- Arrow -->
+          <svg style="position:absolute;top:70px;left:115px;" width="25" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#e94560" stroke-width="2"/><polygon points="20,0 25,5 20,10" fill="#e94560"/></svg>
+          <svg style="position:absolute;top:70px;left:210px;" width="25" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#e94560" stroke-width="2"/><polygon points="20,0 25,5 20,10" fill="#e94560"/></svg>
+          <div style="position:absolute;top:55px;left:235px;background:#0f3460;border:2px solid #f4a261;border-radius:6px;padding:8px;font-size:9px;text-align:center;color:#f4a261;">Dominoes<br><span style="font-size:7px;color:#888;">fall in sequence...</span></div>
+          <!-- End marker -->
+          <div style="position:absolute;top:60px;right:30px;background:#6a2d2d;border:2px solid #e94560;border-radius:6px;padding:6px 10px;font-size:10px;color:#f4978e;">FINISH</div>
+          <!-- Toolbar at bottom -->
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;">
+            <div style="background:#0f3460;padding:4px 10px;border-radius:4px;font-size:9px;border:1px solid #333;">Delete</div>
+            <div style="background:#0f3460;padding:4px 10px;border-radius:4px;font-size:9px;border:1px solid #333;">Save</div>
+            <div style="background:#0f3460;padding:4px 10px;border-radius:4px;font-size:9px;border:1px solid #333;">Load</div>
+            <div style="background:#4cc9f0;color:#000;padding:4px 10px;border-radius:4px;font-size:9px;font-weight:bold;">Export PNG</div>
+          </div>
+        </div>
+        <!-- Right sidebar: Requirements Tracker -->
+        <div style="width:170px;flex-shrink:0;background:#16213e;border:1px solid #0f3460;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;">
+          <div style="color:#e94560;font-weight:bold;font-size:12px;text-align:center;">TRACKER</div>
+          <!-- Simple machines checklist -->
+          <div style="font-size:10px;color:#aaa;">Simple Machines (3 req)</div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#52b788;">&#10003;</span> Lever</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#52b788;">&#10003;</span> Inclined Plane</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#555;">&#9675;</span> <span style="color:#555;">Pulley</span></div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#555;">&#9675;</span> <span style="color:#555;">Wedge</span></div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#555;">&#9675;</span> <span style="color:#555;">Wheel & Axle</span></div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:9px;"><span style="color:#555;">&#9675;</span> <span style="color:#555;">Screw</span></div>
+          </div>
+          <div style="font-size:10px;margin-top:4px;color:#f4a261;">2 of 3 minimum &#9888;</div>
+          <!-- Step counter -->
+          <div style="border-top:1px solid #0f3460;padding-top:8px;margin-top:4px;">
+            <div style="font-size:10px;color:#aaa;">Cause/Effect Steps (5 req)</div>
+            <div style="font-size:22px;font-weight:bold;color:#4cc9f0;text-align:center;margin:4px 0;">3</div>
+            <div style="font-size:10px;color:#f4a261;text-align:center;">3 of 5 minimum &#9888;</div>
+          </div>
+          <!-- Bill of materials -->
+          <div style="border-top:1px solid #0f3460;padding-top:8px;margin-top:4px;">
+            <div style="font-size:10px;color:#aaa;">Bill of Materials</div>
+            <div style="font-size:9px;color:#ccc;margin-top:4px;">
+              Ramp x1<br>
+              Dominoes x1<br>
+              Lever x1<br>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Three-Panel Layout</h3>
+      <p><strong>Left:</strong> Tabbed component library (Simple Machines | Materials) with draggable icon grid</p>
+      <p><strong>Center:</strong> Scrollable blueprint-style canvas with grid snap, auto-linking arrows, and toolbar</p>
+      <p><strong>Right:</strong> Live requirements tracker — simple machine checklist, step counter, bill of materials</p>
+    </div>
+  </div>
+</div>
