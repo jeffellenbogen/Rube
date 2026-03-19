@@ -350,6 +350,10 @@ aside {
   overflow: visible;
 }
 
+#connections-svg .conn-group {
+  pointer-events: auto;
+}
+
 .energy-line-bg {
   stroke: rgba(255, 140, 46, 0.15);
   stroke-width: 8;
@@ -510,7 +514,7 @@ aside {
   background: var(--yellow);
   border-radius: 50%;
   z-index: 25;
-  cursor: crosshair;
+  cursor: default;
   border: 1.5px solid rgba(0, 0, 0, 0.4);
   opacity: 0;
   transition: opacity 0.15s, box-shadow 0.15s;
@@ -518,11 +522,6 @@ aside {
 
 .component-card:hover .conn-node {
   opacity: 1;
-}
-
-.conn-node:hover {
-  background: #fff;
-  box-shadow: 0 0 8px var(--yellow);
 }
 
 /* Positioning */

@@ -55,8 +55,8 @@ let _nextId = 1;
 const genId = () => `c${_nextId++}`;
 const snap  = v => Math.round(v / GRID) * GRID;
 
-let pendingConnection = null; // { compId, side }
 let dragState         = null; // { compId, startMouseX, startMouseY, startCompX, startCompY }
+let _lastRecalc       = 0;
 
 // ============================================================
 // INIT
@@ -143,14 +143,8 @@ function setupCanvasEvents() {
       y:       Math.max(0, snap(rawY)),
       label:   '',
     });
+    recalcConnections();
     render();
-  });
-
-  // ---- Cancel pending connection on bare canvas click ----
-  canvas.addEventListener('click', e => {
-    if (e.target === canvas || e.target.id === 'connections-svg') {
-      if (pendingConnection) { pendingConnection = null; renderComponents(); }
-    }
   });
 
   // ---- Global mouse move / up for card dragging ----
@@ -175,7 +169,7 @@ function handleMouseMove(e) {
     card.style.left = `${comp.x}px`;
     card.style.top  = `${comp.y}px`;
   }
-  renderConnections();
+  recalcThrottled();
 }
 
 function handleMouseUp() {
@@ -186,6 +180,7 @@ function handleMouseUp() {
     comp.y = snap(Math.max(0, comp.y));
   }
   dragState = null;
+  recalcConnections();
   render(); // snap + re-render connections
 }
 
@@ -203,46 +198,6 @@ function startDrag(e, compId) {
     startCompX:  comp.x,
     startCompY:  comp.y,
   };
-}
-
-// ============================================================
-// CONNECTION NODES
-// ============================================================
-
-function handleNodeClick(compId, side) {
-  if (!pendingConnection) {
-    // Begin connection
-    pendingConnection = { compId, side };
-    renderComponents(); // highlight active node
-    return;
-  }
-
-  // Same node — cancel
-  if (pendingConnection.compId === compId && pendingConnection.side === side) {
-    pendingConnection = null;
-    renderComponents();
-    return;
-  }
-
-  // Prevent duplicate connections
-  const exists = state.connections.some(c =>
-    (c.fromId === pendingConnection.compId && c.fromSide === pendingConnection.side &&
-     c.toId   === compId && c.toSide === side) ||
-    (c.fromId === compId && c.fromSide === side &&
-     c.toId   === pendingConnection.compId && c.toSide === pendingConnection.side)
-  );
-
-  if (!exists) {
-    state.connections.push({
-      id:       genId(),
-      fromId:   pendingConnection.compId,
-      fromSide: pendingConnection.side,
-      toId:     compId,
-      toSide:   side,
-    });
-  }
-  pendingConnection = null;
-  render();
 }
 
 /**
@@ -274,13 +229,101 @@ function getNodePos(compId, side) {
 }
 
 // ============================================================
+// PROXIMITY-BASED AUTO-LINKING
+// ============================================================
+
+/**
+ * Compute edge-to-edge distance between two component bounding boxes.
+ * Returns { distance, fromSide, toSide } where sides indicate closest edges.
+ */
+function getProximity(a, b) {
+  const aRight  = a.x + COMP_W;
+  const aBottom = a.y + COMP_H;
+  const bRight  = b.x + COMP_W;
+  const bBottom = b.y + COMP_H;
+
+  const gapRight = b.x - aRight;
+  const gapLeft  = a.x - bRight;
+  const gapDown  = b.y - aBottom;
+  const gapUp    = a.y - bBottom;
+
+  const candidates = [
+    { gap: gapRight, fromSide: 'e', toSide: 'w' },
+    { gap: gapLeft,  fromSide: 'w', toSide: 'e' },
+    { gap: gapDown,  fromSide: 's', toSide: 'n' },
+    { gap: gapUp,    fromSide: 'n', toSide: 's' },
+  ];
+
+  const hOverlap = !(aBottom <= b.y || bBottom <= a.y);
+  const vOverlap = !(aRight <= b.x || bRight <= a.x);
+
+  const valid = candidates.filter(c => {
+    if (c.fromSide === 'e' || c.fromSide === 'w') return hOverlap && c.gap >= 0;
+    return vOverlap && c.gap >= 0;
+  });
+
+  if (valid.length === 0) return null;
+
+  valid.sort((a, b) => a.gap - b.gap);
+  return {
+    distance: valid[0].gap,
+    fromSide: valid[0].fromSide,
+    toSide:   valid[0].toSide,
+  };
+}
+
+const LINK_THRESHOLD = 50;
+
+function recalcConnections() {
+  const newConns = [];
+
+  for (let i = 0; i < state.components.length; i++) {
+    for (let j = i + 1; j < state.components.length; j++) {
+      const a = state.components[i];
+      const b = state.components[j];
+      const prox = getProximity(a, b);
+      if (!prox || prox.distance > LINK_THRESHOLD) continue;
+
+      let fromId = a.id, toId = b.id;
+      let fromSide = prox.fromSide, toSide = prox.toSide;
+
+      const existing = state.connections.find(c =>
+        (c.fromId === a.id && c.toId === b.id) ||
+        (c.fromId === b.id && c.toId === a.id)
+      );
+      if (existing && existing.reversed) {
+        fromId = b.id; toId = a.id;
+        fromSide = prox.toSide; toSide = prox.fromSide;
+      }
+
+      newConns.push({
+        id: existing ? existing.id : genId(),
+        fromId, fromSide, toId, toSide,
+        reversed: existing ? existing.reversed : false,
+      });
+    }
+  }
+
+  state.connections = newConns;
+}
+
+function recalcThrottled() {
+  const now = Date.now();
+  if (now - _lastRecalc > 80) {
+    _lastRecalc = now;
+    recalcConnections();
+  }
+  renderConnections();
+}
+
+// ============================================================
 // DELETE
 // ============================================================
 
 function deleteComponent(id) {
   state.components  = state.components.filter(c => c.id !== id);
   state.connections = state.connections.filter(c => c.fromId !== id && c.toId !== id);
-  if (pendingConnection && pendingConnection.compId === id) pendingConnection = null;
+  recalcConnections();
   render();
 }
 
@@ -368,18 +411,17 @@ function renderComponents() {
       card.appendChild(del);
     }
 
-    // Connection nodes (N/S/E/W)
+    // Connection nodes (N/S/E/W) — non-interactive, light up when connected
     ['n', 's', 'e', 'w'].forEach(side => {
       const node = document.createElement('div');
       node.className            = `conn-node node-${side}`;
       node.dataset.compId       = comp.id;
       node.dataset.side         = side;
-      if (pendingConnection &&
-          pendingConnection.compId === comp.id &&
-          pendingConnection.side   === side) {
-        node.classList.add('node-active');
-      }
-      node.addEventListener('click', e => { e.stopPropagation(); handleNodeClick(comp.id, side); });
+      const hasConn = state.connections.some(c =>
+        (c.fromId === comp.id && c.fromSide === side) ||
+        (c.toId === comp.id && c.toSide === side)
+      );
+      if (hasConn) node.classList.add('node-active');
       card.appendChild(node);
     });
 
@@ -423,6 +465,28 @@ function renderConnections() {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', 'conn-group');
 
+    // Wide invisible hit area for clicking
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hit.setAttribute('x1', from.x); hit.setAttribute('y1', from.y);
+    hit.setAttribute('x2', to.x);   hit.setAttribute('y2', to.y);
+    hit.setAttribute('stroke', 'transparent');
+    hit.setAttribute('stroke-width', '16');
+    hit.style.cursor = 'pointer';
+    hit.style.pointerEvents = 'stroke';
+    // Left-click: reverse direction
+    hit.addEventListener('click', () => {
+      conn.reversed = !conn.reversed;
+      const tmpId = conn.fromId; conn.fromId = conn.toId; conn.toId = tmpId;
+      const tmpSide = conn.fromSide; conn.fromSide = conn.toSide; conn.toSide = tmpSide;
+      render();
+    });
+    // Right-click: delete connection
+    hit.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      state.connections = state.connections.filter(c => c.id !== conn.id);
+      render();
+    });
+
     // Soft glow background line
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     bg.setAttribute('x1', from.x); bg.setAttribute('y1', from.y);
@@ -436,8 +500,22 @@ function renderConnections() {
     line.setAttribute('class', 'energy-line');
     line.setAttribute('filter', 'url(#glow-filter)');
 
+    // Arrowhead at the "to" end
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    const arrowLen = 10;
+    const ax = to.x - arrowLen * Math.cos(angle - 0.4);
+    const ay = to.y - arrowLen * Math.sin(angle - 0.4);
+    const bx = to.x - arrowLen * Math.cos(angle + 0.4);
+    const by = to.y - arrowLen * Math.sin(angle + 0.4);
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    arrow.setAttribute('points', `${to.x},${to.y} ${ax},${ay} ${bx},${by}`);
+    arrow.setAttribute('fill', 'var(--orange)');
+    arrow.setAttribute('filter', 'url(#glow-filter)');
+
+    g.appendChild(hit);
     g.appendChild(bg);
     g.appendChild(line);
+    g.appendChild(arrow);
     svg.appendChild(g);
   });
 }
@@ -565,7 +643,6 @@ function setupToolbarEvents() {
         confirm('Start a new plan? Your current work will be lost.')) {
       state = { components: [], connections: [] };
       _nextId = 1;
-      pendingConnection = null;
       dragState = null;
       placeDefaultMarkers();
       render();
@@ -611,7 +688,6 @@ function loadJSON(e) {
         .map(x => parseInt((x.id || '').replace('c', ''), 10))
         .filter(n => !isNaN(n));
       _nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-      pendingConnection = null;
       dragState = null;
       render();
     } catch {
