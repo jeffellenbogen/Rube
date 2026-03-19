@@ -71,6 +71,10 @@ function init() {
     placeDefaultMarkers();
   }
   render();
+
+  const wrapper = document.getElementById('canvas-wrapper');
+  wrapper.scrollLeft = 0;
+  wrapper.scrollTop = Math.max(0, (900 - wrapper.clientHeight) / 2);
 }
 
 function placeDefaultMarkers() {
@@ -426,13 +430,14 @@ function renderComponents() {
 
   // Empty-state hint
   let hint = document.getElementById('canvas-hint');
-  if (state.components.length === 0) {
+  const nonMarkers = state.components.filter(c => c.type !== 'marker');
+  if (nonMarkers.length === 0) {
     if (!hint) {
       hint = document.createElement('div');
       hint.id = 'canvas-hint';
       hint.innerHTML = `
-        <div class="hint-headline">Drag components onto the canvas</div>
-        <div class="hint-sub">Connect them with energy links to build your machine</div>
+        <div class="hint-headline">Drag components between START and FINISH</div>
+        <div class="hint-sub">Place them close together to auto-connect your chain reaction</div>
       `;
       canvas.appendChild(hint);
     }
@@ -702,6 +707,7 @@ function setupToolbarEvents() {
   document.getElementById('btn-new').addEventListener('click', () => {
     if (state.components.length <= 2 ||
         confirm('Start a new plan? Your current work will be lost.')) {
+      closePopover();
       state = { components: [], connections: [] };
       _nextId = 1;
       dragState = null;
@@ -743,12 +749,29 @@ function loadJSON(e) {
         alert('Invalid plan file — missing components or connections.');
         return;
       }
-      state = parsed;
       // Sync ID counter to avoid collisions
-      const allIds = [...state.components, ...state.connections]
+      const allIds = [...parsed.components, ...parsed.connections]
         .map(x => parseInt((x.id || '').replace('c', ''), 10))
         .filter(n => !isNaN(n));
       _nextId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
+
+      // Ensure markers exist (compat with pre-marker save files)
+      const hasStart  = parsed.components.some(c => c.subtype === 'start');
+      const hasFinish = parsed.components.some(c => c.subtype === 'finish');
+      if (!hasStart) {
+        parsed.components.unshift({
+          id: genId(), type: 'marker', subtype: 'start',
+          name: 'START', icon: '🟢', x: 40, y: 360, label: '',
+        });
+      }
+      if (!hasFinish) {
+        parsed.components.push({
+          id: genId(), type: 'marker', subtype: 'finish',
+          name: 'FINISH', icon: '🔴', x: 1440, y: 360, label: '',
+        });
+      }
+
+      state = parsed;
       dragState = null;
       render();
     } catch {
