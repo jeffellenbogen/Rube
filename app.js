@@ -56,6 +56,7 @@ const genId = () => `c${_nextId++}`;
 const snap  = v => Math.round(v / GRID) * GRID;
 
 let dragState         = null; // { compId, startMouseX, startMouseY, startCompX, startCompY }
+let activePopover     = null;
 let _lastRecalc       = 0;
 
 // ============================================================
@@ -185,6 +186,7 @@ function handleMouseUp() {
 }
 
 function startDrag(e, compId) {
+  closePopover();
   // Don't start drag when clicking node or delete button
   if (e.target.classList.contains('conn-node') ||
       e.target.classList.contains('comp-delete')) return;
@@ -331,33 +333,74 @@ function deleteComponent(id) {
 // ANNOTATION (double-click)
 // ============================================================
 
+function closePopover() {
+  if (activePopover) {
+    activePopover.remove();
+    activePopover = null;
+  }
+}
+
 function startAnnotation(e, compId) {
   e.stopPropagation();
+  closePopover();
+
   const comp = state.components.find(c => c.id === compId);
   if (!comp) return;
 
-  const card    = document.getElementById(`comp-${compId}`);
-  const labelEl = card.querySelector('.comp-label');
+  // Position popover below the card
+  const popX = comp.x;
+  const popY = comp.y + COMP_H + 8;
 
-  const input = document.createElement('input');
-  input.type        = 'text';
-  input.className   = 'comp-label-input';
-  input.value       = comp.label || '';
-  input.placeholder = 'Add a note...';
+  const popover = document.createElement('div');
+  popover.className = 'annotation-popover';
+  popover.style.left = `${popX}px`;
+  popover.style.top  = `${popY}px`;
 
-  labelEl.replaceWith(input);
-  input.focus();
-  input.select();
+  popover.innerHTML = `
+    <div class="pop-title">Step Annotation</div>
+    <textarea class="pop-textarea" placeholder="Describe what happens at this step…"
+              rows="3">${comp.label || ''}</textarea>
+    <div class="pop-actions">
+      <button class="pop-btn pop-save">Save</button>
+      <button class="pop-btn pop-cancel">Cancel</button>
+    </div>
+  `;
+
+  const canvas = document.getElementById('canvas-area');
+  canvas.appendChild(popover);
+  activePopover = popover;
+
+  const textarea = popover.querySelector('.pop-textarea');
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
   const save = () => {
-    comp.label = input.value.trim();
+    comp.label = textarea.value.trim();
+    closePopover();
     render();
   };
-  input.addEventListener('blur', save);
-  input.addEventListener('keydown', ev => {
-    if (ev.key === 'Enter')  { ev.preventDefault(); input.blur(); }
-    if (ev.key === 'Escape') { input.value = comp.label || ''; input.blur(); }
+
+  const cancel = () => {
+    closePopover();
+  };
+
+  popover.querySelector('.pop-save').addEventListener('click', save);
+  popover.querySelector('.pop-cancel').addEventListener('click', cancel);
+
+  textarea.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); save(); }
+    if (ev.key === 'Escape') cancel();
   });
+
+  // Close when clicking outside
+  setTimeout(() => {
+    document.addEventListener('mousedown', function handler(ev) {
+      if (!popover.contains(ev.target)) {
+        save();
+        document.removeEventListener('mousedown', handler);
+      }
+    });
+  }, 0);
 }
 
 // ============================================================
@@ -437,10 +480,18 @@ function renderComponents() {
     name.textContent = comp.name;
     card.appendChild(name);
 
-    // Label / annotation
+    // Label / annotation preview
     const label = document.createElement('div');
-    label.className   = 'comp-label';
-    label.textContent = comp.label || '';
+    label.className = 'comp-label';
+    if (comp.label) {
+      label.textContent = comp.label.length > 20
+        ? comp.label.substring(0, 18) + '\u2026'
+        : comp.label;
+      label.title = comp.label;
+    } else {
+      label.textContent = '';
+      label.title = 'Double-click to add a note';
+    }
     card.appendChild(label);
 
     // Events

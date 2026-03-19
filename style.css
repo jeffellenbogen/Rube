@@ -701,3 +701,83 @@ aside {
   font-size: 9px;
   letter-spacing: 0.03em;
 }
+
+/* ---- Annotation Popover ---- */
+.annotation-popover {
+  position: absolute;
+  z-index: 100;
+  width: 200px;
+  background: #0e2038;
+  border: 1px solid var(--teal);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 201, 167, 0.15);
+}
+
+.pop-title {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+
+.pop-textarea {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-bright);
+  padding: 6px 8px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.5;
+}
+
+.pop-textarea:focus {
+  border-color: var(--teal);
+}
+
+.pop-textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.pop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.pop-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-panel-alt);
+  color: var(--text-mid);
+  transition: all 0.12s;
+}
+
+.pop-btn:hover {
+  background: rgba(52, 140, 215, 0.15);
+  color: var(--text-bright);
+}
+
+.pop-save {
+  background: var(--teal);
+  color: #000;
+  border-color: var(--teal);
+}
+
+.pop-save:hover {
+  background: #00e0b8;
+}
