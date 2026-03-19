@@ -124,14 +124,101 @@ function setupCanvasEvents() {
   const canvas  = document.getElementById('canvas-area');
   const wrapper = document.getElementById('canvas-wrapper');
 
-  // ---- Drop from library ----
+  // ---- Drop from library (with live preview) ----
+
+  let dropGhost = null;    // DOM element: translucent card preview
+  let dropPreviewLine = null; // SVG group: dotted orange preview line
+
+  function clearDropPreview() {
+    if (dropGhost) { dropGhost.remove(); dropGhost = null; }
+    if (dropPreviewLine) { dropPreviewLine.remove(); dropPreviewLine = null; }
+  }
+
+  /** Get the center point of a side on a box { x, y } with COMP_W/COMP_H */
+  function sideCenter(bx, by, side) {
+    switch (side) {
+      case 'e': return { x: bx + COMP_W, y: by + COMP_H / 2 };
+      case 'w': return { x: bx,          y: by + COMP_H / 2 };
+      case 's': return { x: bx + COMP_W / 2, y: by + COMP_H };
+      case 'n': return { x: bx + COMP_W / 2, y: by };
+    }
+  }
+
   canvas.addEventListener('dragover', e => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const rawX = e.clientX - canvasRect.left + wrapper.scrollLeft - COMP_W / 2;
+    const rawY = e.clientY - canvasRect.top  + wrapper.scrollTop  - COMP_H / 2;
+    const snapped = snapToNearestComponent(snap(Math.max(0, rawX)), snap(Math.max(0, rawY)));
+
+    // -- Ghost card --
+    if (!dropGhost) {
+      dropGhost = document.createElement('div');
+      dropGhost.className = 'drop-ghost';
+      dropGhost.style.width  = `${COMP_W}px`;
+      dropGhost.style.height = `${COMP_H}px`;
+      canvas.appendChild(dropGhost);
+    }
+    dropGhost.style.left = `${snapped.x}px`;
+    dropGhost.style.top  = `${snapped.y}px`;
+
+    // -- Preview energy line --
+    const svg = document.getElementById('connections-svg');
+    if (dropPreviewLine) { dropPreviewLine.remove(); dropPreviewLine = null; }
+
+    if (snapped.anchorComp) {
+      const from = sideCenter(snapped.anchorComp.x, snapped.anchorComp.y, snapped.anchorSide);
+      const to   = sideCenter(snapped.x, snapped.y, snapped.snapSide);
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'conn-group drop-preview-line');
+
+      // Glow background
+      const bg = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      bg.setAttribute('x1', from.x); bg.setAttribute('y1', from.y);
+      bg.setAttribute('x2', to.x);   bg.setAttribute('y2', to.y);
+      bg.setAttribute('class', 'energy-line-bg');
+
+      // Dashed preview line
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+      line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+      line.setAttribute('class', 'energy-line');
+      line.setAttribute('filter', 'url(#glow-filter)');
+
+      // Arrowhead
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const arrowLen = 10;
+      const ax = to.x - arrowLen * Math.cos(angle - 0.4);
+      const ay = to.y - arrowLen * Math.sin(angle - 0.4);
+      const bx = to.x - arrowLen * Math.cos(angle + 0.4);
+      const by = to.y - arrowLen * Math.sin(angle + 0.4);
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      arrow.setAttribute('points', `${to.x},${to.y} ${ax},${ay} ${bx},${by}`);
+      arrow.setAttribute('fill', 'var(--orange)');
+      arrow.setAttribute('filter', 'url(#glow-filter)');
+
+      g.appendChild(bg);
+      g.appendChild(line);
+      g.appendChild(arrow);
+      svg.appendChild(g);
+      dropPreviewLine = g;
+    }
+  });
+
+  canvas.addEventListener('dragleave', e => {
+    // Only clear if actually leaving the canvas (not entering a child)
+    if (!canvas.contains(e.relatedTarget)) {
+      clearDropPreview();
+    }
   });
 
   canvas.addEventListener('drop', e => {
     e.preventDefault();
+    clearDropPreview();
+
     const raw = e.dataTransfer.getData('application/json');
     if (!raw) return;
     let def;
@@ -141,14 +228,16 @@ function setupCanvasEvents() {
     const rawX = e.clientX - canvasRect.left + wrapper.scrollLeft - COMP_W / 2;
     const rawY = e.clientY - canvasRect.top  + wrapper.scrollTop  - COMP_H / 2;
 
+    const snapped = snapToNearestComponent(snap(Math.max(0, rawX)), snap(Math.max(0, rawY)));
+
     state.components.push({
       id:      genId(),
       type:    def.type,
       subtype: def.subtype,
       name:    def.name,
       icon:    def.icon,
-      x:       Math.max(0, snap(rawX)),
-      y:       Math.max(0, snap(rawY)),
+      x:       snapped.x,
+      y:       snapped.y,
       label:   '',
     });
     recalcConnections();
@@ -193,10 +282,12 @@ function handleMouseUp() {
 }
 
 function startDrag(e, compId) {
-  closePopover();
-  // Don't start drag when clicking node or delete button
+  // Don't start drag when clicking node, delete button, or comment button
   if (e.target.classList.contains('conn-node') ||
-      e.target.classList.contains('comp-delete')) return;
+      e.target.classList.contains('comp-delete') ||
+      e.target.closest('.comp-comment-btn') ||
+      e.target.closest('.comp-comment-bubble')) return;
+  closePopover();
   e.stopPropagation();
   const comp = state.components.find(c => c.id === compId);
   if (!comp) return;
@@ -282,6 +373,66 @@ function getProximity(a, b) {
 }
 
 const LINK_THRESHOLD = 50;
+const DROP_SNAP_RANGE = 160; // how far a drop can be to snap adjacent to an existing component
+
+/**
+ * When a new component is dropped/dragged near existing components,
+ * find the best adjacent snap position.
+ * Returns { x, y, anchorComp, anchorSide, snapSide } or { x, y } if nothing close.
+ *   anchorComp  — the existing component being snapped to
+ *   anchorSide  — which side of the existing component (e/w/s/n)
+ *   snapSide    — which side of the NEW component faces the anchor (w/e/n/s)
+ */
+function snapToNearestComponent(rawX, rawY) {
+  const fallback = { x: rawX, y: rawY, anchorComp: null };
+  if (state.components.length === 0) return fallback;
+
+  let bestDist = Infinity;
+  let bestResult = fallback;
+
+  for (const comp of state.components) {
+    const cx = comp.x + COMP_W / 2;
+    const cy = comp.y + COMP_H / 2;
+    const nx = rawX + COMP_W / 2;
+    const ny = rawY + COMP_H / 2;
+    const dist = Math.hypot(cx - nx, cy - ny);
+
+    if (dist > DROP_SNAP_RANGE + COMP_W) continue;
+
+    const gap = GRID;
+    const candidates = [
+      { x: comp.x + COMP_W + gap, y: comp.y, anchorSide: 'e', snapSide: 'w' },
+      { x: comp.x - COMP_W - gap, y: comp.y, anchorSide: 'w', snapSide: 'e' },
+      { x: comp.x, y: comp.y + COMP_H + gap, anchorSide: 's', snapSide: 'n' },
+      { x: comp.x, y: comp.y - COMP_H - gap, anchorSide: 'n', snapSide: 's' },
+    ];
+
+    for (const cand of candidates) {
+      const sx = snap(Math.max(0, cand.x));
+      const sy = snap(Math.max(0, cand.y));
+      const d = Math.hypot(sx - rawX, sy - rawY);
+
+      if (d < bestDist && d < DROP_SNAP_RANGE) {
+        const overlaps = state.components.some(other => {
+          if (other.id === comp.id) return false;
+          return !(sx + COMP_W <= other.x || sx >= other.x + COMP_W ||
+                   sy + COMP_H <= other.y || sy >= other.y + COMP_H);
+        });
+        if (!overlaps) {
+          bestDist = d;
+          bestResult = {
+            x: sx, y: sy,
+            anchorComp: comp,
+            anchorSide: cand.anchorSide,
+            snapSide:   cand.snapSide,
+          };
+        }
+      }
+    }
+  }
+
+  return bestResult;
+}
 
 function recalcConnections() {
   const newConns = [];
@@ -347,8 +498,29 @@ function closePopover() {
   }
 }
 
+function toggleComment(compId) {
+  const comp = state.components.find(c => c.id === compId);
+  if (!comp) return;
+
+  // If no comment yet, open the editor
+  if (!comp.label) {
+    startAnnotation(null, compId);
+    return;
+  }
+
+  // If editor is already open for this component, close it
+  if (activePopover && activePopover.dataset.compId === compId) {
+    closePopover();
+    return;
+  }
+
+  // Toggle the visible comment bubble
+  comp.showComment = !comp.showComment;
+  render();
+}
+
 function startAnnotation(e, compId) {
-  e.stopPropagation();
+  if (e) e.stopPropagation();
   closePopover();
 
   const comp = state.components.find(c => c.id === compId);
@@ -360,6 +532,7 @@ function startAnnotation(e, compId) {
 
   const popover = document.createElement('div');
   popover.className = 'annotation-popover';
+  popover.dataset.compId = compId;
   popover.style.left = `${popX}px`;
   popover.style.top  = `${popY}px`;
 
@@ -383,6 +556,7 @@ function startAnnotation(e, compId) {
 
   const save = () => {
     comp.label = textarea.value.trim();
+    comp.showComment = !!comp.label; // show bubble if there's text
     closePopover();
     render();
   };
@@ -492,23 +666,34 @@ function renderComponents() {
     name.textContent = comp.name;
     card.appendChild(name);
 
-    // Label / annotation preview
-    const label = document.createElement('div');
-    label.className = 'comp-label';
-    if (comp.label) {
-      label.textContent = comp.label.length > 20
-        ? comp.label.substring(0, 18) + '\u2026'
-        : comp.label;
-      label.title = comp.label;
-    } else {
-      label.textContent = '';
-      label.title = 'Double-click to add a note';
+    // Comment bubble button
+    const commentBtn = document.createElement('button');
+    commentBtn.className = `comp-comment-btn${comp.label ? ' has-comment' : ''}`;
+    commentBtn.title = comp.label ? 'Show/edit comment' : 'Add a comment';
+    commentBtn.innerHTML = comp.label
+      ? `<svg viewBox="0 0 20 20" width="14" height="14"><path d="M3,2 h14 a1,1 0 0,1 1,1 v9 a1,1 0 0,1 -1,1 h-8 l-4,4 v-4 h-2 a1,1 0 0,1 -1,-1 v-9 a1,1 0 0,1 1,-1z" fill="var(--orange)" stroke="var(--orange)" stroke-width="1"/><line x1="6" y1="6" x2="14" y2="6" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/><line x1="6" y1="9" x2="12" y2="9" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>`
+      : `<svg viewBox="0 0 20 20" width="14" height="14"><path d="M3,2 h14 a1,1 0 0,1 1,1 v9 a1,1 0 0,1 -1,1 h-8 l-4,4 v-4 h-2 a1,1 0 0,1 -1,-1 v-9 a1,1 0 0,1 1,-1z" fill="none" stroke="var(--text-dim)" stroke-width="1.5"/><line x1="8" y1="7.5" x2="12" y2="7.5" stroke="var(--text-dim)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+    commentBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleComment(comp.id);
+    });
+    card.appendChild(commentBtn);
+
+    // Visible comment bubble (if toggled on)
+    if (comp.label && comp.showComment) {
+      const bubble = document.createElement('div');
+      bubble.className = 'comp-comment-bubble';
+      bubble.textContent = comp.label;
+      bubble.addEventListener('dblclick', e => {
+        e.stopPropagation();
+        startAnnotation(e, comp.id);
+      });
+      bubble.title = 'Double-click to edit';
+      card.appendChild(bubble);
     }
-    card.appendChild(label);
 
     // Events
     card.addEventListener('mousedown', e => startDrag(e, comp.id));
-    card.addEventListener('dblclick',  e => startAnnotation(e, comp.id));
 
     canvas.appendChild(card);
   });

@@ -382,6 +382,20 @@ aside {
 }
 
 /* ============================================================
+   DROP PREVIEW GHOST
+   ============================================================ */
+.drop-ghost {
+  position: absolute;
+  border: 2px dashed var(--orange);
+  border-radius: 6px;
+  background: rgba(255, 123, 46, 0.06);
+  pointer-events: none;
+  z-index: 8;
+  transition: left 0.08s ease-out, top 0.08s ease-out;
+  box-shadow: 0 0 16px rgba(255, 123, 46, 0.12);
+}
+
+/* ============================================================
    COMPONENT CARDS
    ============================================================ */
 .component-card {
@@ -394,11 +408,12 @@ aside {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px 8px 8px;
+  padding: 16px 8px 10px;
   cursor: move;
   user-select: none;
   z-index: 10;
   transition: border-color 0.15s, box-shadow 0.15s;
+  overflow: visible;
 }
 
 .component-card.simple_machine {
@@ -469,6 +484,94 @@ aside {
   min-height: 12px;
   max-width: 88px;
   word-break: break-word;
+}
+
+/* Comment bubble button */
+.comp-comment-btn {
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 3px;
+  transition: all 0.12s;
+  opacity: 0.4;
+  z-index: 30;
+}
+
+.component-card:hover .comp-comment-btn {
+  opacity: 0.8;
+}
+
+.comp-comment-btn:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.comp-comment-btn svg,
+.comp-comment-btn svg * {
+  pointer-events: none;
+}
+
+.comp-comment-btn.has-comment {
+  opacity: 0.9;
+}
+
+.comp-comment-btn.has-comment:hover {
+  opacity: 1 !important;
+}
+
+/* Comment bubble tooltip */
+.comp-comment-bubble {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: #142a45;
+  border: 1px solid var(--orange);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: var(--text-bright);
+  line-height: 1.5;
+  max-width: 180px;
+  min-width: 80px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 123, 46, 0.1);
+  z-index: 50;
+  cursor: default;
+  pointer-events: auto;
+}
+
+/* Speech bubble arrow pointing up */
+.comp-comment-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--orange);
+}
+
+.comp-comment-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: #142a45;
+  margin-bottom: -1px;
 }
 
 .comp-label-input {
