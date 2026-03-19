@@ -101,7 +101,10 @@ function makeLibItem(def) {
   const div = document.createElement('div');
   div.className = `lib-item ${def.type === 'simple_machine' ? 'machine' : 'material'}`;
   div.draggable = true;
-  div.innerHTML = `<span class="lib-icon">${def.icon}</span><span class="lib-name">${def.name}</span>`;
+  const iconHtml = (typeof ICONS !== 'undefined' && ICONS[def.subtype])
+    ? `<span class="lib-icon">${ICONS[def.subtype]}</span>`
+    : `<span class="lib-icon">${def.icon}</span>`;
+  div.innerHTML = `${iconHtml}<span class="lib-name">${def.name}</span>`;
   div.addEventListener('dragstart', e => {
     e.dataTransfer.setData('application/json', JSON.stringify(def));
     e.dataTransfer.effectAllowed = 'copy';
@@ -470,8 +473,12 @@ function renderComponents() {
 
     // Icon
     const icon = document.createElement('div');
-    icon.className   = 'comp-icon';
-    icon.textContent = comp.icon;
+    icon.className = 'comp-icon';
+    if (typeof ICONS !== 'undefined' && ICONS[comp.subtype]) {
+      icon.innerHTML = ICONS[comp.subtype];
+    } else {
+      icon.textContent = comp.icon;
+    }
     card.appendChild(icon);
 
     // Name
@@ -620,9 +627,10 @@ function renderChecklist() {
     const checked = machineTypes.has(m.subtype);
     const item = document.createElement('div');
     item.className = `check-item ${checked ? 'checked' : ''}`;
+    const svgIcon = (typeof ICONS !== 'undefined' && ICONS[m.subtype]) ? ICONS[m.subtype] : m.icon;
     item.innerHTML = `
       <div class="check-box ${checked ? 'checked' : ''}">${checked ? '✓' : ''}</div>
-      <span class="lib-icon" style="font-size:12px">${m.icon}</span>
+      <span class="check-icon">${svgIcon}</span>
       <span class="check-label">${m.name}</span>
     `;
     el.appendChild(item);
@@ -656,26 +664,28 @@ function renderStepCounter() {
 
 function renderBOM() {
   const el = document.getElementById('bill-of-materials');
-
-  if (state.components.length === 0) {
+  if (state.components.filter(c => c.type !== 'marker').length === 0) {
     el.innerHTML = '<div class="bom-empty">No components placed yet</div>';
     return;
   }
 
-  const counts = {};
-  const icons  = {};
-  state.components.forEach(c => {
-    counts[c.name] = (counts[c.name] || 0) + 1;
-    icons[c.name]  = c.icon;
+  const counts   = {};
+  const subtypes = {};
+  const icons    = {};
+  state.components.filter(c => c.type !== 'marker').forEach(c => {
+    counts[c.name]   = (counts[c.name] || 0) + 1;
+    subtypes[c.name] = c.subtype;
+    icons[c.name]    = c.icon;
   });
 
   el.innerHTML = '';
   Object.keys(counts).sort().forEach(name => {
     const row = document.createElement('div');
     row.className = 'bom-row';
+    const svgIcon = (typeof ICONS !== 'undefined' && ICONS[subtypes[name]]) ? ICONS[subtypes[name]] : icons[name];
     row.innerHTML = `
       <div class="bom-name">
-        <span class="bom-icon">${icons[name]}</span>
+        <span class="bom-icon">${svgIcon}</span>
         <span>${name}</span>
       </div>
       <span class="bom-qty">×${counts[name]}</span>

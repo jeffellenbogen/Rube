@@ -276,6 +276,14 @@ aside {
   font-size: 16px;
   flex-shrink: 0;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lib-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .lib-name {
@@ -438,6 +446,11 @@ aside {
   margin-bottom: 5px;
 }
 
+.comp-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
 .comp-name {
   font-size: 9px;
   font-weight: 600;
@@ -589,6 +602,16 @@ aside {
   box-shadow: 0 0 8px var(--green-glow);
 }
 
+.check-icon {
+  display: flex;
+  align-items: center;
+}
+
+.check-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 .check-label {
   font-size: 10px;
   color: var(--text-mid);
@@ -690,6 +713,13 @@ aside {
 
 .bom-icon {
   font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.bom-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .bom-qty {
