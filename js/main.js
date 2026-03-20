@@ -138,7 +138,7 @@ canvasWrapper.addEventListener('drop', e => {
 
   undoPush();
   if (item.type === 'environment') {
-    addEnvItem({ subtype: item.subtype, ...pos, stepCount: item.subtype === 'stairs' ? 4 : undefined });
+    addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 4 } : {}) });
   } else {
     addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false });
     if (item.subtype === 'custom') promptCustomName();
