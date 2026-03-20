@@ -36,11 +36,12 @@ function updateUndoButtons() {
   btnRedo.disabled = !canRedo();
 }
 
+updateUndoButtons(); // set initial disabled state
 btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons(); });
 btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
 
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
     if (e.shiftKey) { redo(); } else { undo(); }
     render(); updateUndoButtons();

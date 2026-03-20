@@ -23,6 +23,7 @@ export function redo() {
   if (!future.length) return;
   const snapshot = JSON.parse(JSON.stringify(getState()));
   past.push(snapshot);
+  if (past.length > MAX) past.shift();
   loadState(future.pop());
 }
 
