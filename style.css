@@ -115,7 +115,7 @@ main {
 #canvas-wrapper {
   flex: 1;
   position: relative;
-  overflow-x: auto;
+  overflow-x: scroll;
   overflow-y: hidden;
   background: var(--bg);
   background-image:
