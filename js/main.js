@@ -1,7 +1,11 @@
 import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom, screenToCanvas } from './canvas.js';
-import { getState, addComponent, addEnvItem } from './state.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection } from './state.js';
 import { render } from './render/index.js';
 import { undo, redo, canUndo, canRedo, push as undoPush } from './undo.js';
+import { toggleComment } from './comments.js';
+import { updateTrackerUI } from './tracker-ui.js';
+import { initDrag, getSelected, setSelected } from './drag.js';
+import { deleteConnection } from './connections.js';
 
 const CATALOG = {
   machines: [
@@ -84,6 +88,7 @@ function defaultSubParts(subtype) {
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
 setOnZoom(drawFloor);
+initDrag(svgEl);
 
 // Draw floor (always present, not in state)
 function drawFloor() {
@@ -107,6 +112,31 @@ drawFloor();
 initMarkers();
 render();
 
+let selectedConnId = null;
+
+svgEl.addEventListener('click', e => {
+  const connEl = e.target.closest('[data-conn-id]');
+  if (connEl) {
+    selectedConnId = connEl.dataset.connId;
+    return;
+  }
+  const actionEl = e.target.closest('[data-action]');
+  if (!actionEl) return;
+  const { action, targetId } = actionEl.dataset;
+  if (action === 'delete') {
+    undoPush();
+    const state = getState();
+    if (state.environment.find(en => en.id === targetId)) removeEnvItem(targetId);
+    else removeComponent(targetId);
+    setSelected(null);
+    render(); updateUndoButtons(); updateTrackerUI();
+  }
+  if (action === 'comment') {
+    toggleComment(targetId);
+    render();
+  }
+});
+
 const btnUndo = document.getElementById('btn-undo');
 const btnRedo = document.getElementById('btn-redo');
 
@@ -124,6 +154,24 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     if (e.shiftKey) { redo(); } else { undo(); }
     render(); updateUndoButtons();
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedConnId) {
+      undoPush();
+      deleteConnection(selectedConnId);
+      selectedConnId = null;
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    const id = getSelected();
+    if (!id) return;
+    const s = getState();
+    if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
+    undoPush();
+    if (s.environment.find(en => en.id === id)) removeEnvItem(id);
+    else removeComponent(id);
+    setSelected(null);
+    render(); updateUndoButtons(); updateTrackerUI();
   }
 });
 

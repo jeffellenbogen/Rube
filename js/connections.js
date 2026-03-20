@@ -1,3 +1,6 @@
+import { getAttachPx } from './render/ui.js';
+import { addConnection, removeConnection as removeConn } from './state.js';
+
 export function countSteps(state) {
   if (!state || !state.components || !state.connections) return 0;
   const startComp = state.components.find(c => c.subtype === 'start');
@@ -31,6 +34,22 @@ export function countSteps(state) {
   const result = dfs(startComp.id, new Set());
   return result === -1 ? 0 : result;
 }
-export function createConnection(fromId, fromPoint, toId, toPoint) { return ''; }
-export function deleteConnection(id) {}
-export function findNearestAttachment(state, px, py, excludeId, snapDist = 15) { return null; }
+
+export function findNearestAttachment(state, px, py, excludeId, snapDist = 15) {
+  for (const comp of state.components) {
+    if (comp.id === excludeId) continue;
+    const pts = getAttachPx(comp);
+    for (const [name, pos] of Object.entries(pts)) {
+      if (Math.hypot(pos.x - px, pos.y - py) < snapDist) return { compId: comp.id, pointName: name };
+    }
+  }
+  return null;
+}
+
+export function createConnection(fromId, fromPoint, toId, toPoint) {
+  return addConnection({ fromId, fromPoint, toId, toPoint });
+}
+
+export function deleteConnection(id) {
+  removeConn(id);
+}

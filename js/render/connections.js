@@ -1,2 +1,99 @@
-export function renderConnections(state, layer) {}
-export function renderFallLines(state, layer) {}
+import { getAttachPx } from './ui.js';
+import { getConnDrag } from '../drag.js';
+import { getSurfaces } from './environment.js';
+import { cmToPx } from '../canvas.js';
+
+const NS = 'http://www.w3.org/2000/svg';
+const CORD_SUBTYPES = new Set(['string', 'matchboxTrack']);
+const CORD_POINTS = new Set(['cordLeft', 'cordRight']);
+
+export function renderConnections(state, layer) {
+  layer.innerHTML = '';
+  ensureArrowDef(document.getElementById('canvas'));
+
+  for (const conn of state.connections) {
+    const from = state.components.find(c => c.id === conn.fromId);
+    const to = state.components.find(c => c.id === conn.toId);
+    if (!from || !to) continue;
+    const fromPts = getAttachPx(from);
+    const toPts = getAttachPx(to);
+    const p1 = fromPts[conn.fromPoint];
+    const p2 = toPts[conn.toPoint];
+    if (!p1 || !p2) continue;
+
+    const isCord = CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)
+                 || CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
+    if (from.subtype === 'matchboxTrack' && to.subtype === 'matchboxTrack') continue;
+
+    const g = document.createElementNS(NS, 'g');
+    g.dataset.connId = conn.id;
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
+    l.setAttribute('x2', p2.x); l.setAttribute('y2', p2.y);
+    if (isCord) {
+      l.setAttribute('stroke', '#ccc'); l.setAttribute('stroke-width', 2);
+    } else {
+      l.setAttribute('stroke', '#ff7b2e'); l.setAttribute('stroke-width', 2);
+      l.setAttribute('marker-end', 'url(#arrowhead)');
+    }
+    g.appendChild(l);
+    layer.appendChild(g);
+  }
+
+  // Draw in-progress connection drag
+  const cd = getConnDrag();
+  if (cd) {
+    const fromComp = state.components.find(c => c.id === cd.fromId);
+    if (fromComp) {
+      const pts = getAttachPx(fromComp);
+      const p1 = pts[cd.fromPoint];
+      if (p1) {
+        const l = document.createElementNS(NS, 'line');
+        l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
+        l.setAttribute('x2', cd.curPx); l.setAttribute('y2', cd.curPy);
+        l.setAttribute('stroke', '#00c9a7'); l.setAttribute('stroke-width', 1.5);
+        l.setAttribute('stroke-dasharray', '5 3');
+        layer.appendChild(l);
+      }
+    }
+  }
+}
+
+let arrowDefAdded = false;
+function ensureArrowDef(svgEl) {
+  if (arrowDefAdded || !svgEl) return;
+  const defs = document.createElementNS(NS, 'defs');
+  defs.innerHTML = `<marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ff7b2e"/></marker>`;
+  svgEl.prepend(defs);
+  arrowDefAdded = true;
+}
+
+export function renderFallLines(state, layer) {
+  const allSurfaces = state.environment.flatMap(item => getSurfaces(item));
+  allSurfaces.push({ x1: 0, x2: 99999, y: 300 }); // floor at 300cm
+
+  for (const comp of state.components) {
+    if (comp.type === 'marker') continue;
+    const compBottom = comp.y + comp.height;
+    const compLeft = comp.x, compRight = comp.x + comp.width;
+
+    const below = allSurfaces
+      .filter(s => s.y >= compBottom && s.x2 > compLeft && s.x1 < compRight)
+      .sort((a, b) => a.y - b.y);
+
+    if (below.some(s => Math.abs(s.y - compBottom) < 2)) continue; // resting
+    const target = below[0];
+    if (!target) continue;
+
+    const lx = cmToPx((compLeft + compRight) / 2);
+    const ly1 = cmToPx(compBottom);
+    const ly2 = cmToPx(target.y);
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', lx); line.setAttribute('y1', ly1);
+    line.setAttribute('x2', lx); line.setAttribute('y2', ly2);
+    line.setAttribute('stroke', '#ffd166'); line.setAttribute('stroke-width', 1.5);
+    line.setAttribute('stroke-dasharray', '5 4'); line.setAttribute('opacity', 0.6);
+    layer.appendChild(line);
+  }
+}
