@@ -1,6 +1,10 @@
+import { renderEnvironment } from './environment.js';
+import { getLayers } from '../canvas.js';
 import { getState } from '../state.js';
+
 export function render() {
   const state = getState();
-  // sub-renderers called here as they're implemented
-  console.log('render()', state.components.length, 'components');
+  const layers = getLayers();
+  renderEnvironment(state, layers.environment);
+  // more renderers added in subsequent tasks
 }
