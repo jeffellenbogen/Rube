@@ -36,7 +36,8 @@ function drawMaterial(comp) {
     case 'domino':   el('rect', { x, y, width: w, height: h, fill: '#222', stroke: '#fff', 'stroke-width': 1, rx: 2 }, g);
                      el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#fff', 'stroke-width': 1 }, g); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
-    case 'string':   el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
+    case 'string':   el('rect', { x, y, width: w, height: Math.max(h, 12), fill: 'transparent' }, g);
+                     el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
     case 'cup':      el('path', { d: `M${x+w*0.1},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.9},${y} Z`, fill: TEAL, opacity: 0.8 }, g); break;
     case 'bucket':   el('path', { d: `M${x+w*0.2},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.8},${y} Z`, fill: '#e67e22', stroke: '#c0392b', 'stroke-width': 1.5 }, g); break;
     case 'tube':     el('rect', { x, y, width: w, height: h, fill: 'none', stroke: TEAL, 'stroke-width': 2, rx: h/2 }, g); break;

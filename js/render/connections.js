@@ -9,7 +9,6 @@ const CORD_POINTS = new Set(['cordLeft', 'cordRight']);
 
 export function renderConnections(state, layer) {
   layer.innerHTML = '';
-  ensureArrowDef(document.getElementById('canvas'));
 
   for (const conn of state.connections) {
     const from = state.components.find(c => c.id === conn.fromId);
@@ -34,7 +33,6 @@ export function renderConnections(state, layer) {
       l.setAttribute('stroke', '#ccc'); l.setAttribute('stroke-width', 2);
     } else {
       l.setAttribute('stroke', '#ff7b2e'); l.setAttribute('stroke-width', 2);
-      l.setAttribute('marker-end', 'url(#arrowhead)');
     }
     g.appendChild(l);
 

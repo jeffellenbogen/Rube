@@ -64,12 +64,13 @@ export function renderUI(state, layer) {
     btn.dataset.targetId = selId;
     btn.setAttribute('cursor', 'pointer');
     const bg = document.createElementNS(NS, 'circle');
-    bg.setAttribute('cx', x + w + pad); bg.setAttribute('cy', y - pad);
-    bg.setAttribute('r', 8); bg.setAttribute('fill', '#ef476f');
+    bg.setAttribute('cx', x + w / 2); bg.setAttribute('cy', y - pad);
+    bg.setAttribute('r', 7); bg.setAttribute('fill', '#ef476f');
+    bg.setAttribute('stroke', '#fff'); bg.setAttribute('stroke-width', 1);
     const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', x + w + pad); t.setAttribute('y', y - pad);
+    t.setAttribute('x', x + w / 2); t.setAttribute('y', y - pad);
     t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
-    t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 10); t.textContent = '×';
+    t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = '×';
     btn.appendChild(bg); btn.appendChild(t);
     layer.appendChild(btn);
   }
