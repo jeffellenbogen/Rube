@@ -155,3 +155,14 @@ document.querySelectorAll('.collapse-btn').forEach(btn => {
 });
 
 buildLibrary();
+
+function initMarkers() {
+  const state = getState();
+  if (!state.components.find(c => c.subtype === 'start')) {
+    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: 240, width: 18, height: 14, subParts: {}, comment: '', commentVisible: false });
+  }
+  if (!state.components.find(c => c.subtype === 'finish')) {
+    addComponent({ type: 'marker', subtype: 'finish', name: '', x: 777, y: 240, width: 18, height: 14, subParts: {}, comment: '', commentVisible: false });
+  }
+}
+initMarkers();
