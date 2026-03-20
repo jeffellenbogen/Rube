@@ -1,4 +1,4 @@
-import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom, screenToCanvas, setOnViewChange, setRoomWidth } from './canvas.js';
+import { initCanvas, getLayers, cmToPx, getRoomDimensions, screenToCanvas, setOnViewChange, setRoomWidth } from './canvas.js';
 import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, expandCanvas, loadState, setTitle } from './state.js';
 import { render } from './render/index.js';
 import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
@@ -120,7 +120,6 @@ function defaultSubParts(subtype) {
 
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
-setOnZoom(drawFloor);
 setOnViewChange(repositionOverlays());
 initDrag(svgEl);
 

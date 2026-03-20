@@ -115,7 +115,8 @@ main {
 #canvas-wrapper {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: var(--bg);
   background-image:
     linear-gradient(rgba(26,58,92,0.4) 1px, transparent 1px),
@@ -126,11 +127,9 @@ main {
 }
 
 #canvas {
-  width: 100%;
-  height: 100%;
+  display: block;
   cursor: default;
 }
-#canvas.panning { cursor: grabbing; }
 
 #comment-overlays {
   position: absolute;
