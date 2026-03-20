@@ -3,6 +3,8 @@ let svgEl, viewBox = { x: 0, y: 0 }; // in px
 let scale = 4; // px per cm (default)
 let roomW = 800, roomH = 300; // cm
 let isPanning = false, panStart = null;
+let onZoom = null;
+export function setOnZoom(fn) { onZoom = fn; }
 
 const LAYERS = {};
 
@@ -50,10 +52,7 @@ function updateViewBox() {
 
 function bindPan() {
   svgEl.addEventListener('mousedown', e => {
-    if (e.target !== svgEl && !e.target.closest('#layer-environment')?.isSameNode(e.target)) {
-      // Only pan on background (svg itself or floor line)
-      if (e.target !== svgEl) return;
-    }
+    if (e.target !== svgEl) return;
     isPanning = true;
     panStart = { x: e.clientX, y: e.clientY, vbx: viewBox.x, vby: viewBox.y };
     svgEl.classList.add('panning');
@@ -78,8 +77,30 @@ function bindZoom() {
   svgEl.addEventListener('wheel', e => {
     e.preventDefault();
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const oldScale = scale;
     scale = Math.max(1, Math.min(12, scale * factor));
+    if (scale === oldScale) return;
+
+    // Zoom toward cursor: keep canvas point under cursor stationary
+    const rect = svgEl.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left; // px from SVG top-left
+    const mouseY = e.clientY - rect.top;
+
+    // Canvas point under cursor before scale change
+    const canvasPxX = mouseX + viewBox.x;
+    const canvasPxY = mouseY + viewBox.y;
+
+    // After scale change, same canvas point should be under cursor:
+    // canvasPxX_new = mouseX + viewBox.x_new
+    // canvasPxX_new = canvasCm * scale_new
+    // canvasCm = canvasPxX_old / oldScale
+    const canvasCmX = canvasPxX / oldScale;
+    const canvasCmY = canvasPxY / oldScale;
+    viewBox.x = canvasCmX * scale - mouseX;
+    viewBox.y = canvasCmY * scale - mouseY;
+
     updateViewBox();
+    if (typeof onZoom === 'function') onZoom();
   }, { passive: false });
 }
 

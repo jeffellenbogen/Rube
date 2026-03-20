@@ -1,9 +1,10 @@
-import { initCanvas, getLayers, cmToPx, getRoomDimensions } from './canvas.js';
+import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom } from './canvas.js';
 import { getState } from './state.js';
 import { render } from './render/index.js';
 
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
+setOnZoom(drawFloor);
 
 // Draw floor (always present, not in state)
 function drawFloor() {
