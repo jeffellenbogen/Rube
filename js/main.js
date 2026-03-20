@@ -1,11 +1,12 @@
-import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom, screenToCanvas } from './canvas.js';
-import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection } from './state.js';
+import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom, screenToCanvas, setOnViewChange, setRoomWidth } from './canvas.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, expandCanvas, loadState, setTitle } from './state.js';
 import { render } from './render/index.js';
-import { undo, redo, canUndo, canRedo, push as undoPush } from './undo.js';
-import { toggleComment } from './comments.js';
+import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
+import { toggleComment, repositionOverlays } from './comments.js';
 import { updateTrackerUI } from './tracker-ui.js';
 import { initDrag, getSelected, setSelected } from './drag.js';
 import { deleteConnection } from './connections.js';
+import { downloadPNG, uploadPNG } from './export.js';
 
 const CATALOG = {
   machines: [
@@ -71,7 +72,39 @@ function buildLibrary() {
   }
 }
 
-function promptCustomName() { /* implemented in Task 21 */ }
+function promptCustomName(compId) {
+  const state = getState();
+  const comp = state.components.find(c => c.id === compId);
+  if (!comp) return;
+
+  const wrapper = document.getElementById('canvas-wrapper');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'custom-name-input';
+  input.placeholder = 'Name this item...';
+  input.maxLength = 30;
+  input.value = comp.name || '';
+
+  const rect = wrapper.getBoundingClientRect();
+  import('./canvas.js').then(({ canvasToScreen }) => {
+    const pos = canvasToScreen(comp.x + comp.width / 2, comp.y + comp.height / 2);
+    input.style.left = `${pos.x - rect.left - 60}px`;
+    input.style.top = `${pos.y - rect.top - 12}px`;
+  });
+
+  wrapper.appendChild(input);
+  input.focus();
+
+  const finish = () => {
+    const name = input.value.trim() || '?';
+    updateComponent(compId, { name });
+    input.remove();
+    render();
+  };
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(); } });
+  input.addEventListener('blur', finish);
+}
 
 function defaultSubParts(subtype) {
   const defaults = {
@@ -88,6 +121,7 @@ function defaultSubParts(subtype) {
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
 setOnZoom(drawFloor);
+setOnViewChange(repositionOverlays());
 initDrag(svgEl);
 
 // Draw floor (always present, not in state)
@@ -135,6 +169,23 @@ svgEl.addEventListener('click', e => {
     toggleComment(targetId);
     render();
   }
+  if (action === 'spin') {
+    undoPush();
+    const comp = getState().components.find(c => c.id === targetId);
+    if (comp) {
+      updateComponent(targetId, { subParts: { ...comp.subParts, spinDirection: comp.subParts.spinDirection === 'cw' ? 'ccw' : 'cw' } });
+      render();
+    }
+  }
+});
+
+svgEl.addEventListener('dblclick', e => {
+  const comp = e.target.closest('[data-id]');
+  if (!comp) return;
+  const id = comp.dataset.id;
+  const s = getState();
+  const item = s.components.find(c => c.id === id && c.subtype === 'custom');
+  if (item) promptCustomName(id);
 });
 
 const btnUndo = document.getElementById('btn-undo');
@@ -189,8 +240,8 @@ canvasWrapper.addEventListener('drop', e => {
   if (item.type === 'environment') {
     addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 4 } : {}) });
   } else {
-    addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false });
-    if (item.subtype === 'custom') promptCustomName();
+    const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false });
+    if (item.subtype === 'custom') promptCustomName(newId);
   }
   render(); updateUndoButtons();
 });
@@ -214,3 +265,74 @@ function initMarkers() {
     addComponent({ type: 'marker', subtype: 'finish', name: '', x: 777, y: 240, width: 18, height: 14, subParts: {}, comment: '', commentVisible: false });
   }
 }
+
+// Task 19: Canvas Expansion
+let expandBtnLeft = null, expandBtnRight = null;
+
+function getOrCreateExpandBtn(side) {
+  const wrapper = document.getElementById('canvas-wrapper');
+  let btn = side === 'left' ? expandBtnLeft : expandBtnRight;
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.className = `expand-btn expand-${side}`;
+    btn.textContent = side === 'left' ? '← Expand' : 'Expand →';
+    btn.addEventListener('click', () => {
+      expandCanvas(side);
+      const s = getState();
+      setRoomWidth(s.meta.canvasExpansion.left, s.meta.canvasExpansion.right);
+      drawFloor();
+      render();
+      hideExpandButtons();
+    });
+    wrapper.appendChild(btn);
+    if (side === 'left') expandBtnLeft = btn;
+    else expandBtnRight = btn;
+  }
+  return btn;
+}
+
+function showExpandButton(side) {
+  const btn = getOrCreateExpandBtn(side);
+  btn.style.display = 'block';
+}
+
+function hideExpandButtons() {
+  if (expandBtnLeft) expandBtnLeft.style.display = 'none';
+  if (expandBtnRight) expandBtnRight.style.display = 'none';
+}
+
+document.getElementById('canvas-wrapper').addEventListener('mousemove', e => {
+  if (!window.__dragActive) return;
+  checkExpansionAffordance(e.clientX);
+});
+
+function checkExpansionAffordance(screenX) {
+  const wrapper = document.getElementById('canvas-wrapper');
+  const rect = wrapper.getBoundingClientRect();
+  const state = getState();
+  if (screenX - rect.left < 40 && state.meta.canvasExpansion.left < 0.5) {
+    showExpandButton('left');
+  } else if (rect.right - screenX < 40 && state.meta.canvasExpansion.right < 0.5) {
+    showExpandButton('right');
+  } else {
+    hideExpandButtons();
+  }
+}
+
+// Task 22: Download, Upload, Team Name
+document.getElementById('btn-download').addEventListener('click', () => {
+  downloadPNG(document.getElementById('canvas'));
+});
+
+document.querySelector('#btn-upload input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const result = await uploadPNG(file);
+  if (result.error) { alert(result.error); return; }
+  undoReset();
+  loadState(result.state);
+  render(); updateUndoButtons(); updateTrackerUI();
+  e.target.value = '';
+});
+
+document.getElementById('team-name').addEventListener('input', e => setTitle(e.target.value));

@@ -5,6 +5,8 @@ let roomW = 800, roomH = 300; // cm
 let isPanning = false, panStart = null;
 let onZoom = null;
 export function setOnZoom(fn) { onZoom = fn; }
+let onViewChange = null;
+export function setOnViewChange(fn) { onViewChange = fn; }
 
 const LAYERS = {};
 
@@ -65,6 +67,7 @@ function bindPan() {
     viewBox.x = panStart.vbx - dx;
     viewBox.y = panStart.vby - dy;
     updateViewBox();
+    if (typeof onViewChange === 'function') onViewChange();
   });
 
   window.addEventListener('mouseup', () => {
@@ -101,6 +104,7 @@ function bindZoom() {
 
     updateViewBox();
     if (typeof onZoom === 'function') onZoom();
+    if (typeof onViewChange === 'function') onViewChange();
   }, { passive: false });
 }
 

@@ -96,4 +96,101 @@ export function renderUI(state, layer) {
       layer.appendChild(dot);
     }
   }
+
+  // Sub-part handles for selected component
+  const selComp = state.components.find(c => c.id === selId);
+  if (selComp && selComp.subParts) {
+    const sp = selComp.subParts;
+
+    if (selComp.subtype === 'lever' && sp.fulcrumOffset !== undefined) {
+      // Fulcrum drag handle — diamond at fulcrum position on bar
+      const fx = x + w * sp.fulcrumOffset;
+      const fy = y + h * 0.5;
+      const diamond = document.createElementNS(NS, 'polygon');
+      diamond.setAttribute('points', `${fx},${fy-6} ${fx+6},${fy} ${fx},${fy+6} ${fx-6},${fy}`);
+      diamond.setAttribute('fill', '#ff7b2e'); diamond.setAttribute('stroke', '#fff'); diamond.setAttribute('stroke-width', 1);
+      diamond.dataset.handle = 'fulcrum'; diamond.dataset.compId = selId;
+      diamond.setAttribute('cursor', 'ew-resize');
+      layer.appendChild(diamond);
+    }
+
+    if (selComp.subtype === 'inclinedPlane' && sp.angle !== undefined) {
+      // Angle handle — circle at the high end of the ramp
+      const rad = (sp.angle * Math.PI) / 180;
+      const hx = x; const hy = y + h - w * Math.tan(rad);
+      const handle = document.createElementNS(NS, 'circle');
+      handle.setAttribute('cx', hx); handle.setAttribute('cy', Math.max(y, hy));
+      handle.setAttribute('r', 6); handle.setAttribute('fill', '#ffd166'); handle.setAttribute('stroke', '#fff'); handle.setAttribute('stroke-width', 1);
+      handle.dataset.handle = 'angle'; handle.dataset.compId = selId;
+      handle.setAttribute('cursor', 'ns-resize');
+      layer.appendChild(handle);
+    }
+
+    if (selComp.subtype === 'matchboxTrack' && sp.angle !== undefined) {
+      const handle = document.createElementNS(NS, 'circle');
+      handle.setAttribute('cx', x + w); handle.setAttribute('cy', y + h / 2);
+      handle.setAttribute('r', 6); handle.setAttribute('fill', '#ffd166'); handle.setAttribute('stroke', '#fff'); handle.setAttribute('stroke-width', 1);
+      handle.dataset.handle = 'trackAngle'; handle.dataset.compId = selId;
+      handle.setAttribute('cursor', 'ns-resize');
+      layer.appendChild(handle);
+    }
+
+    if (selComp.subtype === 'pulley') {
+      // Cord end handles
+      const r = Math.min(w, h) * 0.35;
+      const cx = x + w / 2, cy = y + h * 0.3;
+      const lcl = (sp.leftCordLength || 20) * 4; // cmToPx approximation
+      const rcl = (sp.rightCordLength || 20) * 4;
+
+      const lHandle = document.createElementNS(NS, 'circle');
+      lHandle.setAttribute('cx', cx - r * 0.7); lHandle.setAttribute('cy', cy + lcl);
+      lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#ffd166'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
+      lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
+      lHandle.setAttribute('cursor', 'ns-resize');
+      layer.appendChild(lHandle);
+
+      const rHandle = document.createElementNS(NS, 'circle');
+      rHandle.setAttribute('cx', cx + r * 0.7); rHandle.setAttribute('cy', cy + rcl);
+      rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#ffd166'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
+      rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
+      rHandle.setAttribute('cursor', 'ns-resize');
+      layer.appendChild(rHandle);
+    }
+
+    if (selComp.subtype === 'wheelAxle' || selComp.subtype === 'screw') {
+      // Spin direction toggle button
+      const spinBtn = document.createElementNS(NS, 'g');
+      spinBtn.dataset.action = 'spin'; spinBtn.dataset.targetId = selId;
+      spinBtn.setAttribute('cursor', 'pointer');
+      const spinBg = document.createElementNS(NS, 'circle');
+      spinBg.setAttribute('cx', x + w / 2); spinBg.setAttribute('cy', y - 14);
+      spinBg.setAttribute('r', 9); spinBg.setAttribute('fill', '#1a3a5c'); spinBg.setAttribute('stroke', '#ff7b2e'); spinBg.setAttribute('stroke-width', 1);
+      const spinT = document.createElementNS(NS, 'text');
+      spinT.setAttribute('x', x + w / 2); spinT.setAttribute('y', y - 14);
+      spinT.setAttribute('text-anchor', 'middle'); spinT.setAttribute('dominant-baseline', 'middle');
+      spinT.setAttribute('fill', '#ff7b2e'); spinT.setAttribute('font-size', 11);
+      spinT.textContent = (sp.spinDirection || 'cw') === 'cw' ? '↻' : '↺';
+      spinBtn.appendChild(spinBg); spinBtn.appendChild(spinT);
+      layer.appendChild(spinBtn);
+    }
+  }
+
+  // Resize handles (4 corners) — only for non-env, non-marker components
+  if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish') {
+    const corners = [
+      { name: 'nw', cx: x - pad, cy: y - pad },
+      { name: 'ne', cx: x + w + pad, cy: y - pad },
+      { name: 'sw', cx: x - pad, cy: y + h + pad },
+      { name: 'se', cx: x + w + pad, cy: y + h + pad },
+    ];
+    for (const { name, cx, cy } of corners) {
+      const sq = document.createElementNS(NS, 'rect');
+      sq.setAttribute('x', cx - 4); sq.setAttribute('y', cy - 4);
+      sq.setAttribute('width', 8); sq.setAttribute('height', 8);
+      sq.setAttribute('fill', '#fff'); sq.setAttribute('stroke', '#ff7b2e'); sq.setAttribute('stroke-width', 1.5);
+      sq.dataset.handle = `resize-${name}`; sq.dataset.compId = selId;
+      sq.setAttribute('cursor', `${name}-resize`);
+      layer.appendChild(sq);
+    }
+  }
 }

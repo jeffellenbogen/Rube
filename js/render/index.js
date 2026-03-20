@@ -5,6 +5,8 @@ import { renderUI } from './ui.js';
 import { renderConnections, renderFallLines } from './connections.js';
 import { getLayers } from '../canvas.js';
 import { getState } from '../state.js';
+import { syncOverlays } from '../comments.js';
+import { updateTrackerUI } from '../tracker-ui.js';
 
 export function render() {
   const state = getState();
@@ -16,4 +18,6 @@ export function render() {
   renderConnections(state, layers.connections);
   renderFallLines(state, layers.connections);
   renderUI(state, layers.ui);
+  syncOverlays();
+  updateTrackerUI();
 }
