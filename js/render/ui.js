@@ -1,5 +1,5 @@
 import { cmToPx } from '../canvas.js';
-import { getSelected } from '../drag.js';
+import { getSelected, getConnDrag } from '../drag.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -233,6 +233,28 @@ export function renderUI(state, layer) {
       sq.dataset.handle = `resize-${name}`; sq.dataset.compId = selId;
       sq.setAttribute('cursor', `${name}-resize`);
       layer.appendChild(sq);
+    }
+  }
+
+  // Highlight attachment points on other components during a connection drag
+  const cd = getConnDrag();
+  if (cd) {
+    const HOVER_DIST = 40; // SVG px — lights up before snap (snap is 15px)
+    for (const comp of state.components) {
+      if (comp.id === cd.fromId) continue;
+      const pts = getAttachPx(comp);
+      for (const [, pos] of Object.entries(pts)) {
+        const dist = Math.hypot(pos.x - cd.curPx, pos.y - cd.curPy);
+        if (dist > HOVER_DIST) continue;
+        const inSnap = dist < 15;
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('cx', pos.x); dot.setAttribute('cy', pos.y);
+        dot.setAttribute('r', inSnap ? 8 : 6);
+        dot.setAttribute('fill', '#00ff88');
+        dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', inSnap ? 2.5 : 1.5);
+        dot.setAttribute('opacity', inSnap ? 1 : 0.75);
+        layer.appendChild(dot);
+      }
     }
   }
 }
