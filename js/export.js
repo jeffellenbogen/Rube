@@ -97,6 +97,7 @@ export async function downloadPNG(svgEl) {
   canvas.width = svgEl.clientWidth;
   canvas.height = svgEl.clientHeight;
   const ctx = canvas.getContext('2d');
+  if (canvas.width === 0 || canvas.height === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
   ctx.drawImage(img, 0, 0);
 
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
@@ -108,6 +109,7 @@ export async function downloadPNG(svgEl) {
   a.href = URL.createObjectURL(new Blob([finalBuf], { type: 'image/png' }));
   a.download = 'rube-goldberg-plan.png';
   a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 export async function uploadPNG(file) {
@@ -119,18 +121,17 @@ export async function uploadPNG(file) {
   // Scan chunks for iTXt with our keyword
   const view = new DataView(buffer);
   let offset = 8;
-  while (offset < buffer.byteLength - 12) {
+  while (offset + 12 <= buffer.byteLength) {
     const len = view.getUint32(offset);
     const type = String.fromCharCode(view.getUint8(offset+4), view.getUint8(offset+5), view.getUint8(offset+6), view.getUint8(offset+7));
     if (type === 'iTXt') {
       const chunkBuf = buffer.slice(offset, offset + 4 + 4 + len + 4);
       const text = decodeITXt(chunkBuf, KEYWORD);
       if (text) {
-        try {
-          const parsed = JSON.parse(text);
-          if (parsed.version !== 2) throw new Error('wrong version');
-          return { state: parsed };
-        } catch { break; }
+        let parsed;
+        try { parsed = JSON.parse(text); } catch { continue; }
+        if (parsed.version !== 2) return { error: 'This project was saved with an incompatible version of the planner.' };
+        return { state: parsed };
       }
     }
     offset += 4 + 4 + len + 4;
