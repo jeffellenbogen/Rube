@@ -25,7 +25,7 @@ export function initCanvas(svg) {
 
 function computeScale() {
   const h = svgEl.parentElement.clientHeight || 600;
-  return h / roomH;
+  return (h * 0.97) / roomH;
 }
 
 function updateSvgSize() {
