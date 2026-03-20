@@ -45,81 +45,100 @@ export function renderUI(state, layer) {
   const comp = [...state.components, ...state.environment].find(c => c.id === selId);
   if (!comp) return;
 
-  const x = cmToPx(comp.x), y = cmToPx(comp.y), w = cmToPx(comp.width), h = cmToPx(comp.height);
+  const compCx = cmToPx(comp.x + comp.width / 2);
+  const compCy = cmToPx(comp.y + comp.height / 2);
+  const w = cmToPx(comp.width), h = cmToPx(comp.height);
+  const w2 = w / 2, h2 = h / 2;
   const pad = 4;
+  const rad = (comp.rotation || 0) * Math.PI / 180;
+  const flipX = comp.flipped ? -1 : 1;
 
-  // Selection ring
-  const ring = document.createElementNS(NS, 'rect');
-  ring.setAttribute('x', x - pad); ring.setAttribute('y', y - pad);
-  ring.setAttribute('width', w + pad * 2); ring.setAttribute('height', h + pad * 2);
+  // Convert component-local coords (origin = component center, unrotated) to SVG coords.
+  // Buttons drawn via L() appear at the right rotated position; their symbols stay upright
+  // because we set cx/cy directly in SVG space without applying a parent rotation transform.
+  function L(lx, ly) {
+    const rdx = lx * Math.cos(rad) - ly * Math.sin(rad);
+    const rdy = lx * Math.sin(rad) + ly * Math.cos(rad);
+    return { x: compCx + rdx * flipX, y: compCy + rdy };
+  }
+
+  // Selection ring — rotated polygon following the component's actual orientation
+  const ring = document.createElementNS(NS, 'polygon');
+  ring.setAttribute('points', [
+    L(-w2-pad, -h2-pad), L(w2+pad, -h2-pad),
+    L(w2+pad,  h2+pad),  L(-w2-pad,  h2+pad),
+  ].map(p => `${p.x},${p.y}`).join(' '));
   ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#ff7b2e');
   ring.setAttribute('stroke-width', 1.5); ring.setAttribute('stroke-dasharray', '4 3');
-  ring.setAttribute('rx', 3);
   layer.appendChild(ring);
 
-  // Delete button (skip markers)
+  // Delete button — top-center, pushed outward along local Y axis
   if (comp.subtype !== 'start' && comp.subtype !== 'finish') {
+    const pos = L(0, -h2 - pad);
     const btn = document.createElementNS(NS, 'g');
-    btn.dataset.action = 'delete';
-    btn.dataset.targetId = selId;
+    btn.dataset.action = 'delete'; btn.dataset.targetId = selId;
     btn.setAttribute('cursor', 'pointer');
     const bg = document.createElementNS(NS, 'circle');
-    bg.setAttribute('cx', x + w / 2); bg.setAttribute('cy', y - pad);
+    bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
     bg.setAttribute('r', 7); bg.setAttribute('fill', '#ef476f');
     bg.setAttribute('stroke', '#fff'); bg.setAttribute('stroke-width', 1);
     const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', x + w / 2); t.setAttribute('y', y - pad);
+    t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
     t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
     t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = '×';
     btn.appendChild(bg); btn.appendChild(t);
     layer.appendChild(btn);
   }
 
-  // Comment bubble button
-  const commentBtn = document.createElementNS(NS, 'g');
-  commentBtn.dataset.action = 'comment';
-  commentBtn.dataset.targetId = selId;
-  commentBtn.setAttribute('cursor', 'pointer');
-  const cbg = document.createElementNS(NS, 'circle');
-  cbg.setAttribute('cx', x - pad - 8); cbg.setAttribute('cy', y - pad);
-  cbg.setAttribute('r', 8);
-  cbg.setAttribute('fill', comp.comment ? '#ff7b2e' : '#1a3a5c');
-  cbg.setAttribute('stroke', '#ff7b2e'); cbg.setAttribute('stroke-width', 1);
-  const ct = document.createElementNS(NS, 'text');
-  ct.setAttribute('x', x - pad - 8); ct.setAttribute('y', y - pad);
-  ct.setAttribute('text-anchor', 'middle'); ct.setAttribute('dominant-baseline', 'middle');
-  ct.setAttribute('fill', '#fff'); ct.setAttribute('font-size', 9); ct.textContent = '💬';
-  commentBtn.appendChild(cbg); commentBtn.appendChild(ct);
-  layer.appendChild(commentBtn);
+  // Comment bubble button — top-left corner area
+  {
+    const pos = L(-w2 - pad - 8, -h2 - pad);
+    const commentBtn = document.createElementNS(NS, 'g');
+    commentBtn.dataset.action = 'comment'; commentBtn.dataset.targetId = selId;
+    commentBtn.setAttribute('cursor', 'pointer');
+    const cbg = document.createElementNS(NS, 'circle');
+    cbg.setAttribute('cx', pos.x); cbg.setAttribute('cy', pos.y);
+    cbg.setAttribute('r', 8);
+    cbg.setAttribute('fill', comp.comment ? '#ff7b2e' : '#1a3a5c');
+    cbg.setAttribute('stroke', '#ff7b2e'); cbg.setAttribute('stroke-width', 1);
+    const ct = document.createElementNS(NS, 'text');
+    ct.setAttribute('x', pos.x); ct.setAttribute('y', pos.y);
+    ct.setAttribute('text-anchor', 'middle'); ct.setAttribute('dominant-baseline', 'middle');
+    ct.setAttribute('fill', '#fff'); ct.setAttribute('font-size', 9); ct.textContent = '💬';
+    commentBtn.appendChild(cbg); commentBtn.appendChild(ct);
+    layer.appendChild(commentBtn);
+  }
 
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
   if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish') {
-    // Rotate ↻ — bottom-right
+    // Rotate ↻ — bottom-right in local space
+    const rotPos = L(w2 + pad, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
     rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
     rotBtn.setAttribute('cursor', 'pointer');
     const rbg = document.createElementNS(NS, 'circle');
-    rbg.setAttribute('cx', x + w + pad); rbg.setAttribute('cy', y + h + pad + 8);
+    rbg.setAttribute('cx', rotPos.x); rbg.setAttribute('cy', rotPos.y);
     rbg.setAttribute('r', 8); rbg.setAttribute('fill', '#1a3a5c');
     rbg.setAttribute('stroke', '#ff7b2e'); rbg.setAttribute('stroke-width', 1);
     const rt = document.createElementNS(NS, 'text');
-    rt.setAttribute('x', x + w + pad); rt.setAttribute('y', y + h + pad + 8);
+    rt.setAttribute('x', rotPos.x); rt.setAttribute('y', rotPos.y);
     rt.setAttribute('text-anchor', 'middle'); rt.setAttribute('dominant-baseline', 'middle');
     rt.setAttribute('fill', '#fff'); rt.setAttribute('font-size', 11); rt.textContent = '↻';
     rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
     layer.appendChild(rotBtn);
 
-    // Flip ↔ — bottom-left
+    // Flip ↔ — bottom-left in local space
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
     const flipBtn = document.createElementNS(NS, 'g');
     flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
     flipBtn.setAttribute('cursor', 'pointer');
     const fbg = document.createElementNS(NS, 'circle');
-    fbg.setAttribute('cx', x - pad - 8); fbg.setAttribute('cy', y + h + pad + 8);
+    fbg.setAttribute('cx', flipPos.x); fbg.setAttribute('cy', flipPos.y);
     fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
     fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
     const ft = document.createElementNS(NS, 'text');
-    ft.setAttribute('x', x - pad - 8); ft.setAttribute('y', y + h + pad + 8);
+    ft.setAttribute('x', flipPos.x); ft.setAttribute('y', flipPos.y);
     ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
     ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
     flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
@@ -140,17 +159,15 @@ export function renderUI(state, layer) {
     }
   }
 
-  // Sub-part handles for selected component
+  // Sub-part handles — positions follow component rotation/flip
   const selComp = state.components.find(c => c.id === selId);
   if (selComp && selComp.subParts) {
     const sp = selComp.subParts;
 
     if (selComp.subtype === 'lever' && sp.fulcrumOffset !== undefined) {
-      // Fulcrum drag handle — diamond at fulcrum position on bar
-      const fx = x + w * sp.fulcrumOffset;
-      const fy = y + h * 0.5;
+      const fpos = L((sp.fulcrumOffset - 0.5) * w, 0);
       const diamond = document.createElementNS(NS, 'polygon');
-      diamond.setAttribute('points', `${fx},${fy-6} ${fx+6},${fy} ${fx},${fy+6} ${fx-6},${fy}`);
+      diamond.setAttribute('points', `${fpos.x},${fpos.y-6} ${fpos.x+6},${fpos.y} ${fpos.x},${fpos.y+6} ${fpos.x-6},${fpos.y}`);
       diamond.setAttribute('fill', '#ff7b2e'); diamond.setAttribute('stroke', '#fff'); diamond.setAttribute('stroke-width', 1);
       diamond.dataset.handle = 'fulcrum'; diamond.dataset.compId = selId;
       diamond.setAttribute('cursor', 'ew-resize');
@@ -158,11 +175,11 @@ export function renderUI(state, layer) {
     }
 
     if (selComp.subtype === 'inclinedPlane' && sp.angle !== undefined) {
-      // Angle handle — circle at the high end of the ramp
-      const rad = (sp.angle * Math.PI) / 180;
-      const hx = x; const hy = y + h - w * Math.tan(rad);
+      const aRad = (sp.angle * Math.PI) / 180;
+      const localY = Math.max(-h2, h2 - w * Math.tan(aRad));
+      const pos = L(-w2, localY);
       const handle = document.createElementNS(NS, 'circle');
-      handle.setAttribute('cx', hx); handle.setAttribute('cy', Math.max(y, hy));
+      handle.setAttribute('cx', pos.x); handle.setAttribute('cy', pos.y);
       handle.setAttribute('r', 6); handle.setAttribute('fill', '#ffd166'); handle.setAttribute('stroke', '#fff'); handle.setAttribute('stroke-width', 1);
       handle.dataset.handle = 'angle'; handle.dataset.compId = selId;
       handle.setAttribute('cursor', 'ns-resize');
@@ -170,8 +187,9 @@ export function renderUI(state, layer) {
     }
 
     if (selComp.subtype === 'matchboxTrack' && sp.angle !== undefined) {
+      const pos = L(w2, 0);
       const handle = document.createElementNS(NS, 'circle');
-      handle.setAttribute('cx', x + w); handle.setAttribute('cy', y + h / 2);
+      handle.setAttribute('cx', pos.x); handle.setAttribute('cy', pos.y);
       handle.setAttribute('r', 6); handle.setAttribute('fill', '#ffd166'); handle.setAttribute('stroke', '#fff'); handle.setAttribute('stroke-width', 1);
       handle.dataset.handle = 'trackAngle'; handle.dataset.compId = selId;
       handle.setAttribute('cursor', 'ns-resize');
@@ -179,21 +197,22 @@ export function renderUI(state, layer) {
     }
 
     if (selComp.subtype === 'pulley') {
-      // Cord end handles
-      const r = Math.min(w, h) * 0.35;
-      const cx = x + w / 2, cy = y + h * 0.3;
+      const pr = Math.min(w, h) * 0.35;
       const lcl = cmToPx(sp.leftCordLength || 20);
       const rcl = cmToPx(sp.rightCordLength || 20);
+      // Pulley wheel center is at y+h*0.3, which is local y = -h*0.2
+      const lPos = L(-pr * 0.7, -h * 0.2 + lcl);
+      const rPos = L( pr * 0.7, -h * 0.2 + rcl);
 
       const lHandle = document.createElementNS(NS, 'circle');
-      lHandle.setAttribute('cx', cx - r * 0.7); lHandle.setAttribute('cy', cy + lcl);
+      lHandle.setAttribute('cx', lPos.x); lHandle.setAttribute('cy', lPos.y);
       lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#ffd166'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
       lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
       lHandle.setAttribute('cursor', 'ns-resize');
       layer.appendChild(lHandle);
 
       const rHandle = document.createElementNS(NS, 'circle');
-      rHandle.setAttribute('cx', cx + r * 0.7); rHandle.setAttribute('cy', cy + rcl);
+      rHandle.setAttribute('cx', rPos.x); rHandle.setAttribute('cy', rPos.y);
       rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#ffd166'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
       rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
       rHandle.setAttribute('cursor', 'ns-resize');
@@ -201,15 +220,15 @@ export function renderUI(state, layer) {
     }
 
     if (selComp.subtype === 'wheelAxle' || selComp.subtype === 'screw') {
-      // Spin direction toggle button
+      const pos = L(0, -h2 - 14);
       const spinBtn = document.createElementNS(NS, 'g');
       spinBtn.dataset.action = 'spin'; spinBtn.dataset.targetId = selId;
       spinBtn.setAttribute('cursor', 'pointer');
       const spinBg = document.createElementNS(NS, 'circle');
-      spinBg.setAttribute('cx', x + w / 2); spinBg.setAttribute('cy', y - 14);
+      spinBg.setAttribute('cx', pos.x); spinBg.setAttribute('cy', pos.y);
       spinBg.setAttribute('r', 9); spinBg.setAttribute('fill', '#1a3a5c'); spinBg.setAttribute('stroke', '#ff7b2e'); spinBg.setAttribute('stroke-width', 1);
       const spinT = document.createElementNS(NS, 'text');
-      spinT.setAttribute('x', x + w / 2); spinT.setAttribute('y', y - 14);
+      spinT.setAttribute('x', pos.x); spinT.setAttribute('y', pos.y);
       spinT.setAttribute('text-anchor', 'middle'); spinT.setAttribute('dominant-baseline', 'middle');
       spinT.setAttribute('fill', '#ff7b2e'); spinT.setAttribute('font-size', 11);
       spinT.textContent = (sp.spinDirection || 'cw') === 'cw' ? '↻' : '↺';
@@ -218,17 +237,18 @@ export function renderUI(state, layer) {
     }
   }
 
-  // Resize handles (4 corners) — only for non-env, non-marker components
+  // Resize handles (4 corners) — positioned at rotated corners, squares stay axis-aligned
   if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish') {
     const corners = [
-      { name: 'nw', cx: x - pad, cy: y - pad },
-      { name: 'ne', cx: x + w + pad, cy: y - pad },
-      { name: 'sw', cx: x - pad, cy: y + h + pad },
-      { name: 'se', cx: x + w + pad, cy: y + h + pad },
+      { name: 'nw', lx: -w2-pad, ly: -h2-pad },
+      { name: 'ne', lx:  w2+pad, ly: -h2-pad },
+      { name: 'sw', lx: -w2-pad, ly:  h2+pad },
+      { name: 'se', lx:  w2+pad, ly:  h2+pad },
     ];
-    for (const { name, cx, cy } of corners) {
+    for (const { name, lx, ly } of corners) {
+      const pos = L(lx, ly);
       const sq = document.createElementNS(NS, 'rect');
-      sq.setAttribute('x', cx - 4); sq.setAttribute('y', cy - 4);
+      sq.setAttribute('x', pos.x - 4); sq.setAttribute('y', pos.y - 4);
       sq.setAttribute('width', 8); sq.setAttribute('height', 8);
       sq.setAttribute('fill', '#fff'); sq.setAttribute('stroke', '#ff7b2e'); sq.setAttribute('stroke-width', 1.5);
       sq.dataset.handle = `resize-${name}`; sq.dataset.compId = selId;
@@ -241,9 +261,9 @@ export function renderUI(state, layer) {
   const cd = getConnDrag();
   if (cd) {
     const HOVER_DIST = 40; // SVG px — lights up before snap (snap is 15px)
-    for (const comp of state.components) {
-      if (comp.id === cd.fromId) continue;
-      const pts = getAttachPx(comp);
+    for (const otherComp of state.components) {
+      if (otherComp.id === cd.fromId) continue;
+      const pts = getAttachPx(otherComp);
       for (const [, pos] of Object.entries(pts)) {
         const dist = Math.hypot(pos.x - cd.curPx, pos.y - cd.curPy);
         if (dist > HOVER_DIST) continue;
