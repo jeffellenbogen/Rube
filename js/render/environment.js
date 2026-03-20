@@ -117,7 +117,6 @@ export function getSurfaces(item) {
     case 'desk': surfaces.push({ x1: x, x2: x+w, y: y }); break;
     case 'chair':
       surfaces.push({ x1: x, x2: x+w, y: y+h*0.4 }); // seat
-      surfaces.push({ x1: x+w*0.88, x2: x+w, y: y+h*0.3 }); // right arm
       break;
     case 'stairs':
       for (let i = 0; i < (item.stepCount||4); i++) {
