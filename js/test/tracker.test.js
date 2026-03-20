@@ -49,3 +49,28 @@ test('custom items appear by name in BOM', () => {
   const bom = getBOM({ components: comps });
   assert(bom.find(b => b.name === 'Catapult'));
 });
+
+test('5+ steps via connections = stepsMet true', () => {
+  const comps = [
+    { id: 's', type: 'marker', subtype: 'start' },
+    { id: 'a', type: 'material', subtype: 'ball' },
+    { id: 'b', type: 'material', subtype: 'ball' },
+    { id: 'c', type: 'material', subtype: 'ball' },
+    { id: 'd', type: 'material', subtype: 'ball' },
+    { id: 'e', type: 'material', subtype: 'ball' },
+    { id: 'f', type: 'marker', subtype: 'finish' },
+  ];
+  const connections = [
+    { fromId: 's', toId: 'a' }, { fromId: 'a', toId: 'b' },
+    { fromId: 'b', toId: 'c' }, { fromId: 'c', toId: 'd' },
+    { fromId: 'd', toId: 'e' }, { fromId: 'e', toId: 'f' },
+  ];
+  const r = getRequirements({ components: comps, connections });
+  assertEqual(r.steps, 6);
+  assertEqual(r.stepsMet, true);
+});
+
+test('custom item without name falls back to "Custom"', () => {
+  const bom = getBOM({ components: [{ type: 'material', subtype: 'custom' }] });
+  assert(bom.find(b => b.name === 'Custom'));
+});

@@ -2,16 +2,19 @@ import { countSteps } from './connections.js';
 
 const MACHINE_SUBTYPES = ['lever','pulley','inclinedPlane','wheelAxle','wedge','screw'];
 const EXCLUDED_TYPES = ['marker'];
+const MACHINES_REQUIRED = 3;
+const STEPS_REQUIRED = 5;
 
 export function getRequirements(state) {
-  const placed = state.components.filter(c => c.type === 'simple_machine');
+  const components = state.components || [];
+  const placed = components.filter(c => c.type === 'simple_machine');
   const machineTypes = [...new Set(placed.map(c => c.subtype))];
   const steps = countSteps(state);
   return {
     machineTypes,
-    machinesMet: machineTypes.length >= 3,
+    machinesMet: machineTypes.length >= MACHINES_REQUIRED,
     steps,
-    stepsMet: steps >= 5,
+    stepsMet: steps >= STEPS_REQUIRED,
     allMachines: MACHINE_SUBTYPES
   };
 }
