@@ -12,7 +12,7 @@ function defaultState() {
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
-export function getState() { return state; }
+export function getState() { return { ...state }; }
 export function resetState() { state = defaultState(); }
 export function setState(patch) { state = { ...state, ...patch }; }
 
@@ -78,5 +78,5 @@ export function setTitle(title) {
 }
 
 export function loadState(newState) {
-  state = newState;
+  state = { ...defaultState(), ...newState };
 }

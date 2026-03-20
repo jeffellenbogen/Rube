@@ -45,6 +45,15 @@ test('addConnection and removeConnection', () => {
   assertEqual(getState().connections.length, 0);
 });
 
+test('removeComponent cascades to remove connections', () => {
+  resetState();
+  const id = addComponent({ type: 'material', subtype: 'ball', x: 0, y: 0, width: 5, height: 5, subParts: {}, comment: '', commentVisible: false });
+  addConnection({ fromId: id, fromPoint: 'output', toId: 'other', toPoint: 'input' });
+  assertEqual(getState().connections.length, 1);
+  removeComponent(id);
+  assertEqual(getState().connections.length, 0);
+});
+
 test('expandCanvas clamps to 0.5 max', () => {
   resetState();
   expandCanvas('left'); // 0.25
