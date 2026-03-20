@@ -54,8 +54,7 @@ export function renderUI(state, layer) {
   const flipX = comp.flipped ? -1 : 1;
 
   // Convert component-local coords (origin = component center, unrotated) to SVG coords.
-  // Buttons drawn via L() appear at the right rotated position; their symbols stay upright
-  // because we set cx/cy directly in SVG space without applying a parent rotation transform.
+  // Used for selection ring, resize handles, and sub-part handles that must follow rotation.
   function L(lx, ly) {
     const rdx = lx * Math.cos(rad) - ly * Math.sin(rad);
     const rdy = lx * Math.sin(rad) + ly * Math.cos(rad);
@@ -72,9 +71,18 @@ export function renderUI(state, layer) {
   ring.setAttribute('stroke-width', 1.5); ring.setAttribute('stroke-dasharray', '4 3');
   layer.appendChild(ring);
 
-  // Delete button — top-center, pushed outward along local Y axis
+  // Axis-aligned bounding box of the rotated component — used to anchor action buttons
+  // so they always sit at predictable screen positions (top-left, bottom-right, etc.)
+  const rotPts = [L(-w2, -h2), L(w2, -h2), L(w2, h2), L(-w2, h2)];
+  const aMinX = Math.min(...rotPts.map(p => p.x));
+  const aMaxX = Math.max(...rotPts.map(p => p.x));
+  const aMinY = Math.min(...rotPts.map(p => p.y));
+  const aMaxY = Math.max(...rotPts.map(p => p.y));
+  const aMidX = (aMinX + aMaxX) / 2;
+
+  // Delete button — always screen-top-center of visual bounds
   if (comp.subtype !== 'start' && comp.subtype !== 'finish') {
-    const pos = L(0, -h2 - pad);
+    const pos = { x: aMidX, y: aMinY - pad };
     const btn = document.createElementNS(NS, 'g');
     btn.dataset.action = 'delete'; btn.dataset.targetId = selId;
     btn.setAttribute('cursor', 'pointer');
@@ -90,9 +98,9 @@ export function renderUI(state, layer) {
     layer.appendChild(btn);
   }
 
-  // Comment bubble button — top-left corner area
+  // Comment bubble button — always screen-top-left of visual bounds
   {
-    const pos = L(-w2 - pad - 8, -h2 - pad);
+    const pos = { x: aMinX - pad - 8, y: aMinY - pad };
     const commentBtn = document.createElementNS(NS, 'g');
     commentBtn.dataset.action = 'comment'; commentBtn.dataset.targetId = selId;
     commentBtn.setAttribute('cursor', 'pointer');
@@ -112,8 +120,8 @@ export function renderUI(state, layer) {
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
   if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish') {
-    // Rotate ↻ — bottom-right in local space
-    const rotPos = L(w2 + pad, h2 + pad + 8);
+    // Rotate ↻ — always screen-bottom-right of visual bounds
+    const rotPos = { x: aMaxX + pad, y: aMaxY + pad + 8 };
     const rotBtn = document.createElementNS(NS, 'g');
     rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
     rotBtn.setAttribute('cursor', 'pointer');
@@ -128,8 +136,8 @@ export function renderUI(state, layer) {
     rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
     layer.appendChild(rotBtn);
 
-    // Flip ↔ — bottom-left in local space
-    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
+    // Flip ↔ — always screen-bottom-left of visual bounds
+    const flipPos = { x: aMinX - pad - 8, y: aMaxY + pad + 8 };
     const flipBtn = document.createElementNS(NS, 'g');
     flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
     flipBtn.setAttribute('cursor', 'pointer');
@@ -220,7 +228,7 @@ export function renderUI(state, layer) {
     }
 
     if (selComp.subtype === 'wheelAxle' || selComp.subtype === 'screw') {
-      const pos = L(0, -h2 - 14);
+      const pos = { x: aMidX, y: aMinY - 14 };
       const spinBtn = document.createElementNS(NS, 'g');
       spinBtn.dataset.action = 'spin'; spinBtn.dataset.targetId = selId;
       spinBtn.setAttribute('cursor', 'pointer');
