@@ -1,4 +1,5 @@
 export function countSteps(state) {
+  if (!state || !state.components || !state.connections) return 0;
   const startComp = state.components.find(c => c.subtype === 'start');
   const finishComp = state.components.find(c => c.subtype === 'finish');
   if (!startComp || !finishComp) return 0;
@@ -10,6 +11,8 @@ export function countSteps(state) {
     adj[conn.fromId].push(conn.toId);
   }
 
+  // Branch-local DFS: copies visited set per branch so different paths can share nodes.
+  // O(n!) worst case for highly connected graphs, but fine for student projects (dozens of components).
   // Branch-local DFS: returns max edges from node to finish, or -1 if unreachable
   function dfs(nodeId, visited) {
     if (nodeId === finishComp.id) return 0;
