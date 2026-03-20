@@ -17,6 +17,12 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
   if (shiftHeld) return { x: newX, y: newY };
   const state = getState();
   const allSurfaces = state.environment.flatMap(item => getSurfaces(item));
+  // Add top edges of other machine components as snap surfaces
+  for (const other of state.components) {
+    if (other.id === comp.id) continue;
+    if (other.subtype === 'start' || other.subtype === 'finish' || other.subtype === 'marker') continue;
+    allSurfaces.push({ x1: other.x, x2: other.x + other.width, y: other.y });
+  }
   allSurfaces.push({ x1: 0, x2: 99999, y: 300 });
   const compBottom = newY + comp.height;
   const compMidX = newX + comp.width / 2;
@@ -31,6 +37,9 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
 
 export function initDrag(svgEl) {
   svgEl.addEventListener('mousedown', e => {
+    // Let action buttons (delete, comment, spin) be handled by the click event
+    if (e.target.closest('[data-action]')) return;
+
     // Check for sub-part/resize handle
     if (e.target.dataset.handle) {
       const handle = e.target.dataset.handle;
