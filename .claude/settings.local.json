@@ -12,7 +12,14 @@
       "Bash(node -c app.js)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node -c icons.js)",
+      "Bash(node -c /Users/jellenbogen/claude/Rube/app.js)",
+      "Bash(gh auth:*)",
+      "Bash(brew list:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo:*)"
     ]
   }
 }
