@@ -12,3 +12,4 @@ export function updateEnvItem(id, patch) {}
 export function expandCanvas(side) {}
 export function setTitle(title) {}
 export function loadState(newState) { state = newState; }
+export function setState(patch) {}
