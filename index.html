@@ -3,87 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rube Goldberg Machine Planner</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <title>Rube Goldberg Planner</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app">
-
-    <header id="toolbar">
-      <div id="app-title">
-        <span class="title-rube">RUBE</span>
-        <span class="title-goldberg">GOLDBERG</span>
-        <span class="title-planner">MACHINE PLANNER</span>
-      </div>
-      <div id="toolbar-actions">
-        <button class="btn btn-secondary" id="btn-new">New</button>
-        <button class="btn btn-secondary" id="btn-save">Save JSON</button>
-        <label class="btn btn-secondary" id="btn-load-label">
-          Load JSON
-          <input type="file" id="file-input" accept=".json" style="display:none">
-        </label>
-        <button class="btn btn-primary" id="btn-export">Export PNG</button>
-      </div>
-    </header>
-
-    <div id="main">
-
-      <!-- Left Panel: Component Library -->
-      <aside id="library-panel">
-        <div class="panel-header">Component Library</div>
-        <div class="section-label">Simple Machines</div>
-        <div id="library-machines" class="library-section"></div>
-        <div class="section-label">Materials</div>
-        <div id="library-materials" class="library-section"></div>
-      </aside>
-
-      <!-- Center: Canvas -->
-      <div id="canvas-wrapper">
-        <div id="canvas-area">
-          <svg id="connections-svg">
-            <defs>
-              <filter id="glow-filter" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Right Panel: Requirements Tracker -->
-      <aside id="tracker-panel">
-        <div class="panel-header">Requirements</div>
-
-        <div class="tracker-section">
-          <div class="section-label">Simple Machines</div>
-          <div class="section-sublabel">Need 3+ different types</div>
-          <div id="machine-checklist"></div>
-        </div>
-
-        <div class="tracker-section">
-          <div class="section-label">Steps</div>
-          <div class="section-sublabel">Energy links in your machine</div>
-          <div id="step-counter"></div>
-        </div>
-
-        <div class="tracker-section">
-          <div class="section-label">Bill of Materials</div>
-          <div id="bill-of-materials"></div>
-        </div>
-      </aside>
-
+  <header id="toolbar">
+    <input id="team-name" type="text" value="Team Name" spellcheck="false">
+    <div class="toolbar-actions">
+      <button id="btn-undo" disabled>Undo</button>
+      <button id="btn-redo" disabled>Redo</button>
+      <button id="btn-download">Download</button>
+      <label id="btn-upload">Upload<input type="file" accept="image/png" hidden></label>
     </div>
-  </div>
-
-  <script src="icons.js"></script>
-  <script src="app.js"></script>
+  </header>
+  <main>
+    <aside id="library">
+      <section class="lib-section" id="lib-machines">
+        <h3>Simple Machines <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+      <section class="lib-section" id="lib-materials">
+        <h3>Materials <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+      <section class="lib-section" id="lib-environment">
+        <h3>Environment <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+    </aside>
+    <div id="canvas-wrapper">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+        <g id="layer-environment"></g>
+        <g id="layer-machines"></g>
+        <g id="layer-connections"></g>
+        <g id="layer-ui"></g>
+      </svg>
+      <div id="comment-overlays"></div>
+    </div>
+    <aside id="tracker">
+      <h3>Requirements</h3>
+      <ul id="machine-checklist"></ul>
+      <div id="step-counter"></div>
+      <h3>Bill of Materials</h3>
+      <ul id="bom-list"></ul>
+    </aside>
+  </main>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
