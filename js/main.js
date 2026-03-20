@@ -104,6 +104,7 @@ function drawFloor() {
 }
 
 drawFloor();
+initMarkers();
 render();
 
 const btnUndo = document.getElementById('btn-undo');
@@ -165,4 +166,3 @@ function initMarkers() {
     addComponent({ type: 'marker', subtype: 'finish', name: '', x: 777, y: 240, width: 18, height: 14, subParts: {}, comment: '', commentVisible: false });
   }
 }
-initMarkers();

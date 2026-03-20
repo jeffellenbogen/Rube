@@ -20,6 +20,7 @@ export function renderMaterials(state, layer) {
 function drawMaterial(comp) {
   const g = document.createElementNS(NS, 'g');
   g.dataset.id = comp.id;
+  g.dataset.type = comp.subtype;
   const x = cmToPx(comp.x), y = cmToPx(comp.y), w = cmToPx(comp.width), h = cmToPx(comp.height);
   switch (comp.subtype) {
     case 'ball':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: '#e74c3c' }, g); break;
