@@ -1,6 +1,7 @@
 import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom } from './canvas.js';
 import { getState } from './state.js';
 import { render } from './render/index.js';
+import { undo, redo, canUndo, canRedo } from './undo.js';
 
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
@@ -26,3 +27,22 @@ function drawFloor() {
 
 drawFloor();
 render();
+
+const btnUndo = document.getElementById('btn-undo');
+const btnRedo = document.getElementById('btn-redo');
+
+function updateUndoButtons() {
+  btnUndo.disabled = !canUndo();
+  btnRedo.disabled = !canRedo();
+}
+
+btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons(); });
+btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) { redo(); } else { undo(); }
+    render(); updateUndoButtons();
+  }
+});
