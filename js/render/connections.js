@@ -37,6 +37,24 @@ export function renderConnections(state, layer) {
       l.setAttribute('marker-end', 'url(#arrowhead)');
     }
     g.appendChild(l);
+
+    // Delete button — red × at midpoint
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const del = document.createElementNS(NS, 'g');
+    del.dataset.action = 'delete-conn';
+    del.dataset.connId = conn.id;
+    del.setAttribute('cursor', 'pointer');
+    const dc = document.createElementNS(NS, 'circle');
+    dc.setAttribute('cx', mx); dc.setAttribute('cy', my);
+    dc.setAttribute('r', 7); dc.setAttribute('fill', '#ef476f');
+    dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
+    const dt = document.createElementNS(NS, 'text');
+    dt.setAttribute('x', mx); dt.setAttribute('y', my);
+    dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
+    dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
+    del.appendChild(dc); del.appendChild(dt);
+    g.appendChild(del);
+
     layer.appendChild(g);
   }
 

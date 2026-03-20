@@ -21,11 +21,19 @@ const DEFAULT_ATTACH = { input: [0, 0.5], output: [1, 0.5] };
 
 export function getAttachPx(comp) {
   const pts = ATTACH_POINTS[comp.subtype] || DEFAULT_ATTACH;
-  const x = cmToPx(comp.x), y = cmToPx(comp.y);
+  const cx = cmToPx(comp.x + comp.width / 2);
+  const cy = cmToPx(comp.y + comp.height / 2);
   const w = cmToPx(comp.width), h = cmToPx(comp.height);
+  const deg = (comp.rotation || 0) * Math.PI / 180;
+  const flipX = comp.flipped ? -1 : 1;
   const result = {};
   for (const [name, [fx, fy]] of Object.entries(pts)) {
-    result[name] = { x: x + w * fx, y: y + h * fy };
+    const dx = (fx - 0.5) * w;
+    const dy = (fy - 0.5) * h;
+    // rotate first, then flip (matches SVG transform order)
+    const rdx = dx * Math.cos(deg) - dy * Math.sin(deg);
+    const rdy = dx * Math.sin(deg) + dy * Math.cos(deg);
+    result[name] = { x: cx + rdx * flipX, y: cy + rdy };
   }
   return result;
 }
@@ -82,6 +90,40 @@ export function renderUI(state, layer) {
   ct.setAttribute('fill', '#fff'); ct.setAttribute('font-size', 9); ct.textContent = '💬';
   commentBtn.appendChild(cbg); commentBtn.appendChild(ct);
   layer.appendChild(commentBtn);
+
+  // Rotate / Flip buttons (machine and material components only, not env or markers)
+  const isComp = !!state.components.find(c => c.id === selId);
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish') {
+    // Rotate ↻ — bottom-right
+    const rotBtn = document.createElementNS(NS, 'g');
+    rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
+    rotBtn.setAttribute('cursor', 'pointer');
+    const rbg = document.createElementNS(NS, 'circle');
+    rbg.setAttribute('cx', x + w + pad); rbg.setAttribute('cy', y + h + pad + 8);
+    rbg.setAttribute('r', 8); rbg.setAttribute('fill', '#1a3a5c');
+    rbg.setAttribute('stroke', '#ff7b2e'); rbg.setAttribute('stroke-width', 1);
+    const rt = document.createElementNS(NS, 'text');
+    rt.setAttribute('x', x + w + pad); rt.setAttribute('y', y + h + pad + 8);
+    rt.setAttribute('text-anchor', 'middle'); rt.setAttribute('dominant-baseline', 'middle');
+    rt.setAttribute('fill', '#fff'); rt.setAttribute('font-size', 11); rt.textContent = '↻';
+    rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
+    layer.appendChild(rotBtn);
+
+    // Flip ↔ — bottom-left
+    const flipBtn = document.createElementNS(NS, 'g');
+    flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
+    flipBtn.setAttribute('cursor', 'pointer');
+    const fbg = document.createElementNS(NS, 'circle');
+    fbg.setAttribute('cx', x - pad - 8); fbg.setAttribute('cy', y + h + pad + 8);
+    fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
+    fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
+    const ft = document.createElementNS(NS, 'text');
+    ft.setAttribute('x', x - pad - 8); ft.setAttribute('y', y + h + pad + 8);
+    ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
+    ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
+    flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
+    layer.appendChild(flipBtn);
+  }
 
   // Attachment point dots (for selected component only)
   if (state.components.find(c => c.id === selId)) {

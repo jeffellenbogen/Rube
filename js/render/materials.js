@@ -17,6 +17,15 @@ export function renderMaterials(state, layer) {
   }
 }
 
+function applyTransform(g, comp) {
+  const deg = comp.rotation || 0;
+  const fx = comp.flipped ? -1 : 1;
+  if (deg === 0 && fx === 1) return;
+  const cx = cmToPx(comp.x + comp.width / 2);
+  const cy = cmToPx(comp.y + comp.height / 2);
+  g.setAttribute('transform', `translate(${cx},${cy}) scale(${fx},1) rotate(${deg}) translate(${-cx},${-cy})`);
+}
+
 function drawMaterial(comp) {
   const g = document.createElementNS(NS, 'g');
   g.dataset.id = comp.id;
@@ -43,7 +52,9 @@ function drawMaterial(comp) {
     case 'custom':   drawCustom(g, x, y, w, h, comp.name); break;
     case 'start':    drawMarker(g, x, y, w, h, 'START', '#06d6a0'); break;
     case 'finish':   drawMarker(g, x, y, w, h, 'FINISH', '#ef476f'); break;
+    default: break;
   }
+  if (comp.type !== 'marker') applyTransform(g, comp);
   return g;
 }
 

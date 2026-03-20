@@ -1,5 +1,5 @@
 import { updateComponent, updateEnvItem, getState } from './state.js';
-import { screenToCanvas, getSvg, cmToPx, pxToCm } from './canvas.js';
+import { screenToCanvas, cmToPx, pxToCm } from './canvas.js';
 import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection } from './connections.js';
@@ -9,6 +9,7 @@ let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCan
 let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }
 let handleDrag = null;    // { type, compId, startPx, startPy, origValue }
 let selected = null;
+let hasMoved = false;     // tracks whether current drag has actually moved
 
 export function getSelected() { return selected; }
 export function setSelected(id) { selected = id; }
@@ -47,7 +48,6 @@ export function initDrag(svgEl) {
       const state = getState();
       const comp = state.components.find(c => c.id === compId);
       if (comp) {
-        undoPush();
         const rect = svgEl.getBoundingClientRect();
         handleDrag = {
           type: handle,
@@ -60,6 +60,7 @@ export function initDrag(svgEl) {
           origW: comp.width, origH: comp.height,
           origX: comp.x, origY: comp.y,
         };
+        hasMoved = false;
         e.stopPropagation();
         return;
       }
@@ -83,15 +84,17 @@ export function initDrag(svgEl) {
     if (!item) return;
     if (item.subtype === 'start' || item.subtype === 'finish') { selected = id; render(); return; }
     selected = id;
-    undoPush();
+    render();
     const pos = screenToCanvas(e.clientX, e.clientY);
     dragging = { id, isEnv: !!state.environment.find(ev => ev.id === id), startCanvasX: pos.x, startCanvasY: pos.y, compX: item.x, compY: item.y };
+    hasMoved = false;
     window.__dragActive = true;
     e.stopPropagation();
   });
 
   window.addEventListener('mousemove', e => {
     if (handleDrag) {
+      if (!hasMoved) { undoPush(); hasMoved = true; }
       const rect = svgEl.getBoundingClientRect();
       const curPx = e.clientX - rect.left;
       const curPy = e.clientY - rect.top;
@@ -139,6 +142,7 @@ export function initDrag(svgEl) {
       return;
     }
     if (!dragging) return;
+    if (!hasMoved) { undoPush(); hasMoved = true; }
     const pos = screenToCanvas(e.clientX, e.clientY);
     const dx = pos.x - dragging.startCanvasX, dy = pos.y - dragging.startCanvasY;
     const newX = dragging.compX + dx, newY = dragging.compY + dy;
@@ -151,7 +155,7 @@ export function initDrag(svgEl) {
   });
 
   window.addEventListener('mouseup', e => {
-    if (handleDrag) { handleDrag = null; return; }
+    if (handleDrag) { handleDrag = null; hasMoved = false; return; }
     if (connDrag) {
       const upPos = screenToCanvas(e.clientX, e.clientY);
       const state = getState();
@@ -165,7 +169,7 @@ export function initDrag(svgEl) {
       render();
       return;
     }
-    if (dragging) { dragging = null; window.__dragActive = false; }
+    if (dragging) { dragging = null; window.__dragActive = false; hasMoved = false; }
   });
 }
 

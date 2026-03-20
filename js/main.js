@@ -148,33 +148,54 @@ render();
 let selectedConnId = null;
 
 svgEl.addEventListener('click', e => {
+  // Action buttons take priority (including delete-conn on connections)
+  const actionEl = e.target.closest('[data-action]');
+  if (actionEl) {
+    const { action, targetId, connId } = actionEl.dataset;
+    if (action === 'delete-conn') {
+      undoPush();
+      deleteConnection(connId);
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    // fall through to handle other actions below
+    if (action === 'delete') {
+      undoPush();
+      const state = getState();
+      if (state.environment.find(en => en.id === targetId)) removeEnvItem(targetId);
+      else removeComponent(targetId);
+      setSelected(null);
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    if (action === 'comment') { toggleComment(targetId); render(); return; }
+    if (action === 'rotate') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { rotation: ((comp.rotation || 0) + 90) % 360 }); render(); }
+      return;
+    }
+    if (action === 'flip') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { flipped: !comp.flipped }); render(); }
+      return;
+    }
+    if (action === 'spin') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        updateComponent(targetId, { subParts: { ...comp.subParts, spinDirection: comp.subParts.spinDirection === 'cw' ? 'ccw' : 'cw' } });
+        render();
+      }
+      return;
+    }
+    return;
+  }
   const connEl = e.target.closest('[data-conn-id]');
   if (connEl) {
     selectedConnId = connEl.dataset.connId;
     return;
-  }
-  const actionEl = e.target.closest('[data-action]');
-  if (!actionEl) return;
-  const { action, targetId } = actionEl.dataset;
-  if (action === 'delete') {
-    undoPush();
-    const state = getState();
-    if (state.environment.find(en => en.id === targetId)) removeEnvItem(targetId);
-    else removeComponent(targetId);
-    setSelected(null);
-    render(); updateUndoButtons(); updateTrackerUI();
-  }
-  if (action === 'comment') {
-    toggleComment(targetId);
-    render();
-  }
-  if (action === 'spin') {
-    undoPush();
-    const comp = getState().components.find(c => c.id === targetId);
-    if (comp) {
-      updateComponent(targetId, { subParts: { ...comp.subParts, spinDirection: comp.subParts.spinDirection === 'cw' ? 'ccw' : 'cw' } });
-      render();
-    }
   }
 });
 
@@ -239,7 +260,7 @@ canvasWrapper.addEventListener('drop', e => {
   if (item.type === 'environment') {
     addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 4 } : {}) });
   } else {
-    const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false });
+    const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false, rotation: 0, flipped: false });
     if (item.subtype === 'custom') promptCustomName(newId);
   }
   render(); updateUndoButtons();

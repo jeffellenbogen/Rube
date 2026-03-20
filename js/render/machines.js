@@ -20,6 +20,15 @@ export function renderMachines(state, layer) {
   }
 }
 
+function applyTransform(g, comp) {
+  const deg = comp.rotation || 0;
+  const fx = comp.flipped ? -1 : 1;
+  if (deg === 0 && fx === 1) return;
+  const cx = cmToPx(comp.x + comp.width / 2);
+  const cy = cmToPx(comp.y + comp.height / 2);
+  g.setAttribute('transform', `translate(${cx},${cy}) scale(${fx},1) rotate(${deg}) translate(${-cx},${-cy})`);
+}
+
 function drawMachine(comp) {
   const g = document.createElementNS(NS, 'g');
   g.dataset.id = comp.id;
@@ -36,6 +45,7 @@ function drawMachine(comp) {
     case 'wedge':     drawWedge(g, x, y, w, h); break;
     case 'screw':     drawScrew(g, x, y, w, h, comp.subParts); break;
   }
+  applyTransform(g, comp);
   return g;
 }
 
