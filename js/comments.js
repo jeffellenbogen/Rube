@@ -41,9 +41,10 @@ export function syncOverlays() {
       container.appendChild(div);
       overlays.set(comp.id, div);
     }
+    const wrapperRect = container.getBoundingClientRect();
     const screen = canvasToScreen(comp.x + comp.width / 2, comp.y);
-    div.style.left = `${screen.x - 70}px`;
-    div.style.top = `${screen.y - 100}px`;
+    div.style.left = `${screen.x - wrapperRect.left - 70}px`;
+    div.style.top = `${screen.y - wrapperRect.top - 100}px`;
   }
 }
 

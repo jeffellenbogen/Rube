@@ -38,6 +38,7 @@ export function initDrag(svgEl) {
       const state = getState();
       const comp = state.components.find(c => c.id === compId);
       if (comp) {
+        undoPush();
         const rect = svgEl.getBoundingClientRect();
         handleDrag = {
           type: handle,
@@ -59,8 +60,8 @@ export function initDrag(svgEl) {
     if (e.target.dataset.attachPoint) {
       const compId = e.target.dataset.compId;
       const pointName = e.target.dataset.attachPoint;
-      const rect = svgEl.getBoundingClientRect();
-      connDrag = { fromId: compId, fromPoint: pointName, curPx: e.clientX - rect.left, curPy: e.clientY - rect.top };
+      const startPos = screenToCanvas(e.clientX, e.clientY);
+      connDrag = { fromId: compId, fromPoint: pointName, curPx: cmToPx(startPos.x), curPy: cmToPx(startPos.y) };
       e.stopPropagation();
       return;
     }
@@ -73,6 +74,7 @@ export function initDrag(svgEl) {
     if (!item) return;
     if (item.subtype === 'start' || item.subtype === 'finish') { selected = id; render(); return; }
     selected = id;
+    undoPush();
     const pos = screenToCanvas(e.clientX, e.clientY);
     dragging = { id, isEnv: !!state.environment.find(ev => ev.id === id), startCanvasX: pos.x, startCanvasY: pos.y, compX: item.x, compY: item.y };
     window.__dragActive = true;
@@ -121,9 +123,9 @@ export function initDrag(svgEl) {
     }
 
     if (connDrag) {
-      const rect = svgEl.getBoundingClientRect();
-      connDrag.curPx = e.clientX - rect.left;
-      connDrag.curPy = e.clientY - rect.top;
+      const movePos = screenToCanvas(e.clientX, e.clientY);
+      connDrag.curPx = cmToPx(movePos.x);
+      connDrag.curPy = cmToPx(movePos.y);
       render();
       return;
     }
@@ -140,12 +142,11 @@ export function initDrag(svgEl) {
   });
 
   window.addEventListener('mouseup', e => {
-    if (handleDrag) { undoPush(); handleDrag = null; return; }
+    if (handleDrag) { handleDrag = null; return; }
     if (connDrag) {
-      const rect = svgEl.getBoundingClientRect();
-      const px = e.clientX - rect.left, py = e.clientY - rect.top;
+      const upPos = screenToCanvas(e.clientX, e.clientY);
       const state = getState();
-      const nearest = findNearestAttachment(state, px, py, connDrag.fromId);
+      const nearest = findNearestAttachment(state, cmToPx(upPos.x), cmToPx(upPos.y), connDrag.fromId);
       if (nearest) {
         undoPush();
         createConnection(connDrag.fromId, connDrag.fromPoint, nearest.compId, nearest.pointName);
@@ -155,7 +156,7 @@ export function initDrag(svgEl) {
       render();
       return;
     }
-    if (dragging) { undoPush(); dragging = null; window.__dragActive = false; }
+    if (dragging) { dragging = null; window.__dragActive = false; }
   });
 }
 

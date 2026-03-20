@@ -331,6 +331,10 @@ document.querySelector('#btn-upload input').addEventListener('change', async e =
   if (result.error) { alert(result.error); return; }
   undoReset();
   loadState(result.state);
+  const loaded = getState();
+  document.getElementById('team-name').value = loaded.meta.title || '';
+  setRoomWidth(loaded.meta.canvasExpansion.left, loaded.meta.canvasExpansion.right);
+  drawFloor();
   render(); updateUndoButtons(); updateTrackerUI();
   e.target.value = '';
 });

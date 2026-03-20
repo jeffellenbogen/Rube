@@ -139,8 +139,8 @@ export function renderUI(state, layer) {
       // Cord end handles
       const r = Math.min(w, h) * 0.35;
       const cx = x + w / 2, cy = y + h * 0.3;
-      const lcl = (sp.leftCordLength || 20) * 4; // cmToPx approximation
-      const rcl = (sp.rightCordLength || 20) * 4;
+      const lcl = cmToPx(sp.leftCordLength || 20);
+      const rcl = cmToPx(sp.rightCordLength || 20);
 
       const lHandle = document.createElementNS(NS, 'circle');
       lHandle.setAttribute('cx', cx - r * 0.7); lHandle.setAttribute('cy', cy + lcl);
