@@ -1,7 +1,85 @@
-import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom } from './canvas.js';
-import { getState } from './state.js';
+import { initCanvas, getLayers, cmToPx, getRoomDimensions, setOnZoom, screenToCanvas } from './canvas.js';
+import { getState, addComponent, addEnvItem } from './state.js';
 import { render } from './render/index.js';
-import { undo, redo, canUndo, canRedo } from './undo.js';
+import { undo, redo, canUndo, canRedo, push as undoPush } from './undo.js';
+
+const CATALOG = {
+  machines: [
+    { subtype: 'lever', label: 'Lever', type: 'simple_machine', defaultW: 30, defaultH: 8 },
+    { subtype: 'pulley', label: 'Pulley', type: 'simple_machine', defaultW: 15, defaultH: 20 },
+    { subtype: 'inclinedPlane', label: 'Ramp', type: 'simple_machine', defaultW: 40, defaultH: 20 },
+    { subtype: 'wheelAxle', label: 'Wheel & Axle', type: 'simple_machine', defaultW: 20, defaultH: 20 },
+    { subtype: 'wedge', label: 'Wedge', type: 'simple_machine', defaultW: 20, defaultH: 15 },
+    { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 8, defaultH: 25 },
+  ],
+  materials: [
+    { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 4, defaultH: 8 },
+    { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 6, defaultH: 6 },
+    { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 12, defaultH: 7 },
+    { subtype: 'string', label: 'String', type: 'material', defaultW: 20, defaultH: 1 },
+    { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 7, defaultH: 9 },
+    { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 10, defaultH: 12 },
+    { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 20, defaultH: 5 },
+    { subtype: 'box', label: 'Box', type: 'material', defaultW: 12, defaultH: 12 },
+    { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 20, defaultH: 2 },
+    { subtype: 'tape', label: 'Tape', type: 'material', defaultW: 5, defaultH: 5 },
+    { subtype: 'magnet', label: 'Magnet', type: 'material', defaultW: 6, defaultH: 8 },
+    { subtype: 'track', label: 'Track', type: 'material', defaultW: 20, defaultH: 4 },
+    { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 36, defaultH: 2 },
+    { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 10, defaultH: 5 },
+    { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 20, defaultH: 4 },
+    { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 12, defaultH: 12 },
+  ],
+  environment: [
+    { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
+    { subtype: 'chair', label: 'Chair', type: 'environment', defaultW: 45, defaultH: 80 },
+    { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
+    { subtype: 'shelf', label: 'Shelf', type: 'environment', defaultW: 40, defaultH: 3 },
+    { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
+    { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 90, defaultH: 70 },
+  ]
+};
+
+function placeholderEmoji(subtype) {
+  const map = { lever:'⚖️', pulley:'🎡', inclinedPlane:'📐', wheelAxle:'⚙️', wedge:'🔺', screw:'🔩',
+    domino:'🁣', ball:'⚽', toyCar:'🚗', string:'🧵', cup:'🥤', bucket:'🪣', tube:'🫙', box:'📦',
+    cardboard:'🗂️', tape:'📼', magnet:'🧲', track:'🛤️', yardstick:'📏', protractor:'📐',
+    matchboxTrack:'🛣️', custom:'❓',
+    desk:'🪑', chair:'🪑', stairs:'🪜', shelf:'🗄️', bookshelf:'📚', couch:'🛋️' };
+  return map[subtype] || '?';
+}
+
+function buildLibrary() {
+  for (const [section, items] of Object.entries(CATALOG)) {
+    const container = document.querySelector(`#lib-${section} .lib-items`);
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = 'lib-item';
+      div.draggable = true;
+      div.dataset.catalog = JSON.stringify(item);
+      div.innerHTML = `<span style="font-size:24px">${placeholderEmoji(item.subtype)}</span><span>${item.label}</span>`;
+      div.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('catalog', JSON.stringify(item));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      container.appendChild(div);
+    }
+  }
+}
+
+function promptCustomName() { /* implemented in Task 21 */ }
+
+function defaultSubParts(subtype) {
+  const defaults = {
+    lever: { fulcrumOffset: 0.5 },
+    pulley: { leftCordLength: 20, rightCordLength: 20 },
+    inclinedPlane: { angle: 30 },
+    wheelAxle: { spinDirection: 'cw' },
+    screw: { spinDirection: 'cw', angle: 90 },
+    matchboxTrack: { angle: 0 },
+  };
+  return defaults[subtype] || {};
+}
 
 const svgEl = document.getElementById('canvas');
 initCanvas(svgEl);
@@ -47,3 +125,33 @@ document.addEventListener('keydown', e => {
     render(); updateUndoButtons();
   }
 });
+
+const canvasWrapper = document.getElementById('canvas-wrapper');
+canvasWrapper.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+canvasWrapper.addEventListener('drop', e => {
+  e.preventDefault();
+  const data = e.dataTransfer.getData('catalog');
+  if (!data) return;
+  const item = JSON.parse(data);
+  const { x, y } = screenToCanvas(e.clientX, e.clientY);
+  const pos = { x: x - item.defaultW/2, y: y - item.defaultH/2, width: item.defaultW, height: item.defaultH };
+
+  undoPush();
+  if (item.type === 'environment') {
+    addEnvItem({ subtype: item.subtype, ...pos, stepCount: item.subtype === 'stairs' ? 4 : undefined });
+  } else {
+    addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false });
+    if (item.subtype === 'custom') promptCustomName();
+  }
+  render(); updateUndoButtons();
+});
+
+document.querySelectorAll('.collapse-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const items = btn.closest('.lib-section').querySelector('.lib-items');
+    items.style.display = items.style.display === 'none' ? '' : 'none';
+    btn.textContent = items.style.display === 'none' ? '▸' : '▾';
+  });
+});
+
+buildLibrary();
