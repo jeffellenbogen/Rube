@@ -30,8 +30,8 @@ const ICONS = {
   </svg>`,
 
   inclined_plane: `<svg viewBox="0 0 32 32" width="28" height="28">
-    <polygon points="2,28 30,28 30,8" fill="rgba(255,123,46,0.15)" stroke="#ff7b2e" stroke-width="1.5" stroke-linejoin="round"/>
-    <circle cx="12" cy="21" r="3" fill="rgba(255,123,46,0.4)" stroke="#ff7b2e" stroke-width="1"/>
+    <rect x="19" y="18" width="10" height="9" fill="rgba(255,123,46,0.25)" stroke="#ff7b2e" stroke-width="1.5" rx="0.5"/>
+    <polygon points="3,27 23,18 22,16 2,25" fill="rgba(255,123,46,0.45)" stroke="#ff7b2e" stroke-width="1.2"/>
   </svg>`,
 
   screw: `<svg viewBox="0 0 32 32" width="28" height="28">

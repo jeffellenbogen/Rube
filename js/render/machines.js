@@ -40,7 +40,7 @@ function drawMachine(comp) {
   switch (comp.subtype) {
     case 'lever':     drawLever(g, x, y, w, h, comp.subParts); break;
     case 'pulley':    drawPulley(g, x, y, w, h, comp.subParts); break;
-    case 'inclinedPlane': drawRamp(g, x, y, w, h, comp.subParts); break;
+    case 'inclinedPlane': drawInclinedPlane(g, x, y, w, h, comp.subParts); break;
     case 'wheelAxle': drawWheelAxle(g, x, y, w, h, comp.subParts); break;
     case 'wedge':     drawWedge(g, x, y, w, h); break;
     case 'screw':     drawScrew(g, x, y, w, h, comp.subParts); break;
@@ -70,11 +70,37 @@ function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20 }
   el('line', { x1: cx+r*0.7, y1: cy, x2: cx+r*0.7, y2: cy+rcl, stroke: '#ccc', 'stroke-width': 2 }, g);
 }
 
-function drawRamp(g, x, y, w, h, { angle = 30 } = {}) {
+function drawInclinedPlane(g, x, y, w, h, { angle = 30 } = {}) {
   const rad = (angle * Math.PI) / 180;
-  const x2 = x + w, y2 = y + h;
-  const y1 = y2 - w * Math.tan(rad);
-  el('polygon', { points: `${x},${y2} ${x2},${Math.max(y, y1)} ${x2},${y2}`, fill: '#c8a87a', stroke: BROWN, 'stroke-width': 2 }, g);
+  const y2 = y + h;
+  const blockW = w * 0.20;
+  const plankSpan = w - blockW * 0.5;
+  const blockH = Math.min(h * 0.85, plankSpan * Math.tan(rad));
+
+  // Support block (draw behind plank)
+  el('rect', {
+    x: x + w - blockW, y: y2 - blockH,
+    width: blockW, height: blockH,
+    fill: '#a06030', stroke: BROWN, 'stroke-width': 2, rx: 1,
+  }, g);
+
+  // Plank: thin board from ground-left to top of block on right
+  const px1 = x, py1 = y2;
+  const px2 = x + w, py2 = y2 - blockH;
+  const dx = px2 - px1, dy = py2 - py1;
+  const len = Math.hypot(dx, dy);
+  const plankT = Math.max(4, h * 0.08);
+  // Normal pointing above the plank surface (CW rotation of direction vector)
+  const nx = dy / len, ny = -dx / len;
+
+  el('polygon', {
+    points: [
+      [px1, py1], [px2, py2],
+      [px2 + nx * plankT, py2 + ny * plankT],
+      [px1 + nx * plankT, py1 + ny * plankT],
+    ].map(([cx, cy]) => `${cx.toFixed(1)},${cy.toFixed(1)}`).join(' '),
+    fill: '#c8a87a', stroke: BROWN, 'stroke-width': 2,
+  }, g);
 }
 
 function drawWheelAxle(g, x, y, w, h, { spinDirection = 'cw' } = {}) {

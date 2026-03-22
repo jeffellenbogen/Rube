@@ -12,7 +12,7 @@ const CATALOG = {
   machines: [
     { subtype: 'lever', label: 'Lever', type: 'simple_machine', defaultW: 30, defaultH: 8 },
     { subtype: 'pulley', label: 'Pulley', type: 'simple_machine', defaultW: 15, defaultH: 20 },
-    { subtype: 'inclinedPlane', label: 'Ramp', type: 'simple_machine', defaultW: 40, defaultH: 20 },
+    { subtype: 'inclinedPlane', label: 'Inclined Plane', type: 'simple_machine', defaultW: 40, defaultH: 20 },
     { subtype: 'wheelAxle', label: 'Wheel & Axle', type: 'simple_machine', defaultW: 20, defaultH: 20 },
     { subtype: 'wedge', label: 'Wedge', type: 'simple_machine', defaultW: 20, defaultH: 15 },
     { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 8, defaultH: 25 },
