@@ -7,7 +7,7 @@ const NS = 'http://www.w3.org/2000/svg';
 export const ATTACH_POINTS = {
   lever:         { left: [0, 0.4], right: [1, 0.4] },
   pulley:        { cordLeft: [0.3, 0.55], cordRight: [0.7, 0.55], mountTop: [0.5, 0] },
-  inclinedPlane: { top: [0, 0], bottom: [1, 1] },
+  inclinedPlane: { lowEnd: [0, 1], highEnd: [1, 0] },
   wheelAxle:     { axleLeft: [0, 0.5], axleRight: [1, 0.5] },
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
   screw:         { top: [0.5, 0], tip: [0.5, 1] },
