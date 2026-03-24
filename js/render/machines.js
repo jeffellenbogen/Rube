@@ -49,12 +49,43 @@ function drawMachine(comp) {
   return g;
 }
 
-function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5 } = {}) {
-  // Lever bar
-  el('rect', { x, y: y+h*0.3, width: w, height: h*0.2, fill: BROWN, rx: 2 }, g);
-  // Fulcrum (triangle)
+function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5, tiltSide = 'none' } = {}) {
+  const barCy = y + h * 0.4;
+  const tiltAmt = h * 0.25;
+  const thick = h * 0.1;
+
+  let leftY, rightY;
+  if (tiltSide === 'left') {
+    leftY = barCy - tiltAmt;
+    rightY = barCy + tiltAmt;
+  } else if (tiltSide === 'right') {
+    leftY = barCy + tiltAmt;
+    rightY = barCy - tiltAmt;
+  } else {
+    leftY = rightY = barCy;
+  }
+
+  // Bar as polygon (works for both flat and tilted)
+  const dx = w, dy = rightY - leftY;
+  const len = Math.hypot(dx, dy);
+  // Normal pointing "above" bar surface (toward smaller y = top of screen)
+  const tnx = thick * dy / len;
+  const tny = -thick * dx / len;
+  el('polygon', {
+    points: [
+      [x + tnx,     leftY  + tny],
+      [x + w + tnx, rightY + tny],
+      [x + w - tnx, rightY - tny],
+      [x - tnx,     leftY  - tny],
+    ].map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' '),
+    fill: BROWN,
+  }, g);
+
+  // Fulcrum triangle — tip touches bottom of bar at fulcrum X
   const fx = x + w * fulcrumOffset;
-  el('polygon', { points: `${fx},${y+h*0.5} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
+  const barCenterAtFulcrum = leftY + dy * fulcrumOffset;
+  const fulcrumTipY = barCenterAtFulcrum + thick * dx / len;
+  el('polygon', { points: `${fx},${fulcrumTipY} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
 }
 
 function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20 } = {}) {

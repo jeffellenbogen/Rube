@@ -108,7 +108,7 @@ function promptCustomName(compId) {
 
 function defaultSubParts(subtype) {
   const defaults = {
-    lever: { fulcrumOffset: 0.5 },
+    lever: { fulcrumOffset: 0.5, tiltSide: 'none' },
     pulley: { leftCordLength: 20, rightCordLength: 20 },
     inclinedPlane: { angle: 30 },
     wheelAxle: { spinDirection: 'cw' },
@@ -186,6 +186,17 @@ svgEl.addEventListener('click', e => {
       const comp = getState().components.find(c => c.id === targetId);
       if (comp) {
         updateComponent(targetId, { subParts: { ...comp.subParts, spinDirection: comp.subParts.spinDirection === 'cw' ? 'ccw' : 'cw' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'tilt') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const current = (comp.subParts && comp.subParts.tiltSide) || 'none';
+        const next = current === 'none' ? 'left' : current === 'left' ? 'right' : 'none';
+        updateComponent(targetId, { subParts: { ...comp.subParts, tiltSide: next } });
         render();
       }
       return;

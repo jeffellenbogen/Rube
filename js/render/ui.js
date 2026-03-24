@@ -5,7 +5,7 @@ const NS = 'http://www.w3.org/2000/svg';
 
 // Attachment point positions per subtype (fractions of width/height)
 export const ATTACH_POINTS = {
-  lever:         { left: [0, 0.4], right: [1, 0.4] },
+  // lever: computed dynamically in getAttachPx (tiltSide-dependent)
   pulley:        { cordLeft: [0.3, 0.55], cordRight: [0.7, 0.55], mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { axleLeft: [0, 0.5], axleRight: [1, 0.5] },
@@ -30,6 +30,27 @@ export function getAttachPx(comp) {
     const rdx = dx * Math.cos(deg) - dy * Math.sin(deg);
     const rdy = dx * Math.sin(deg) + dy * Math.cos(deg);
     return { x: cx + rdx * flipX, y: cy + rdy };
+  }
+
+  // Lever: attach points follow the tilted bar ends.
+  if (comp.subtype === 'lever') {
+    const tiltSide = (comp.subParts && comp.subParts.tiltSide) || 'none';
+    const barFy = 0.4; // bar center as fraction of height
+    const tiltAmt = 0.25;
+    let leftFy, rightFy;
+    if (tiltSide === 'left') {
+      leftFy  = barFy - tiltAmt;
+      rightFy = barFy + tiltAmt;
+    } else if (tiltSide === 'right') {
+      leftFy  = barFy + tiltAmt;
+      rightFy = barFy - tiltAmt;
+    } else {
+      leftFy = rightFy = barFy;
+    }
+    return {
+      left:  applyTransform(-w / 2, (leftFy  - 0.5) * h),
+      right: applyTransform( w / 2, (rightFy - 0.5) * h),
+    };
   }
 
   // Inclined plane: connectors sit exactly at the two ends of the plank,
@@ -190,7 +211,26 @@ export function renderUI(state, layer) {
     const sp = selComp.subParts;
 
     if (selComp.subtype === 'lever' && sp.fulcrumOffset !== undefined) {
-      const fpos = L((sp.fulcrumOffset - 0.5) * w, 0);
+      // Compute where the bottom of the bar sits at the fulcrum X (mirrors drawLever logic)
+      const tiltSide = sp.tiltSide || 'none';
+      const barLocalCy = -0.1 * h; // bar center is at 0.4 from top = -0.1h from component center
+      const tiltAmt = 0.25 * h;
+      const thick = 0.1 * h;
+      let leftLocalY, rightLocalY;
+      if (tiltSide === 'left') {
+        leftLocalY  = barLocalCy - tiltAmt;
+        rightLocalY = barLocalCy + tiltAmt;
+      } else if (tiltSide === 'right') {
+        leftLocalY  = barLocalCy + tiltAmt;
+        rightLocalY = barLocalCy - tiltAmt;
+      } else {
+        leftLocalY = rightLocalY = barLocalCy;
+      }
+      const dy_local = rightLocalY - leftLocalY;
+      const len_local = Math.hypot(w, dy_local);
+      const barCenterAtFulcrum = leftLocalY + dy_local * sp.fulcrumOffset;
+      const bottomOffset = thick * w / len_local;
+      const fpos = L((sp.fulcrumOffset - 0.5) * w, barCenterAtFulcrum + bottomOffset);
       const diamond = document.createElementNS(NS, 'polygon');
       diamond.setAttribute('points', `${fpos.x},${fpos.y-6} ${fpos.x+6},${fpos.y} ${fpos.x},${fpos.y+6} ${fpos.x-6},${fpos.y}`);
       diamond.setAttribute('fill', '#ff7b2e'); diamond.setAttribute('stroke', '#fff'); diamond.setAttribute('stroke-width', 1);
@@ -242,6 +282,24 @@ export function renderUI(state, layer) {
       rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
       rHandle.setAttribute('cursor', 'ns-resize');
       layer.appendChild(rHandle);
+    }
+
+    if (selComp.subtype === 'lever') {
+      const tiltSide = sp.tiltSide || 'none';
+      const tiltIcon = tiltSide === 'left' ? '↖' : tiltSide === 'right' ? '↗' : '—';
+      const tiltPos = { x: aMidX, y: aMaxY + pad + 8 };
+      const tiltBtn = document.createElementNS(NS, 'g');
+      tiltBtn.dataset.action = 'tilt'; tiltBtn.dataset.targetId = selId;
+      tiltBtn.setAttribute('cursor', 'pointer');
+      const tbg = document.createElementNS(NS, 'circle');
+      tbg.setAttribute('cx', tiltPos.x); tbg.setAttribute('cy', tiltPos.y);
+      tbg.setAttribute('r', 9); tbg.setAttribute('fill', '#1a3a5c'); tbg.setAttribute('stroke', '#ff7b2e'); tbg.setAttribute('stroke-width', 1);
+      const tt = document.createElementNS(NS, 'text');
+      tt.setAttribute('x', tiltPos.x); tt.setAttribute('y', tiltPos.y);
+      tt.setAttribute('text-anchor', 'middle'); tt.setAttribute('dominant-baseline', 'middle');
+      tt.setAttribute('fill', '#fff'); tt.setAttribute('font-size', 11); tt.textContent = tiltIcon;
+      tiltBtn.appendChild(tbg); tiltBtn.appendChild(tt);
+      layer.appendChild(tiltBtn);
     }
 
     if (selComp.subtype === 'wheelAxle' || selComp.subtype === 'screw') {
