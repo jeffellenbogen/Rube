@@ -10,6 +10,7 @@ function el(tag, attrs, parent) {
 }
 
 export function renderMaterials(state, layer) {
+  layer.innerHTML = '';
   for (const comp of state.components) {
     if (comp.type !== 'material' && comp.type !== 'marker') continue;
     const g = drawMaterial(comp);

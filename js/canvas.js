@@ -10,6 +10,7 @@ const LAYERS = {};
 export function initCanvas(svg) {
   svgEl = svg;
   LAYERS.environment = svg.querySelector('#layer-environment');
+  LAYERS.materials = svg.querySelector('#layer-materials');
   LAYERS.machines = svg.querySelector('#layer-machines');
   LAYERS.connections = svg.querySelector('#layer-connections');
   LAYERS.ui = svg.querySelector('#layer-ui');

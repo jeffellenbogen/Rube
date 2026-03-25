@@ -12,9 +12,9 @@ export function render() {
   const state = getState();
   const layers = getLayers();
   renderEnvironment(state, layers.environment);
+  renderMaterials(state, layers.materials);
   layers.machines.innerHTML = '';
   renderMachines(state, layers.machines);
-  renderMaterials(state, layers.machines); // materials share machines layer
   renderConnections(state, layers.connections);
   renderFallLines(state, layers.connections);
   renderUI(state, layers.ui);

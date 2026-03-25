@@ -6,7 +6,7 @@ const NS = 'http://www.w3.org/2000/svg';
 // Attachment point positions per subtype (fractions of width/height)
 export const ATTACH_POINTS = {
   // lever: computed dynamically in getAttachPx (tiltSide-dependent)
-  pulley:        { cordLeft: [0.3, 0.55], cordRight: [0.7, 0.55], mountTop: [0.5, 0] },
+  pulley:        { mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { axleLeft: [0, 0.5], axleRight: [1, 0.5] },
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
@@ -63,6 +63,18 @@ export function getAttachPx(comp) {
     return {
       lowEnd:  applyTransform(-w / 2,  h / 2),           // left end of plank (ground level)
       highEnd: applyTransform( w / 2,  h / 2 - blockH),  // right end of plank (top of block)
+    };
+  }
+
+  // Pulley: cordLeft/cordRight attach points follow the cord ends (depend on cord length).
+  if (comp.subtype === 'pulley') {
+    const r = Math.min(w, h) * 0.35;
+    const lcl = cmToPx((comp.subParts && comp.subParts.leftCordLength) || 20);
+    const rcl = cmToPx((comp.subParts && comp.subParts.rightCordLength) || 20);
+    return {
+      mountTop:  applyTransform(0,        -h / 2),
+      cordLeft:  applyTransform(-r * 0.7, -h * 0.2 + lcl),
+      cordRight: applyTransform( r * 0.7, -h * 0.2 + rcl),
     };
   }
 
@@ -157,7 +169,7 @@ export function renderUI(state, layer) {
 
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
-  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever') {
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever' && comp.subtype !== 'pulley') {
     // Rotate ↻ — always screen-bottom-right of visual bounds
     const rotPos = { x: aMaxX + pad, y: aMaxY + pad + 8 };
     const rotBtn = document.createElementNS(NS, 'g');
@@ -271,14 +283,14 @@ export function renderUI(state, layer) {
 
       const lHandle = document.createElementNS(NS, 'circle');
       lHandle.setAttribute('cx', lPos.x); lHandle.setAttribute('cy', lPos.y);
-      lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#ffd166'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
+      lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#00c9a7'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
       lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
       lHandle.setAttribute('cursor', 'ns-resize');
       layer.appendChild(lHandle);
 
       const rHandle = document.createElementNS(NS, 'circle');
       rHandle.setAttribute('cx', rPos.x); rHandle.setAttribute('cy', rPos.y);
-      rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#ffd166'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
+      rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#00c9a7'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
       rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
       rHandle.setAttribute('cursor', 'ns-resize');
       layer.appendChild(rHandle);
