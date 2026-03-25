@@ -74,7 +74,7 @@ export function getAttachPx(comp) {
     const lRad = ((comp.subParts && comp.subParts.leftCordAngle) || 0) * Math.PI / 180;
     const rRad = ((comp.subParts && comp.subParts.rightCordAngle) || 0) * Math.PI / 180;
     return {
-      mountTop:  applyTransform(0, -h / 2),
+      mountTop:  applyTransform(0, -h * 0.2 - r * 1.2),
       cordLeft:  applyTransform(-r * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad)),
       cordRight: applyTransform( r * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad)),
     };

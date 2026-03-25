@@ -93,9 +93,10 @@ function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, 
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
   el('circle', { cx, cy, r: r*0.3, fill: ORANGE }, g);
-  // Hanger — narrow rectangle from component top down to wheel top
+  // Hanger — from wheel center up to 10% of diameter past the wheel top
   const hangerW = r * 0.45;
-  el('rect', { x: cx - hangerW/2, y, width: hangerW, height: Math.max(2, cy - r - y), fill: '#777', stroke: '#555', 'stroke-width': 1 }, g);
+  const hangerTop = cy - r * 1.2;
+  el('rect', { x: cx - hangerW/2, y: hangerTop, width: hangerW, height: r * 1.2, fill: '#777', stroke: '#555', 'stroke-width': 1 }, g);
   // Cords — angled from wheel origin
   const lcl = cmToPx(leftCordLength), rcl = cmToPx(rightCordLength);
   const lRad = leftCordAngle * Math.PI / 180;
