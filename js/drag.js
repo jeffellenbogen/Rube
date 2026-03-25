@@ -119,7 +119,7 @@ export function initDrag(svgEl) {
         const originY = handleDrag.compY + handleDrag.compH * 0.3;
         const dx2 = curPx - originX, dy2 = curPy - originY;
         const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newAngle = Math.max(-60, Math.min(60, rawAngle));
+        const newAngle = Math.max(-60, Math.min(0, rawAngle)); // left cord stays left of midline
         const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, leftCordAngle: newAngle, leftCordLength: newLen } });
       } else if (handleDrag.type === 'cordRight') {
@@ -128,7 +128,7 @@ export function initDrag(svgEl) {
         const originY = handleDrag.compY + handleDrag.compH * 0.3;
         const dx2 = curPx - originX, dy2 = curPy - originY;
         const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newAngle = Math.max(-60, Math.min(60, rawAngle));
+        const newAngle = Math.max(0, Math.min(60, rawAngle)); // right cord stays right of midline
         const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordAngle: newAngle, rightCordLength: newLen } });
       } else if (handleDrag.type.startsWith('resize-')) {
