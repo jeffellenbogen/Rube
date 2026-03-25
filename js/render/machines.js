@@ -147,8 +147,7 @@ function drawInclinedPlane(g, x, y, w, h, { angle = 30 } = {}) {
 
 function drawWheelAxle(g, x, y, w, h, { spinDirection = 'cw' } = {}) {
   const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)*0.45;
-  // Axle line
-  el('line', { x1: x, y1: cy, x2: x+w, y2: cy, stroke: '#666', 'stroke-width': 4 }, g);
+  const ri = r * 0.3;
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
   // Spokes
@@ -156,6 +155,8 @@ function drawWheelAxle(g, x, y, w, h, { spinDirection = 'cw' } = {}) {
     const a = (i/4)*Math.PI*2;
     el('line', { x1: cx, y1: cy, x2: cx+Math.cos(a)*r, y2: cy+Math.sin(a)*r, stroke: '#aaa', 'stroke-width': 2 }, g);
   }
+  // Axle (inner circle)
+  el('circle', { cx, cy, r: ri, fill: '#666', stroke: '#aaa', 'stroke-width': 1.5 }, g);
 }
 
 function drawWedge(g, x, y, w, h) {

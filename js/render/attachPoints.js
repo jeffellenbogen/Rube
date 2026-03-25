@@ -6,7 +6,7 @@ export const ATTACH_POINTS = {
   // lever: computed dynamically in getAttachPx (tiltSide-dependent)
   pulley:        { mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
-  wheelAxle:     { axleLeft: [0, 0.5], axleRight: [1, 0.5] },
+  wheelAxle:     { center: [0.5, 0.5] },
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
   screw:         { top: [0.5, 0], tip: [0.5, 1] },
   yardstick:     { left: [0, 0.5], center: [0.5, 0.5], right: [1, 0.5] },
