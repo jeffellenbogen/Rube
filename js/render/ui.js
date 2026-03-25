@@ -233,7 +233,7 @@ export function renderUI(state, layer) {
       layer.appendChild(tiltBtn);
     }
 
-    if (selComp.subtype === 'wheelAxle' || selComp.subtype === 'screw') {
+    if (selComp.subtype === 'screw') {
       const pos = { x: aMidX, y: aMinY - 14 };
       const spinBtn = document.createElementNS(NS, 'g');
       spinBtn.dataset.action = 'spin'; spinBtn.dataset.targetId = selId;
