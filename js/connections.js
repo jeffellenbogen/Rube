@@ -46,8 +46,8 @@ export function findNearestAttachment(state, px, py, excludeId, snapDist = 15) {
   return null;
 }
 
-export function createConnection(fromId, fromPoint, toId, toPoint) {
-  return addConnection({ fromId, fromPoint, toId, toPoint });
+export function createConnection(fromId, fromPoint, toId, toPoint, snap = false) {
+  return addConnection({ fromId, fromPoint, toId, toPoint, ...(snap && { snap: true }) });
 }
 
 export function deleteConnection(id) {

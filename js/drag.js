@@ -179,7 +179,7 @@ export function initDrag(svgEl) {
       // Cord ends: use mouse release position to snap-connect (30px radius)
       if (moved && (type === 'cordLeft' || type === 'cordRight')) {
         const nearest = findNearestAttachment(getState(), upX, upY, compId, 30);
-        if (nearest) { createConnection(compId, type, nearest.compId, nearest.pointName); render(); }
+        if (nearest) { createConnection(compId, type, nearest.compId, nearest.pointName, true); render(); }
       }
       return;
     }
@@ -216,7 +216,16 @@ export function initDrag(svgEl) {
               const d = Math.hypot(ptPos.x - targetPos.x, ptPos.y - targetPos.y);
               if (d < bestDist) { bestDist = d; bestPt = ptName; }
             }
-            if (bestPt) { createConnection(dragId, bestPt, nearest.compId, nearest.pointName); render(); }
+            if (bestPt) {
+              // Shift the component so its attach point aligns exactly with the target connector
+              const fromPos = myPts[bestPt];
+              updateComponent(dragId, {
+                x: comp.x + pxToCm(targetPos.x - fromPos.x),
+                y: comp.y + pxToCm(targetPos.y - fromPos.y),
+              });
+              createConnection(dragId, bestPt, nearest.compId, nearest.pointName, true);
+              render();
+            }
           }
         }
       }

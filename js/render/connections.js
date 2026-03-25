@@ -20,12 +20,33 @@ export function renderConnections(state, layer) {
     const p2 = toPts[conn.toPoint];
     if (!p1 || !p2) continue;
 
+    const g = document.createElementNS(NS, 'g');
+    g.dataset.connId = conn.id;
+
+    if (conn.snap) {
+      // Snap connection: no line — just a red × above the attachment point to detach
+      const del = document.createElementNS(NS, 'g');
+      del.dataset.action = 'delete-conn';
+      del.dataset.connId = conn.id;
+      del.setAttribute('cursor', 'pointer');
+      const dc = document.createElementNS(NS, 'circle');
+      dc.setAttribute('cx', p1.x); dc.setAttribute('cy', p1.y - 12);
+      dc.setAttribute('r', 7); dc.setAttribute('fill', '#ef476f');
+      dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
+      const dt = document.createElementNS(NS, 'text');
+      dt.setAttribute('x', p1.x); dt.setAttribute('y', p1.y - 12);
+      dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
+      dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
+      del.appendChild(dc); del.appendChild(dt);
+      g.appendChild(del);
+      layer.appendChild(g);
+      continue;
+    }
+
     const isCord = CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)
                  || CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
     if (from.subtype === 'matchboxTrack' && to.subtype === 'matchboxTrack') continue;
 
-    const g = document.createElementNS(NS, 'g');
-    g.dataset.connId = conn.id;
     const l = document.createElementNS(NS, 'line');
     l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
     l.setAttribute('x2', p2.x); l.setAttribute('y2', p2.y);
