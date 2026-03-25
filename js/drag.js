@@ -168,22 +168,18 @@ export function initDrag(svgEl) {
   });
 
   window.addEventListener('mouseup', e => {
+    const rect = svgEl.getBoundingClientRect();
+    const upX = e.clientX - rect.left, upY = e.clientY - rect.top;
+
     if (handleDrag) {
       const moved = hasMoved;
       const { type, compId } = handleDrag;
       handleDrag = null;
       hasMoved = false;
-      // Cord ends snap-connect to nearby attachment points on release
+      // Cord ends: use mouse release position to snap-connect (30px radius)
       if (moved && (type === 'cordLeft' || type === 'cordRight')) {
-        const state = getState();
-        const comp = state.components.find(c => c.id === compId);
-        if (comp) {
-          const cordPos = getAttachPx(comp)[type];
-          if (cordPos) {
-            const nearest = findNearestAttachment(state, cordPos.x, cordPos.y, compId);
-            if (nearest) { createConnection(compId, type, nearest.compId, nearest.pointName); render(); }
-          }
-        }
+        const nearest = findNearestAttachment(getState(), upX, upY, compId, 30);
+        if (nearest) { createConnection(compId, type, nearest.compId, nearest.pointName); render(); }
       }
       return;
     }
@@ -204,14 +200,23 @@ export function initDrag(svgEl) {
       const dragId = dragging.id;
       const wasEnv = dragging.isEnv;
       dragging = null; window.__dragActive = false; hasMoved = false;
-      // Component body drag: auto-connect if any attachment point lands near another's
+      // Component body drag: check mouse release position against all attachment points (40px radius).
+      // Find target connector near where the user dropped, then pair with closest point on dragged comp.
       if (!wasEnv) {
         const state = getState();
-        const comp = state.components.find(c => c.id === dragId);
-        if (comp) {
-          for (const [ptName, ptPos] of Object.entries(getAttachPx(comp))) {
-            const nearest = findNearestAttachment(state, ptPos.x, ptPos.y, dragId);
-            if (nearest) { createConnection(dragId, ptName, nearest.compId, nearest.pointName); render(); break; }
+        const nearest = findNearestAttachment(state, upX, upY, dragId, 40);
+        if (nearest) {
+          const comp = state.components.find(c => c.id === dragId);
+          const targetComp = state.components.find(c => c.id === nearest.compId);
+          if (comp && targetComp) {
+            const targetPos = getAttachPx(targetComp)[nearest.pointName];
+            const myPts = getAttachPx(comp);
+            let bestPt = null, bestDist = Infinity;
+            for (const [ptName, ptPos] of Object.entries(myPts)) {
+              const d = Math.hypot(ptPos.x - targetPos.x, ptPos.y - targetPos.y);
+              if (d < bestDist) { bestDist = d; bestPt = ptName; }
+            }
+            if (bestPt) { createConnection(dragId, bestPt, nearest.compId, nearest.pointName); render(); }
           }
         }
       }
