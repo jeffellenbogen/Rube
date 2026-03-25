@@ -88,17 +88,26 @@ function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5, tiltSide = 'none' } = {
   el('polygon', { points: `${fx},${fulcrumTipY} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
 }
 
-function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20 } = {}) {
+function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0 } = {}) {
   const cx = x + w/2, cy = y + h*0.3, r = Math.min(w,h)*0.35;
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
   el('circle', { cx, cy, r: r*0.3, fill: ORANGE }, g);
   // Mounting bracket
   el('line', { x1: cx, y1: y, x2: cx, y2: cy-r, stroke: '#666', 'stroke-width': 3 }, g);
-  // Cords
+  // Cords — angled from wheel origin
   const lcl = cmToPx(leftCordLength), rcl = cmToPx(rightCordLength);
-  el('line', { x1: cx-r*0.7, y1: cy, x2: cx-r*0.7, y2: cy+lcl, stroke: '#ccc', 'stroke-width': 2 }, g);
-  el('line', { x1: cx+r*0.7, y1: cy, x2: cx+r*0.7, y2: cy+rcl, stroke: '#ccc', 'stroke-width': 2 }, g);
+  const lRad = leftCordAngle * Math.PI / 180;
+  const rRad = rightCordAngle * Math.PI / 180;
+  const lox = cx - r*0.7, loy = cy;
+  const rox = cx + r*0.7, roy = cy;
+  const lex = lox + lcl * Math.sin(lRad), ley = loy + lcl * Math.cos(lRad);
+  const rex = rox + rcl * Math.sin(rRad), rey = roy + rcl * Math.cos(rRad);
+  el('line', { x1: lox, y1: loy, x2: lex, y2: ley, stroke: '#ccc', 'stroke-width': 2 }, g);
+  el('line', { x1: rox, y1: roy, x2: rex, y2: rey, stroke: '#ccc', 'stroke-width': 2 }, g);
+  // Yellow balls at cord ends — visible when not selected; replaced by teal when selected
+  el('circle', { cx: lex, cy: ley, r: 5, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
+  el('circle', { cx: rex, cy: rey, r: 5, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
 }
 
 function drawInclinedPlane(g, x, y, w, h, { angle = 30 } = {}) {

@@ -109,7 +109,7 @@ function promptCustomName(compId) {
 function defaultSubParts(subtype) {
   const defaults = {
     lever: { fulcrumOffset: 0.5, tiltSide: 'none' },
-    pulley: { leftCordLength: 20, rightCordLength: 20 },
+    pulley: { leftCordLength: 20, rightCordLength: 20, leftCordAngle: 0, rightCordAngle: 0 },
     inclinedPlane: { angle: 30 },
     wheelAxle: { spinDirection: 'cw' },
     screw: { spinDirection: 'cw', angle: 90 },

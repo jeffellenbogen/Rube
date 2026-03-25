@@ -66,15 +66,17 @@ export function getAttachPx(comp) {
     };
   }
 
-  // Pulley: cordLeft/cordRight attach points follow the cord ends (depend on cord length).
+  // Pulley: cordLeft/cordRight attach points follow the angled cord ends.
   if (comp.subtype === 'pulley') {
     const r = Math.min(w, h) * 0.35;
     const lcl = cmToPx((comp.subParts && comp.subParts.leftCordLength) || 20);
     const rcl = cmToPx((comp.subParts && comp.subParts.rightCordLength) || 20);
+    const lRad = ((comp.subParts && comp.subParts.leftCordAngle) || 0) * Math.PI / 180;
+    const rRad = ((comp.subParts && comp.subParts.rightCordAngle) || 0) * Math.PI / 180;
     return {
-      mountTop:  applyTransform(0,        -h / 2),
-      cordLeft:  applyTransform(-r * 0.7, -h * 0.2 + lcl),
-      cordRight: applyTransform( r * 0.7, -h * 0.2 + rcl),
+      mountTop:  applyTransform(0, -h / 2),
+      cordLeft:  applyTransform(-r * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad)),
+      cordRight: applyTransform( r * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad)),
     };
   }
 
@@ -277,22 +279,24 @@ export function renderUI(state, layer) {
       const pr = Math.min(w, h) * 0.35;
       const lcl = cmToPx(sp.leftCordLength || 20);
       const rcl = cmToPx(sp.rightCordLength || 20);
+      const lRad = (sp.leftCordAngle || 0) * Math.PI / 180;
+      const rRad = (sp.rightCordAngle || 0) * Math.PI / 180;
       // Pulley wheel center is at y+h*0.3, which is local y = -h*0.2
-      const lPos = L(-pr * 0.7, -h * 0.2 + lcl);
-      const rPos = L( pr * 0.7, -h * 0.2 + rcl);
+      const lPos = L(-pr * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad));
+      const rPos = L( pr * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad));
 
       const lHandle = document.createElementNS(NS, 'circle');
       lHandle.setAttribute('cx', lPos.x); lHandle.setAttribute('cy', lPos.y);
       lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#00c9a7'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
       lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
-      lHandle.setAttribute('cursor', 'ns-resize');
+      lHandle.setAttribute('cursor', 'move');
       layer.appendChild(lHandle);
 
       const rHandle = document.createElementNS(NS, 'circle');
       rHandle.setAttribute('cx', rPos.x); rHandle.setAttribute('cy', rPos.y);
       rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#00c9a7'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
       rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
-      rHandle.setAttribute('cursor', 'ns-resize');
+      rHandle.setAttribute('cursor', 'move');
       layer.appendChild(rHandle);
     }
 

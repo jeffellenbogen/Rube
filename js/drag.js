@@ -114,11 +114,23 @@ export function initDrag(svgEl) {
         const newAngle = Math.max(5, Math.min(80, Math.atan2(-dyCm, wCm) * 180 / Math.PI));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, angle: newAngle } });
       } else if (handleDrag.type === 'cordLeft') {
-        const newLen = Math.max(5, pxToCm(handleDrag.origSubParts.leftCordLength * 4 + dy));
-        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, leftCordLength: newLen } });
+        const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
+        const originX = handleDrag.compX + handleDrag.compW / 2 - r * 0.7;
+        const originY = handleDrag.compY + handleDrag.compH * 0.3;
+        const dx2 = curPx - originX, dy2 = curPy - originY;
+        const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
+        const newAngle = Math.max(-60, Math.min(60, rawAngle));
+        const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
+        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, leftCordAngle: newAngle, leftCordLength: newLen } });
       } else if (handleDrag.type === 'cordRight') {
-        const newLen = Math.max(5, pxToCm(handleDrag.origSubParts.rightCordLength * 4 + dy));
-        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordLength: newLen } });
+        const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
+        const originX = handleDrag.compX + handleDrag.compW / 2 + r * 0.7;
+        const originY = handleDrag.compY + handleDrag.compH * 0.3;
+        const dx2 = curPx - originX, dy2 = curPy - originY;
+        const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
+        const newAngle = Math.max(-60, Math.min(60, rawAngle));
+        const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
+        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordAngle: newAngle, rightCordLength: newLen } });
       } else if (handleDrag.type.startsWith('resize-')) {
         const corner = handleDrag.type.slice(7); // 'nw', 'ne', 'sw', 'se'
         const dxCm = pxToCm(dx), dyCm = pxToCm(dy);
