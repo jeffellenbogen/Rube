@@ -1,4 +1,4 @@
-import { getAttachPx } from './ui.js';
+import { getAttachPx } from './attachPoints.js';
 import { getConnDrag } from '../drag.js';
 import { getSurfaces } from './environment.js';
 import { cmToPx } from '../canvas.js';

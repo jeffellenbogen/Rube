@@ -4,7 +4,7 @@ import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection } from './connections.js';
 import { getSurfaces } from './render/environment.js';
-import { getAttachPx } from './render/ui.js';
+import { getAttachPx } from './render/attachPoints.js';
 
 let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
 let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }

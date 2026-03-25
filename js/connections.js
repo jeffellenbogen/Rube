@@ -1,4 +1,4 @@
-import { getAttachPx } from './render/ui.js';
+import { getAttachPx } from './render/attachPoints.js';
 import { addConnection, removeConnection as removeConn } from './state.js';
 
 export function countSteps(state) {
