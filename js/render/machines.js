@@ -163,20 +163,45 @@ function drawWedge(g, x, y, w, h) {
   el('polygon', { points: `${x},${y+h} ${x+w},${y+h} ${x},${y}`, fill: '#c8a87a', stroke: BROWN, 'stroke-width': 2 }, g);
 }
 
-function drawScrew(g, x, y, w, h, { angle = 90, spinDirection = 'cw' } = {}) {
-  const rad = ((90-angle)*Math.PI/180);
-  const cx = x+w/2, cy = y+h/2;
-  const len = Math.min(w,h)*0.8;
-  const dx = Math.cos(rad)*len/2, dy = Math.sin(rad)*len/2;
+function drawScrew(g, x, y, w, h) {
+  const cx = x + w / 2;
+  const headRx = w * 0.48;
+  const headRy = h * 0.07;
+  const headCy = y + h * 0.10;
+  const shaftW = w * 0.40;
+  const shaftX = cx - shaftW / 2;
+  const shaftTopY = y + h * 0.20;
+  const shaftBotY = y + h * 0.75;
+  const shaftH = shaftBotY - shaftTopY;
+  const slotW = Math.max(2, w * 0.07);
+
+  // Head — dome (two offset ellipses)
+  el('ellipse', { cx, cy: headCy + headRy * 0.5, rx: headRx, ry: headRy, fill: '#bbb', stroke: ORANGE, 'stroke-width': 2.5 }, g);
+  el('ellipse', { cx, cy: headCy - headRy * 0.5, rx: headRx, ry: headRy, fill: '#ccc', stroke: ORANGE, 'stroke-width': 2.5 }, g);
+  // Phillips slot
+  el('line', { x1: cx, y1: headCy - headRy, x2: cx, y2: headCy + headRy, stroke: '#555', 'stroke-width': slotW }, g);
+  el('line', { x1: cx - headRx * 0.5, y1: headCy, x2: cx + headRx * 0.5, y2: headCy, stroke: '#555', 'stroke-width': slotW }, g);
+  // Collar
+  el('rect', { x: shaftX - w * 0.02, y: shaftTopY - h * 0.025, width: shaftW + w * 0.04, height: h * 0.04, fill: '#aaa', stroke: '#888', 'stroke-width': 1 }, g);
   // Shaft
-  el('line', { x1: cx-dx, y1: cy+dy, x2: cx+dx, y2: cy-dy, stroke: '#999', 'stroke-width': w*0.4 }, g);
-  // Threads (perpendicular ticks)
-  for (let i = 0; i <= 4; i++) {
-    const t = i/4;
-    const tx = cx-dx+dx*2*t, ty = cy+dy-dy*2*t;
-    const perp = { x: -dy*0.3, y: dx*0.3 };
-    el('line', { x1: tx-perp.x, y1: ty-perp.y, x2: tx+perp.x, y2: ty+perp.y, stroke: ORANGE, 'stroke-width': 1.5 }, g);
+  el('rect', { x: shaftX, y: shaftTopY, width: shaftW, height: shaftH, fill: '#999', stroke: '#777', 'stroke-width': 1 }, g);
+  // Spiral threads (5 coils)
+  const numCoils = 5;
+  const coilH = shaftH / numCoils;
+  const overshoot = shaftW * 0.5;
+  const shaftRight = shaftX + shaftW;
+  for (let i = 0; i < numCoils; i++) {
+    const topY = shaftTopY + i * coilH;
+    const botY = topY + coilH;
+    const midY = (topY + botY) / 2;
+    const offset = coilH * 0.35;
+    el('path', {
+      d: `M${shaftX},${topY} Q${cx},${topY - offset} ${shaftRight},${topY} Q${shaftRight + overshoot},${midY} ${shaftRight},${botY} Q${cx},${botY + offset} ${shaftX},${botY}`,
+      fill: 'none', stroke: ORANGE, 'stroke-width': 1.5,
+    }, g);
   }
+  // Tapered point
+  el('polygon', { points: `${shaftX},${shaftBotY} ${shaftRight},${shaftBotY} ${cx},${y + h * 0.97}`, fill: '#888', stroke: '#666', 'stroke-width': 1.5 }, g);
 }
 
 export { drawMachine };

@@ -112,7 +112,7 @@ function defaultSubParts(subtype) {
     pulley: { leftCordLength: 20, rightCordLength: 20, leftCordAngle: 0, rightCordAngle: 0 },
     inclinedPlane: { angle: 30 },
     wheelAxle: { spinDirection: 'cw' },
-    screw: { spinDirection: 'cw', angle: 90 },
+    screw: { spinDirection: 'cw' },
     matchboxTrack: { angle: 0 },
   };
   return defaults[subtype] || {};

@@ -8,7 +8,7 @@ export const ATTACH_POINTS = {
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { center: [0.5, 0.5] },
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
-  screw:         { top: [0.5, 0], tip: [0.5, 1] },
+  screw:         { tip: [0.5, 1] },
   yardstick:     { left: [0, 0.5], center: [0.5, 0.5], right: [1, 0.5] },
   protractor:    { base: [0.5, 1] },
   matchboxTrack: { left: [0, 0.5], right: [1, 0.5] },
