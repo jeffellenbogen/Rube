@@ -145,7 +145,7 @@ function drawInclinedPlane(g, x, y, w, h, { angle = 30 } = {}) {
   }, g);
 }
 
-function drawWheelAxle(g, x, y, w, h, { spinDirection = 'cw' } = {}) {
+function drawWheelAxle(g, x, y, w, h) {
   const cx = x+w/2, cy = y+h/2, r = Math.min(w,h)*0.45;
   const ri = r * 0.3;
   // Wheel

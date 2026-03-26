@@ -111,8 +111,8 @@ function defaultSubParts(subtype) {
     lever: { fulcrumOffset: 0.5, tiltSide: 'none' },
     pulley: { leftCordLength: 20, rightCordLength: 20, leftCordAngle: 0, rightCordAngle: 0 },
     inclinedPlane: { angle: 30 },
-    wheelAxle: { spinDirection: 'cw' },
-    screw: { spinDirection: 'cw' },
+    wheelAxle: {},
+    screw: {},
     matchboxTrack: { angle: 0 },
   };
   return defaults[subtype] || {};
@@ -181,15 +181,7 @@ svgEl.addEventListener('click', e => {
       if (comp) { updateComponent(targetId, { flipped: !comp.flipped }); render(); }
       return;
     }
-    if (action === 'spin') {
-      undoPush();
-      const comp = getState().components.find(c => c.id === targetId);
-      if (comp) {
-        updateComponent(targetId, { subParts: { ...comp.subParts, spinDirection: comp.subParts.spinDirection === 'cw' ? 'ccw' : 'cw' } });
-        render();
-      }
-      return;
-    }
+
     if (action === 'tilt') {
       undoPush();
       const comp = getState().components.find(c => c.id === targetId);

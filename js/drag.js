@@ -39,7 +39,7 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
 
 export function initDrag(svgEl) {
   svgEl.addEventListener('mousedown', e => {
-    // Let action buttons (delete, comment, spin) be handled by the click event
+    // Let action buttons (delete, comment) be handled by the click event
     if (e.target.closest('[data-action]')) return;
 
     // Check for sub-part/resize handle

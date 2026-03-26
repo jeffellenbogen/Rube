@@ -233,22 +233,7 @@ export function renderUI(state, layer) {
       layer.appendChild(tiltBtn);
     }
 
-    if (selComp.subtype === 'screw') {
-      const pos = { x: aMidX, y: aMinY - 14 };
-      const spinBtn = document.createElementNS(NS, 'g');
-      spinBtn.dataset.action = 'spin'; spinBtn.dataset.targetId = selId;
-      spinBtn.setAttribute('cursor', 'pointer');
-      const spinBg = document.createElementNS(NS, 'circle');
-      spinBg.setAttribute('cx', pos.x); spinBg.setAttribute('cy', pos.y);
-      spinBg.setAttribute('r', 9); spinBg.setAttribute('fill', '#1a3a5c'); spinBg.setAttribute('stroke', '#ff7b2e'); spinBg.setAttribute('stroke-width', 1);
-      const spinT = document.createElementNS(NS, 'text');
-      spinT.setAttribute('x', pos.x); spinT.setAttribute('y', pos.y);
-      spinT.setAttribute('text-anchor', 'middle'); spinT.setAttribute('dominant-baseline', 'middle');
-      spinT.setAttribute('fill', '#ff7b2e'); spinT.setAttribute('font-size', 11);
-      spinT.textContent = (sp.spinDirection || 'cw') === 'cw' ? '↻' : '↺';
-      spinBtn.appendChild(spinBg); spinBtn.appendChild(spinT);
-      layer.appendChild(spinBtn);
-    }
+
   }
 
   // Resize handles (4 corners) — positioned at rotated corners, squares stay axis-aligned
