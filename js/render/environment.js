@@ -139,15 +139,15 @@ function drawCouch(g, x, y, w, h) {
 
   // — Cushion buttons —
   const btnColor = '#5e7d96';
-  const btnR = cushW * 0.055;
+  const btnR = cushW * 0.044;
   function drawButton(cx, cy) {
     const c = document.createElementNS(NS, 'circle');
     c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', btnR);
     c.setAttribute('fill', btnColor); c.setAttribute('stroke', shadow); c.setAttribute('stroke-width', 0.5);
     g.appendChild(c);
   }
-  drawButton(innerX + cushW / 2,           y + backH * 0.42);
-  drawButton(innerX+cushW+gap + cushW / 2, y + backH * 0.42);
+  drawButton(innerX + cushW / 2,           y + backH * 0.50);
+  drawButton(innerX+cushW+gap + cushW / 2, y + backH * 0.50);
 
   // — Seat cushions —
   svgRect(g, innerX,            seatY, cushW, seatH, fabric, shadow);
