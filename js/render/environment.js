@@ -92,55 +92,56 @@ function drawBookshelf(g, x, y, w, h) {
 
 function drawCouch(g, x, y, w, h) {
   const NS = 'http://www.w3.org/2000/svg';
-  const fabric  = '#7a9bb5';  // blue-gray upholstery
-  const shadow  = '#5a7a94';  // darker stroke / shading
-  const wood    = '#7a5230';  // tapered leg color
-  const woodDk  = '#5a3a20';
+  const fabric = '#7a9bb5';
+  const shadow = '#5a7a94';
+  const wood   = '#7a5230';
+  const woodDk = '#5a3a20';
 
-  const armW  = w * 0.10;
-  const legH  = h * 0.14;
-  const bodyH = h - legH;        // body sits above legs
-  const backH = bodyH * 0.50;    // back cushions: top 50% of body
-  const seatH = bodyH * 0.35;    // seat cushions below back
-  const skirtH = bodyH - backH - seatH; // thin skirt at bottom of body
+  const armW   = w * 0.08;
+  const legH   = h * 0.16;
+  const bodyH  = h - legH;
+
+  // Vertical zones (proportions of bodyH, bottom-up):
+  const skirtH = bodyH * 0.10;
+  const seatH  = bodyH * 0.30;
+  const upperH = bodyH - seatH - skirtH; // above-seat zone = where back & arm heights are measured
+
+  const seatY     = y + upperH;           // top of seat cushions in SVG coords
+  // Back cushions fill the full upper zone; arms are 15% shorter (top flush to y)
+  const armTopY   = y + upperH * (1 - 1 / 1.15); // arms start this far below top
 
   const innerX = x + armW;
   const innerW = w - armW * 2;
-  const gap    = innerW * 0.02;  // gap between left/right cushions
+  const gap    = innerW * 0.025;
   const cushW  = (innerW - gap) / 2;
 
-  // — Legs (4 tapered trapezoids) —
-  const legW = w * 0.04;
-  const legInset = armW * 0.3;
+  // — Legs —
+  const legW = w * 0.028;
   function drawLeg(lx) {
     const poly = document.createElementNS(NS, 'polygon');
     const top = y + bodyH, bot = y + h;
-    // tapered: wider at top, narrower at bottom
-    poly.setAttribute('points',
-      `${lx},${top} ${lx+legW},${top} ${lx+legW*0.6},${bot} ${lx+legW*0.4},${bot}`);
+    poly.setAttribute('points', `${lx},${top} ${lx+legW},${top} ${lx+legW*0.55},${bot} ${lx+legW*0.45},${bot}`);
     poly.setAttribute('fill', wood); poly.setAttribute('stroke', woodDk); poly.setAttribute('stroke-width', 1);
     g.appendChild(poly);
   }
-  drawLeg(x + legInset);
-  drawLeg(x + armW * 0.5);
-  drawLeg(x + w - armW * 0.5 - legW);
-  drawLeg(x + w - legInset - legW);
+  drawLeg(x + armW * 0.3);
+  drawLeg(x + w - armW * 0.3 - legW);
+  drawLeg(x + armW + innerW * 0.22);
+  drawLeg(x + armW + innerW * 0.78 - legW);
 
-  // — Arms (boxy, full body height) —
-  svgRect(g, x, y, armW, bodyH, fabric, shadow);
-  svgRect(g, x + w - armW, y, armW, bodyH, fabric, shadow);
+  // — Arms: boxy, shorter than back cushions by 15% —
+  svgRect(g, x,           armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
+  svgRect(g, x + w - armW, armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
 
-  // — Back cushions (two side by side) —
-  const backY = y;
-  svgRect(g, innerX,           backY, cushW,      backH, fabric, shadow);
-  svgRect(g, innerX+cushW+gap, backY, cushW,      backH, fabric, shadow);
+  // — Back cushions: full upper zone height, poke above arms —
+  svgRect(g, innerX,            y, cushW, upperH, fabric, shadow);
+  svgRect(g, innerX+cushW+gap,  y, cushW, upperH, fabric, shadow);
 
-  // — Seat cushions (two side by side) —
-  const seatY = y + backH;
-  svgRect(g, innerX,           seatY, cushW,      seatH, fabric, shadow);
-  svgRect(g, innerX+cushW+gap, seatY, cushW,      seatH, fabric, shadow);
+  // — Seat cushions —
+  svgRect(g, innerX,            seatY, cushW, seatH, fabric, shadow);
+  svgRect(g, innerX+cushW+gap,  seatY, cushW, seatH, fabric, shadow);
 
-  // — Skirt / base panel —
+  // — Skirt —
   svgRect(g, innerX, seatY + seatH, innerW, skirtH, shadow, shadow);
 }
 
@@ -164,12 +165,14 @@ export function getSurfaces(item) {
       [1,2,3].forEach(i => surfaces.push({ x1: x, x2: x+w, y: y+h*(i/4) }));
       break;
     case 'couch': {
-      const armW = w * 0.10;
-      const bodyH = h * 0.86; // matches drawCouch legH=14%
-      const backH = bodyH * 0.50;
-      surfaces.push({ x1: x + armW, x2: x + w - armW, y: y + backH }); // seat top
-      surfaces.push({ x1: x, x2: x + armW, y: y });                     // left arm top
-      surfaces.push({ x1: x + w - armW, x2: x + w, y: y });             // right arm top
+      const armW  = w * 0.08;
+      const bodyH = h * 0.84; // legH=16%
+      const skirtH = bodyH * 0.10, seatH = bodyH * 0.30;
+      const upperH = bodyH - seatH - skirtH;
+      const armTopOffset = upperH * (1 - 1 / 1.15);
+      surfaces.push({ x1: x + armW, x2: x + w - armW, y: y + upperH }); // seat top
+      surfaces.push({ x1: x, x2: x + armW, y: y + armTopOffset });       // left arm top
+      surfaces.push({ x1: x + w - armW, x2: x + w, y: y + armTopOffset }); // right arm top
       break;
     }
   }

@@ -40,7 +40,7 @@ const CATALOG = {
     { subtype: 'chair', label: 'Chair', type: 'environment', defaultW: 45, defaultH: 80 },
     { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
     { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
-    { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 90, defaultH: 70 },
+    { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 140, defaultH: 55 },
   ]
 };
 
