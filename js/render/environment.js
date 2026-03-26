@@ -107,8 +107,10 @@ function drawCouch(g, x, y, w, h) {
   const upperH = bodyH - seatH - skirtH; // above-seat zone = where back & arm heights are measured
 
   const seatY     = y + upperH;           // top of seat cushions in SVG coords
-  // Back cushions fill the full upper zone; arms are 15% shorter (top flush to y)
-  const armTopY   = y + upperH * (1 - 1 / 1.15); // arms start this far below top
+  // Back cushions are 15% taller than upperH; arms reduced 15% from previous height
+  const backH     = upperH * 1.15;
+  const armAbove  = upperH / 1.15 * 0.85;         // arm height above seat
+  const armTopY   = seatY - armAbove;
 
   const innerX = x + armW;
   const innerW = w - armW * 2;
@@ -126,16 +128,14 @@ function drawCouch(g, x, y, w, h) {
   }
   drawLeg(x + armW * 0.3);
   drawLeg(x + w - armW * 0.3 - legW);
-  drawLeg(x + armW + innerW * 0.22);
-  drawLeg(x + armW + innerW * 0.78 - legW);
 
   // — Arms: boxy, shorter than back cushions by 15% —
   svgRect(g, x,           armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
   svgRect(g, x + w - armW, armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
 
-  // — Back cushions: full upper zone height, poke above arms —
-  svgRect(g, innerX,            y, cushW, upperH, fabric, shadow);
-  svgRect(g, innerX+cushW+gap,  y, cushW, upperH, fabric, shadow);
+  // — Back cushions: taller than arms, extend slightly below seat line —
+  svgRect(g, innerX,            y, cushW, backH, fabric, shadow);
+  svgRect(g, innerX+cushW+gap,  y, cushW, backH, fabric, shadow);
 
   // — Seat cushions —
   svgRect(g, innerX,            seatY, cushW, seatH, fabric, shadow);
@@ -169,7 +169,8 @@ export function getSurfaces(item) {
       const bodyH = h * 0.84; // legH=16%
       const skirtH = bodyH * 0.10, seatH = bodyH * 0.30;
       const upperH = bodyH - seatH - skirtH;
-      const armTopOffset = upperH * (1 - 1 / 1.15);
+      const armAbove = upperH / 1.15 * 0.85;
+      const armTopOffset = upperH - armAbove;
       surfaces.push({ x1: x + armW, x2: x + w - armW, y: y + upperH }); // seat top
       surfaces.push({ x1: x, x2: x + armW, y: y + armTopOffset });       // left arm top
       surfaces.push({ x1: x + w - armW, x2: x + w, y: y + armTopOffset }); // right arm top
