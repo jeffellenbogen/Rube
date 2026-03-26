@@ -39,7 +39,6 @@ const CATALOG = {
     { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
     { subtype: 'chair', label: 'Chair', type: 'environment', defaultW: 45, defaultH: 80 },
     { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
-    { subtype: 'shelf', label: 'Shelf', type: 'environment', defaultW: 40, defaultH: 3 },
     { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
     { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 90, defaultH: 70 },
   ]
@@ -50,7 +49,7 @@ function placeholderEmoji(subtype) {
     domino:'🁣', ball:'⚽', toyCar:'🚗', string:'🧵', cup:'🥤', bucket:'🪣', tube:'🫙', box:'📦',
     cardboard:'🗂️', tape:'📼', magnet:'🧲', track:'🛤️', yardstick:'📏', protractor:'📐',
     matchboxTrack:'🛣️', custom:'❓',
-    desk:'🪑', chair:'🪑', stairs:'🪜', shelf:'🗄️', bookshelf:'📚', couch:'🛋️' };
+    desk:'🪑', chair:'🪑', stairs:'🪜', bookshelf:'📚', couch:'🛋️' };
   return map[subtype] || '?';
 }
 
