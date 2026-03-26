@@ -118,11 +118,11 @@ function drawCouch(g, x, y, w, h) {
   const cushW  = (innerW - gap) / 2;
 
   // — Legs —
-  const legW = w * 0.028;
+  const legW = w * 0.042;
   function drawLeg(lx) {
     const poly = document.createElementNS(NS, 'polygon');
     const top = y + bodyH, bot = y + h;
-    poly.setAttribute('points', `${lx},${top} ${lx+legW},${top} ${lx+legW*0.55},${bot} ${lx+legW*0.45},${bot}`);
+    poly.setAttribute('points', `${lx},${top} ${lx+legW},${top} ${lx+legW*0.7},${bot} ${lx+legW*0.3},${bot}`);
     poly.setAttribute('fill', wood); poly.setAttribute('stroke', woodDk); poly.setAttribute('stroke-width', 1);
     g.appendChild(poly);
   }
