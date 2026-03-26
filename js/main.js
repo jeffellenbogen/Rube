@@ -10,12 +10,12 @@ import { downloadPNG, uploadPNG } from './export.js';
 
 const CATALOG = {
   machines: [
-    { subtype: 'lever', label: 'Lever', type: 'simple_machine', defaultW: 30, defaultH: 8 },
+    { subtype: 'lever', label: 'Lever', type: 'simple_machine', defaultW: 60, defaultH: 16 },
     { subtype: 'pulley', label: 'Pulley', type: 'simple_machine', defaultW: 15, defaultH: 20 },
-    { subtype: 'inclinedPlane', label: 'Inclined Plane', type: 'simple_machine', defaultW: 40, defaultH: 20 },
+    { subtype: 'inclinedPlane', label: 'Inclined Plane', type: 'simple_machine', defaultW: 80, defaultH: 40 },
     { subtype: 'wheelAxle', label: 'Wheel & Axle', type: 'simple_machine', defaultW: 20, defaultH: 20 },
     { subtype: 'wedge', label: 'Wedge', type: 'simple_machine', defaultW: 20, defaultH: 15 },
-    { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 8, defaultH: 25 },
+    { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 5, defaultH: 15 },
   ],
   materials: [
     { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 4, defaultH: 8 },
