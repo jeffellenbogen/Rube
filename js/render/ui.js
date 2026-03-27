@@ -120,6 +120,25 @@ export function renderUI(state, layer) {
     layer.appendChild(flipBtn);
   }
 
+  // Rotate-only button for bookshelf (env item)
+  const isBookshelf = !!state.environment.find(e => e.id === selId && e.subtype === 'bookshelf');
+  if (isBookshelf) {
+    const rotPos = { x: aMaxX + pad + 8, y: aMaxY + pad + 8 };
+    const rotBtn = document.createElementNS(NS, 'g');
+    rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
+    rotBtn.setAttribute('cursor', 'pointer');
+    const rbg = document.createElementNS(NS, 'circle');
+    rbg.setAttribute('cx', rotPos.x); rbg.setAttribute('cy', rotPos.y);
+    rbg.setAttribute('r', 8); rbg.setAttribute('fill', '#1a3a5c');
+    rbg.setAttribute('stroke', '#ff7b2e'); rbg.setAttribute('stroke-width', 1);
+    const rt = document.createElementNS(NS, 'text');
+    rt.setAttribute('x', rotPos.x); rt.setAttribute('y', rotPos.y);
+    rt.setAttribute('text-anchor', 'middle'); rt.setAttribute('dominant-baseline', 'middle');
+    rt.setAttribute('fill', '#fff'); rt.setAttribute('font-size', 11); rt.textContent = '↻';
+    rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
+    layer.appendChild(rotBtn);
+  }
+
   // Flip-only button for stairs (env item)
   const isStairs = !!state.environment.find(e => e.id === selId && e.subtype === 'stairs');
   if (isStairs) {

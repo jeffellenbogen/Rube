@@ -29,9 +29,12 @@ function makeEnvItem(item) {
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
     case 'couch': drawCouch(g, x, y, w, h); break;
   }
-  if (item.flipped) {
-    const cx = x + w / 2;
+  const cx = x + w / 2, cy = y + h / 2;
+  const rotation = item.rotation || 0;
+  if (item.flipped && !rotation) {
     g.setAttribute('transform', `translate(${cx},0) scale(-1,1) translate(${-cx},0)`);
+  } else if (rotation) {
+    g.setAttribute('transform', `rotate(${rotation},${cx},${cy})`);
   }
   return g;
 }
@@ -192,11 +195,19 @@ export function getSurfaces(item) {
       }
       break;
     }
-    case 'bookshelf':
-      surfaces.push({ x1: x, x2: x+w, y: y });        // top
-      surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
-      surfaces.push({ x1: x, x2: x+w, y: y+h });      // bottom shelf floor
+    case 'bookshelf': {
+      const rotation = item.rotation || 0;
+      if (rotation === 90 || rotation === 270) {
+        // Horizontal orientation: top of rotated shape is the only useful snap surface
+        const bsCx = x + w / 2, bsCy = y + h / 2;
+        surfaces.push({ x1: bsCx - h/2, x2: bsCx + h/2, y: bsCy - w/2 }); // top face
+      } else {
+        surfaces.push({ x1: x, x2: x+w, y: y });        // top
+        surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
+        surfaces.push({ x1: x, x2: x+w, y: y+h });      // bottom shelf floor
+      }
       break;
+    }
     case 'couch': {
       const armW  = w * 0.08;
       const bodyH = h * 0.84; // legH=16%

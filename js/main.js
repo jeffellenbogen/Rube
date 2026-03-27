@@ -205,8 +205,11 @@ svgEl.addEventListener('click', e => {
     if (action === 'comment') { toggleComment(targetId); render(); return; }
     if (action === 'rotate') {
       undoPush();
-      const comp = getState().components.find(c => c.id === targetId);
-      if (comp) { updateComponent(targetId, { rotation: ((comp.rotation || 0) + 90) % 360 }); render(); }
+      const state = getState();
+      const comp = state.components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { rotation: ((comp.rotation || 0) + 90) % 360 }); render(); return; }
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) { updateEnvItem(targetId, { rotation: ((envItem.rotation || 0) + 90) % 360 }); render(); }
       return;
     }
     if (action === 'flip') {
