@@ -93,10 +93,15 @@ function drawDomino(g, x, y, w, h, topVal, botVal) {
 }
 
 function drawCar(g, x, y, w, h) {
-  el('rect', { x, y: y+h*0.4, width: w, height: h*0.6, fill: '#e74c3c', rx: 3 }, g);
-  el('rect', { x: x+w*0.2, y, width: w*0.6, height: h*0.5, fill: '#c0392b', rx: 3 }, g);
-  el('circle', { cx: x+w*0.2, cy: y+h, r: h*0.25, fill: '#333' }, g);
-  el('circle', { cx: x+w*0.8, cy: y+h, r: h*0.25, fill: '#333' }, g);
+  const wheelCy = y + h * 0.75; // wheel center — bottom of wheel flush with bbox bottom
+  const wheelR  = h * 0.25;
+  // Body: sits between wheel tops and cab
+  el('rect', { x, y: y+h*0.3, width: w, height: h*0.45, fill: '#e74c3c', rx: 3 }, g);
+  // Cab
+  el('rect', { x: x+w*0.2, y, width: w*0.6, height: h*0.38, fill: '#c0392b', rx: 3 }, g);
+  // Wheels — bottom at y+h, flush with bounding box
+  el('circle', { cx: x+w*0.2, cy: wheelCy, r: wheelR, fill: '#333' }, g);
+  el('circle', { cx: x+w*0.8, cy: wheelCy, r: wheelR, fill: '#333' }, g);
 }
 
 function drawBucket(g, x, y, w, h) {
