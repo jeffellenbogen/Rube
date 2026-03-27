@@ -180,6 +180,124 @@ const GUIDE_CARDS = [
   },
 ];
 
+// ── Reference icon builder ────────────────────────────────────────────
+function makeRefIcon(item) {
+  const SIZE = 32, PAD = 3, INNER = SIZE - PAD * 2;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', SIZE); svg.setAttribute('height', SIZE);
+  svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+  svg.setAttribute('overflow', 'hidden');
+  svg.style.flexShrink = '0';
+
+  const scale = Math.min(INNER / item.defaultW, INNER / item.defaultH);
+  let iw = Math.max(item.defaultW * scale, 8);
+  let ih = Math.max(item.defaultH * scale, 8);
+  if (item.subtype === 'lever') { ih = INNER * 0.65; iw = INNER; }
+  let ox = PAD + (INNER - iw) / 2;
+  let oy = PAD + (INNER - ih) / 2;
+  if (item.subtype === 'bucket') {
+    const OVERHANG = 0.196;
+    const bs = Math.min(INNER / item.defaultW, INNER / (item.defaultH * (1 + OVERHANG)));
+    iw = item.defaultW * bs; ih = item.defaultH * bs;
+    ox = PAD + (INNER - iw) / 2; oy = PAD + ih * OVERHANG;
+  }
+
+  const g = document.createElementNS(NS, 'g');
+  svg.appendChild(g);
+  if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  return svg;
+}
+
+// ── Reference content ─────────────────────────────────────────────────
+const QUICK_REF = [
+  {
+    section: 'SIMPLE MACHINES',
+    items: [
+      { subtype:'lever',         type:'simple_machine', defaultW:60,  defaultH:16,  label:'Lever',         desc:'A bar that pivots on a fulcrum to lift or launch' },
+      { subtype:'pulley',        type:'simple_machine', defaultW:15,  defaultH:20,  label:'Pulley',        desc:'A wheel and rope that redirects force or lifts loads' },
+      { subtype:'inclinedPlane', type:'simple_machine', defaultW:80,  defaultH:40,  label:'Inclined Plane',desc:'A sloped surface that objects roll or slide down' },
+      { subtype:'wheelAxle',     type:'simple_machine', defaultW:20,  defaultH:20,  label:'Wheel & Axle',  desc:'A wheel on a rod that rolls or transfers rotation' },
+      { subtype:'wedge',         type:'simple_machine', defaultW:20,  defaultH:15,  label:'Wedge',         desc:'An angled ramp that splits, lifts, or redirects objects' },
+      { subtype:'screw',         type:'simple_machine', defaultW:5,   defaultH:15,  label:'Screw',         desc:'A spiral ramp that converts rotation into linear motion' },
+    ]
+  },
+  {
+    section: 'MATERIALS',
+    items: [
+      { subtype:'domino',        type:'material', defaultW:8,   defaultH:16,  label:'Domino',      desc:'Tips over and knocks into the next object' },
+      { subtype:'ball',          type:'material', defaultW:12,  defaultH:12,  label:'Ball',         desc:'Rolls along surfaces and down ramps' },
+      { subtype:'toyCar',        type:'material', defaultW:24,  defaultH:14,  label:'Toy Car',      desc:'Rolls along surfaces; can be pushed by other parts' },
+      { subtype:'string',        type:'material', defaultW:40,  defaultH:2,   label:'String',       desc:'Connects parts or trips a trigger when pulled' },
+      { subtype:'cup',           type:'material', defaultW:22,  defaultH:16,  label:'Cup',          desc:'Tips or transfers contents when weighted' },
+      { subtype:'bucket',        type:'material', defaultW:20,  defaultH:24,  label:'Bucket',       desc:'Can hold objects; tips when weighted' },
+      { subtype:'tube',          type:'material', defaultW:40,  defaultH:10,  label:'Tube',         desc:'Guides a ball or object through a path' },
+      { subtype:'box',           type:'material', defaultW:24,  defaultH:24,  label:'Crate',        desc:'A solid block for stacking or stopping objects' },
+      { subtype:'cardboard',     type:'material', defaultW:120, defaultH:60,  label:'Cardboard',    desc:'A flat panel for ramps, walls, or dividers' },
+      { subtype:'yardstick',     type:'material', defaultW:108, defaultH:6,   label:'Yardstick',    desc:'A long straight edge for ramps or extended levers' },
+      { subtype:'protractor',    type:'material', defaultW:20,  defaultH:10,  label:'Protractor',   desc:'Measures angles; can redirect rolling objects' },
+      { subtype:'matchboxTrack', type:'material', defaultW:40,  defaultH:8,   label:'Car Track',    desc:'A channel that guides a toy car in one direction' },
+      { subtype:'book',          type:'material', defaultW:10,  defaultH:30,  label:'Book',         desc:'Stacks to build platforms; snaps to bookshelves' },
+      { subtype:'custom',        type:'material', defaultW:24,  defaultH:24,  label:'Custom',       desc:'A labeled placeholder for any item you invent' },
+    ]
+  },
+  {
+    section: 'ENVIRONMENT',
+    items: [
+      { subtype:'desk',      type:'environment', defaultW:80,  defaultH:75,  label:'Desk',      desc:'A wide flat surface to build on' },
+      { subtype:'chair',     type:'environment', defaultW:45,  defaultH:80,  label:'Chair',     desc:'Raised seat; components rest on the seat surface' },
+      { subtype:'stairs',    type:'environment', defaultW:80,  defaultH:60,  label:'Stairs',    desc:'A stepped surface; use Flip to face left or right' },
+      { subtype:'bookshelf', type:'environment', defaultW:40,  defaultH:120, label:'Bookshelf', desc:'Upright or horizontal shelf; books snap to shelves' },
+      { subtype:'couch',     type:'environment', defaultW:140, defaultH:55,  label:'Couch',     desc:'Seat and arm surfaces at different heights' },
+    ]
+  }
+];
+
+// ── Reference tab renderer ────────────────────────────────────────────
+function renderRefTab() {
+  const body = document.getElementById('help-body');
+  body.innerHTML = '';
+  for (const group of QUICK_REF) {
+    const section = document.createElement('div');
+    section.className = 'help-ref-section';
+
+    const label = document.createElement('div');
+    label.className = 'help-ref-label';
+    label.textContent = group.section;
+
+    const grid = document.createElement('div');
+    grid.className = 'help-ref-grid';
+
+    for (const item of group.items) {
+      const row = document.createElement('div');
+      row.className = 'help-ref-item';
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'help-ref-icon';
+      iconDiv.appendChild(makeRefIcon(item));
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'help-ref-name';
+      nameEl.textContent = item.label;
+
+      const descEl = document.createElement('div');
+      descEl.className = 'help-ref-desc';
+      descEl.textContent = item.desc;
+
+      const info = document.createElement('div');
+      info.className = 'help-ref-info';
+      info.append(nameEl, descEl);
+
+      row.append(iconDiv, info);
+      grid.appendChild(row);
+    }
+
+    section.append(label, grid);
+    body.appendChild(section);
+  }
+}
+
 // ── Guide tab renderer ────────────────────────────────────────────────
 function renderGuideTab() {
   const body = document.getElementById('help-body');
