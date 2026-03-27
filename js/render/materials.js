@@ -45,7 +45,6 @@ function drawMaterial(comp) {
     case 'box':      drawCrate(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
     case 'cardboard':drawCardboard(g, x, y, w, h); break;
     case 'tape':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
-    case 'magnet':   drawMagnet(g, x, y, w, h); break;
     case 'track':    el('rect', { x, y, width: w, height: h, fill: '#888', stroke: '#555', 'stroke-width': 2 }, g); break;
     case 'yardstick':drawYardstick(g, x, y, w, h); break;
     case 'protractor':drawProtractor(g, x, y, w, h); break;
@@ -213,12 +212,6 @@ function drawTube(g, x, y, w, h) {
   el('ellipse', { cx: x, cy: y+h/2, rx: Math.max(2, h*0.18), ry: h*0.46, fill: '#444' }, g);
 }
 
-function drawMagnet(g, x, y, w, h) {
-  el('path', { d: `M${x+w*0.1},${y} L${x+w*0.1},${y+h*0.7} A${w*0.4},${h*0.4} 0 0,0 ${x+w*0.9},${y+h*0.7} L${x+w*0.9},${y}`, fill: 'none', stroke: '#e74c3c', 'stroke-width': w*0.2 }, g);
-  el('line', { x1: x+w*0.1, y1: y, x2: x+w*0.3, y2: y, stroke: '#e74c3c', 'stroke-width': 4 }, g);
-  el('line', { x1: x+w*0.7, y1: y, x2: x+w*0.9, y2: y, stroke: '#3498db', 'stroke-width': 4 }, g);
-}
-
 function drawYardstick(g, x, y, w, h) {
   el('rect', { x, y, width: w, height: h, fill: '#f0e0a0', stroke: '#c8a040', 'stroke-width': 1 }, g);
   for (let i = 1; i < 36; i++) {
@@ -273,7 +266,6 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'box':           drawCrate(g, x, y, w, h, 0); break;
     case 'cardboard':     drawCardboard(g, x, y, w, h); break;
     case 'tape':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
-    case 'magnet':        drawMagnet(g, x, y, w, h); break;
     case 'track':         el('rect', { x, y, width: w, height: h, fill: '#888', stroke: '#555', 'stroke-width': 2 }, g); break;
     case 'yardstick':     drawYardstick(g, x, y, w, h); break;
     case 'protractor':    drawProtractor(g, x, y, w, h); break;
