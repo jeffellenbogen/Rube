@@ -29,7 +29,7 @@ const CATALOG = {
     { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 10, defaultH: 12 },
     { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 20, defaultH: 5 },
     { subtype: 'box', label: 'Box', type: 'material', defaultW: 12, defaultH: 12 },
-    { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 20, defaultH: 2 },
+    { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 60, defaultH: 10 },
     { subtype: 'tape', label: 'Tape', type: 'material', defaultW: 5, defaultH: 5 },
     { subtype: 'magnet', label: 'Magnet', type: 'material', defaultW: 6, defaultH: 8 },
     { subtype: 'track', label: 'Track', type: 'material', defaultW: 20, defaultH: 4 },
