@@ -1,6 +1,7 @@
 import { cmToPx } from '../canvas.js';
 const NS = 'http://www.w3.org/2000/svg';
 const TEAL = '#00c9a7';
+let _clipUid = 0;
 
 function el(tag, attrs, parent) {
   const e = document.createElementNS(NS, tag);
@@ -40,7 +41,7 @@ function drawMaterial(comp) {
                      el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
-    case 'tube':     el('rect', { x, y, width: w, height: h, fill: 'none', stroke: TEAL, 'stroke-width': 2, rx: h/2 }, g); break;
+    case 'tube':     drawTube(g, x, y, w, h); break;
     case 'box':      el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                      el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
     case 'cardboard':el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#999', 'stroke-width': 1 }, g); break;
@@ -137,6 +138,26 @@ function drawCup(g, x, y, w, h) {
   }, g);
 }
 
+function drawTube(g, x, y, w, h) {
+  const gray = '#b8b8b8';
+  const spiralColor = '#949494';
+  const clipId = `tc${++_clipUid}`;
+  // Clip path keeps spiral lines inside the tube body
+  const defs = el('defs', {}, g);
+  const clip = el('clipPath', { id: clipId }, defs);
+  el('rect', { x, y, width: w, height: h }, clip);
+  // Body
+  el('rect', { x, y, width: w, height: h, fill: gray, stroke: '#999', 'stroke-width': 1 }, g);
+  // Spiral lines clipped to body
+  const sg = el('g', { 'clip-path': `url(#${clipId})` }, g);
+  const spacing = h * 0.9;
+  for (let i = -1; i <= Math.ceil(w / spacing) + 1; i++) {
+    el('line', { x1: x+i*spacing, y1: y+h, x2: x+i*spacing+h, y2: y, stroke: spiralColor, 'stroke-width': Math.max(1, h*0.07) }, sg);
+  }
+  // Dark ellipse on left end showing hollow interior
+  el('ellipse', { cx: x, cy: y+h/2, rx: Math.max(2, h*0.18), ry: h*0.46, fill: '#444' }, g);
+}
+
 function drawMagnet(g, x, y, w, h) {
   el('path', { d: `M${x+w*0.1},${y} L${x+w*0.1},${y+h*0.7} A${w*0.4},${h*0.4} 0 0,0 ${x+w*0.9},${y+h*0.7} L${x+w*0.9},${y}`, fill: 'none', stroke: '#e74c3c', 'stroke-width': w*0.2 }, g);
   el('line', { x1: x+w*0.1, y1: y, x2: x+w*0.3, y2: y, stroke: '#e74c3c', 'stroke-width': 4 }, g);
@@ -193,7 +214,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
-    case 'tube':          el('rect', { x, y, width: w, height: h, fill: 'none', stroke: TEAL, 'stroke-width': 2, rx: h/2 }, g); break;
+    case 'tube':          drawTube(g, x, y, w, h); break;
     case 'box':           el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                           el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
     case 'cardboard':     el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#999', 'stroke-width': 1 }, g); break;
