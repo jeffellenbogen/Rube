@@ -44,7 +44,7 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
 
   const compBottom = newY + comp.height;
   const compMidX = newX + comp.width / 2;
-  const snapDist = 10;
+  const snapDist = 5;
 
   // Check lever bar surface (tilted) — uses interpolated Y at compMidX
   for (const other of state.components) {
@@ -252,7 +252,7 @@ export function initDrag(svgEl) {
       // Find target connector near where the user dropped, then pair with closest point on dragged comp.
       if (!wasEnv) {
         const state = getState();
-        const nearest = findNearestAttachment(state, upX, upY, dragId, 40);
+        const nearest = findNearestAttachment(state, upX, upY, dragId, 16);
         if (nearest) {
           const comp = state.components.find(c => c.id === dragId);
           const targetComp = state.components.find(c => c.id === nearest.compId);
