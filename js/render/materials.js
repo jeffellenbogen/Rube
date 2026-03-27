@@ -42,7 +42,7 @@ function drawMaterial(comp) {
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
     case 'tube':     drawTube(g, x, y, w, h); break;
-    case 'box':      drawCrate(g, x, y, w, h); break;
+    case 'box':      drawCrate(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
     case 'cardboard':drawCardboard(g, x, y, w, h); break;
     case 'tape':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':   drawMagnet(g, x, y, w, h); break;
@@ -137,9 +137,16 @@ function drawCup(g, x, y, w, h) {
   }, g);
 }
 
-function drawCrate(g, x, y, w, h) {
-  const blue   = '#2276e0';
-  const blueDk = '#0e4a8f';
+const CRATE_COLORS = [
+  { main: '#2276e0', dark: '#0e4a8f' }, // blue
+  { main: '#f0c020', dark: '#a07808' }, // yellow
+  { main: '#e02222', dark: '#8f0e0e' }, // red
+  { main: '#22b822', dark: '#0e7a0e' }, // green
+];
+
+function drawCrate(g, x, y, w, h, colorIndex = 0) {
+  const blue   = CRATE_COLORS[colorIndex]?.main ?? CRATE_COLORS[0].main;
+  const blueDk = CRATE_COLORS[colorIndex]?.dark ?? CRATE_COLORS[0].dark;
   const rimH   = h * 0.13;
   const postW  = Math.max(2, w * 0.09);
   const lx = x + postW, ly = y + rimH;
@@ -263,7 +270,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
     case 'tube':          drawTube(g, x, y, w, h); break;
-    case 'box':           drawCrate(g, x, y, w, h); break;
+    case 'box':           drawCrate(g, x, y, w, h, 0); break;
     case 'cardboard':     drawCardboard(g, x, y, w, h); break;
     case 'tape':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':        drawMagnet(g, x, y, w, h); break;
