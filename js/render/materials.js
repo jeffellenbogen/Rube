@@ -42,8 +42,7 @@ function drawMaterial(comp) {
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
     case 'tube':     drawTube(g, x, y, w, h); break;
-    case 'box':      el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
-                     el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
+    case 'box':      drawCrate(g, x, y, w, h); break;
     case 'cardboard':drawCardboard(g, x, y, w, h); break;
     case 'tape':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':   drawMagnet(g, x, y, w, h); break;
@@ -138,6 +137,23 @@ function drawCup(g, x, y, w, h) {
   }, g);
 }
 
+function drawCrate(g, x, y, w, h) {
+  const wood  = '#c8973c';
+  const plank = '#a07030';
+  const post  = '#7a4e18';
+  const postW = Math.max(2, w * 0.07);
+  // Background
+  el('rect', { x, y, width: w, height: h, fill: wood, stroke: post, 'stroke-width': 1.5, rx: 1 }, g);
+  // Horizontal slat lines (3 dividers = 4 planks)
+  for (let i = 1; i <= 3; i++) {
+    el('line', { x1: x+postW, y1: y+i*h/4, x2: x+w-postW, y2: y+i*h/4, stroke: plank, 'stroke-width': 1 }, g);
+  }
+  // Vertical posts: left, center, right
+  el('rect', { x,                    y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
+  el('rect', { x: x+w-postW,         y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
+  el('rect', { x: x+w/2-postW/2,     y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
+}
+
 function drawCardboard(g, x, y, w, h) {
   const fold = '#b8864a';
   const sw = Math.max(0.75, Math.min(w, h) * 0.03);
@@ -228,8 +244,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
     case 'tube':          drawTube(g, x, y, w, h); break;
-    case 'box':           el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
-                          el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
+    case 'box':           drawCrate(g, x, y, w, h); break;
     case 'cardboard':     drawCardboard(g, x, y, w, h); break;
     case 'tape':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':        drawMagnet(g, x, y, w, h); break;
