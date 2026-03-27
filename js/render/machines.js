@@ -88,7 +88,7 @@ function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5, tiltSide = 'none' } = {
   el('polygon', { points: `${fx},${fulcrumTipY} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
 }
 
-function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0, cordPixels } = {}) {
+function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0, cordPixels, ballRadius = 5 } = {}) {
   const cx = x + w/2, cy = y + h*0.3, r = Math.min(w,h)*0.35;
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
@@ -109,8 +109,8 @@ function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, 
   el('line', { x1: lox, y1: loy, x2: lex, y2: ley, stroke: '#ccc', 'stroke-width': 2 }, g);
   el('line', { x1: rox, y1: roy, x2: rex, y2: rey, stroke: '#ccc', 'stroke-width': 2 }, g);
   // Yellow balls at cord ends — visible when not selected; replaced by teal when selected
-  el('circle', { cx: lex, cy: ley, r: 5, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
-  el('circle', { cx: rex, cy: rey, r: 5, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
+  el('circle', { cx: lex, cy: ley, r: ballRadius, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
+  el('circle', { cx: rex, cy: rey, r: ballRadius, fill: '#ffd166', stroke: '#fff', 'stroke-width': 1.5 }, g);
 }
 
 function drawInclinedPlane(g, x, y, w, h, { angle = 30 } = {}) {
@@ -210,7 +210,7 @@ export { drawMachine };
 export function drawMachineIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
     case 'lever':         drawLever(g, x, y, w, h); break;
-    case 'pulley':        drawPulley(g, x, y, w, h, { cordPixels: h * 0.35 }); break;
+    case 'pulley':        drawPulley(g, x, y, w, h, { cordPixels: h * 0.52, ballRadius: 2.5 }); break;
     case 'inclinedPlane': drawInclinedPlane(g, x, y, w, h); break;
     case 'wheelAxle':     drawWheelAxle(g, x, y, w, h); break;
     case 'wedge':         drawWedge(g, x, y, w, h); break;
