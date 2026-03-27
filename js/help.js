@@ -239,7 +239,7 @@ const QUICK_REF = [
       { subtype:'protractor',    type:'material', defaultW:20,  defaultH:10,  label:'Protractor',   desc:'Measures angles; can redirect rolling objects' },
       { subtype:'matchboxTrack', type:'material', defaultW:40,  defaultH:8,   label:'Car Track',    desc:'A channel that guides a toy car in one direction' },
       { subtype:'book',          type:'material', defaultW:10,  defaultH:30,  label:'Book',         desc:'Stacks to build platforms; snaps to bookshelves' },
-      { subtype:'custom',        type:'material', defaultW:24,  defaultH:24,  label:'Custom',       desc:'A labeled placeholder for any item you invent' },
+      { subtype:'custom',        type:'material', defaultW:24,  defaultH:24,  label:'? Custom',     desc:'A labeled placeholder for any item you invent' },
     ]
   },
   {
