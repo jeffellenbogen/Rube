@@ -119,8 +119,7 @@ main {
 #canvas-wrapper {
   flex: 1;
   position: relative;
-  overflow-x: scroll;
-  overflow-y: hidden;
+  overflow: hidden;
   background: var(--bg);
   background-image:
     linear-gradient(rgba(26,58,92,0.4) 1px, transparent 1px),

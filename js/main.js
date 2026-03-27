@@ -1,5 +1,5 @@
-import { initCanvas, getLayers, cmToPx, getRoomDimensions, screenToCanvas, setOnViewChange, setRoomWidth } from './canvas.js';
-import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, expandCanvas, loadState, setTitle } from './state.js';
+import { initCanvas, getLayers, cmToPx, getRoomDimensions, screenToCanvas, setOnViewChange } from './canvas.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, loadState, setTitle } from './state.js';
 import { render } from './render/index.js';
 import { drawMachineIcon } from './render/machines.js';
 import { drawMaterialIcon } from './render/materials.js';
@@ -30,7 +30,6 @@ const CATALOG = {
     { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 20, defaultH: 5 },
     { subtype: 'box', label: 'Crate', type: 'material', defaultW: 12, defaultH: 12 },
     { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 60, defaultH: 30 },
-    { subtype: 'magnet', label: 'Magnet', type: 'material', defaultW: 6, defaultH: 8 },
     { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 54, defaultH: 3 },
     { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 10, defaultH: 5 },
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 20, defaultH: 4 },
@@ -145,6 +144,7 @@ function defaultSubParts(subtype) {
     screw: {},
     matchboxTrack: { angle: 0 },
     domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
+    box:    { colorIndex: Math.floor(Math.random() * 4) },
   };
   return defaults[subtype] || {};
 }
@@ -320,58 +320,6 @@ function initMarkers() {
   }
 }
 
-// Task 19: Canvas Expansion
-let expandBtnLeft = null, expandBtnRight = null;
-
-function getOrCreateExpandBtn(side) {
-  const wrapper = document.getElementById('canvas-wrapper');
-  let btn = side === 'left' ? expandBtnLeft : expandBtnRight;
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.className = `expand-btn expand-${side}`;
-    btn.textContent = side === 'left' ? '← Expand' : 'Expand →';
-    btn.addEventListener('click', () => {
-      expandCanvas(side);
-      const s = getState();
-      setRoomWidth(s.meta.canvasExpansion.left, s.meta.canvasExpansion.right);
-      drawFloor();
-      render();
-      hideExpandButtons();
-    });
-    wrapper.appendChild(btn);
-    if (side === 'left') expandBtnLeft = btn;
-    else expandBtnRight = btn;
-  }
-  return btn;
-}
-
-function showExpandButton(side) {
-  const btn = getOrCreateExpandBtn(side);
-  btn.style.display = 'block';
-}
-
-function hideExpandButtons() {
-  if (expandBtnLeft) expandBtnLeft.style.display = 'none';
-  if (expandBtnRight) expandBtnRight.style.display = 'none';
-}
-
-document.getElementById('canvas-wrapper').addEventListener('mousemove', e => {
-  if (!window.__dragActive) return;
-  checkExpansionAffordance(e.clientX);
-});
-
-function checkExpansionAffordance(screenX) {
-  const wrapper = document.getElementById('canvas-wrapper');
-  const rect = wrapper.getBoundingClientRect();
-  const state = getState();
-  if (screenX - rect.left < 40 && state.meta.canvasExpansion.left < 0.5) {
-    showExpandButton('left');
-  } else if (rect.right - screenX < 40 && state.meta.canvasExpansion.right < 0.5) {
-    showExpandButton('right');
-  } else {
-    hideExpandButtons();
-  }
-}
 
 // Task 22: Download, Upload, Team Name
 document.getElementById('btn-download').addEventListener('click', () => {
@@ -387,7 +335,6 @@ document.querySelector('#btn-upload input').addEventListener('change', async e =
   loadState(result.state);
   const loaded = getState();
   document.getElementById('team-name').value = loaded.meta.title || '';
-  setRoomWidth(loaded.meta.canvasExpansion.left, loaded.meta.canvasExpansion.right);
   drawFloor();
   render(); updateUndoButtons(); updateTrackerUI();
   e.target.value = '';

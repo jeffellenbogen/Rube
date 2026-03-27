@@ -25,8 +25,10 @@ export function initCanvas(svg) {
 }
 
 function computeScale() {
-  const h = svgEl.parentElement.clientHeight || 600;
-  return (h * 0.97) / roomH;
+  const wrapper = svgEl.parentElement;
+  const availW = wrapper.clientWidth || 800;
+  const availH = wrapper.clientHeight || 600;
+  return Math.min((availW * 0.99) / roomW, (availH * 0.97) / roomH);
 }
 
 function updateSvgSize() {
