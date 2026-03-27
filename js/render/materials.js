@@ -38,8 +38,8 @@ function drawMaterial(comp) {
     case 'toyCar':   drawCar(g, x, y, w, h); break;
     case 'string':   el('rect', { x, y, width: w, height: Math.max(h, 12), fill: 'transparent' }, g);
                      el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
-    case 'cup':      el('path', { d: `M${x+w*0.1},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.9},${y} Z`, fill: TEAL, opacity: 0.8 }, g); break;
-    case 'bucket':   el('path', { d: `M${x+w*0.2},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.8},${y} Z`, fill: '#e67e22', stroke: '#c0392b', 'stroke-width': 1.5 }, g); break;
+    case 'cup':      drawCup(g, x, y, w, h); break;
+    case 'bucket':   drawBucket(g, x, y, w, h); break;
     case 'tube':     el('rect', { x, y, width: w, height: h, fill: 'none', stroke: TEAL, 'stroke-width': 2, rx: h/2 }, g); break;
     case 'box':      el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                      el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
@@ -99,6 +99,38 @@ function drawCar(g, x, y, w, h) {
   el('circle', { cx: x+w*0.8, cy: y+h, r: h*0.25, fill: '#333' }, g);
 }
 
+function drawBucket(g, x, y, w, h) {
+  const bodyY = y + h * 0.18;
+  const cx = x + w / 2;
+  // Metal handle arc — drawn first so body sits in front
+  el('path', {
+    d: `M${x+w*0.2},${bodyY} Q${cx},${y+h*0.02} ${x+w*0.8},${bodyY}`,
+    fill: 'none', stroke: '#bbb', 'stroke-width': Math.max(1.5, w*0.05), 'stroke-linecap': 'round',
+  }, g);
+  // Body: trapezoid wider at top (opening faces up)
+  el('path', {
+    d: `M${x},${bodyY} L${x+w*0.15},${y+h} L${x+w*0.85},${y+h} L${x+w},${bodyY} Z`,
+    fill: '#e67e22', stroke: '#c0392b', 'stroke-width': 1.5,
+  }, g);
+  // Rim
+  el('line', { x1: x, y1: bodyY, x2: x+w, y2: bodyY, stroke: '#c0392b', 'stroke-width': 2 }, g);
+}
+
+function drawCup(g, x, y, w, h) {
+  const bw = w * 0.65; // body width, right portion reserved for handle
+  const hx = x + bw;
+  const hw = w * 0.30; // how far the handle curves right
+  // Body
+  el('rect', { x, y, width: bw, height: h, fill: TEAL, rx: 2 }, g);
+  // Rim highlight
+  el('line', { x1: x+2, y1: y+2, x2: x+bw-2, y2: y+2, stroke: '#00a08a', 'stroke-width': 2 }, g);
+  // Handle: D-curve on right side
+  el('path', {
+    d: `M${hx},${y+h*0.22} C${hx+hw},${y+h*0.22} ${hx+hw},${y+h*0.75} ${hx},${y+h*0.75}`,
+    fill: 'none', stroke: TEAL, 'stroke-width': Math.max(2, w*0.10),
+  }, g);
+}
+
 function drawMagnet(g, x, y, w, h) {
   el('path', { d: `M${x+w*0.1},${y} L${x+w*0.1},${y+h*0.7} A${w*0.4},${h*0.4} 0 0,0 ${x+w*0.9},${y+h*0.7} L${x+w*0.9},${y}`, fill: 'none', stroke: '#e74c3c', 'stroke-width': w*0.2 }, g);
   el('line', { x1: x+w*0.1, y1: y, x2: x+w*0.3, y2: y, stroke: '#e74c3c', 'stroke-width': 4 }, g);
@@ -153,8 +185,8 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'domino':        drawDomino(g, x, y, w, h, 2, 3); break;
     case 'toyCar':        drawCar(g, x, y, w, h); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
-    case 'cup':           el('path', { d: `M${x+w*0.1},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.9},${y} Z`, fill: TEAL, opacity: 0.8 }, g); break;
-    case 'bucket':        el('path', { d: `M${x+w*0.2},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.8},${y} Z`, fill: '#e67e22', stroke: '#c0392b', 'stroke-width': 1.5 }, g); break;
+    case 'cup':           drawCup(g, x, y, w, h); break;
+    case 'bucket':        drawBucket(g, x, y, w, h); break;
     case 'tube':          el('rect', { x, y, width: w, height: h, fill: 'none', stroke: TEAL, 'stroke-width': 2, rx: h/2 }, g); break;
     case 'box':           el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                           el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;

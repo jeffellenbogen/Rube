@@ -7,6 +7,8 @@ export const ATTACH_POINTS = {
   ball:          { center: [0.5, 0.5] },
   domino:        { center: [0.5, 0.5] },
   toyCar:        { center: [0.5, 0.5] },
+  bucket:        { handle: [0.5, 0.05], bottom: [0.5, 1] },
+  cup:           { top: [0.325, 0], bottom: [0.325, 1], handle: [0.88, 0.485] },
   pulley:        { mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { center: [0.5, 0.5] },
