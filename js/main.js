@@ -62,8 +62,17 @@ function makeComponentIcon(item) {
   let ih = Math.max(item.defaultH * scale, 8);
   // Lever is very flat by default; give it more height so the bar and fulcrum are legible
   if (item.subtype === 'lever') { ih = INNER * 0.65; iw = INNER; }
-  const ox = PAD + (INNER - iw) / 2;
-  const oy = PAD + (INNER - ih) / 2;
+  let ox = PAD + (INNER - iw) / 2;
+  let oy = PAD + (INNER - ih) / 2;
+  // Bucket handle arcs 19.6% above the component top; scale to fit full visual height
+  if (item.subtype === 'bucket') {
+    const OVERHANG = 0.196;
+    const bs = Math.min(INNER / item.defaultW, INNER / (item.defaultH * (1 + OVERHANG)));
+    iw = item.defaultW * bs;
+    ih = item.defaultH * bs;
+    ox = PAD + (INNER - iw) / 2;
+    oy = PAD + ih * OVERHANG;
+  }
 
   const g = document.createElementNS(NS, 'g');
   svg.appendChild(g);
