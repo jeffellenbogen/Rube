@@ -4,6 +4,7 @@ const DEFAULT_ATTACH = { input: [0, 0.5], output: [1, 0.5] };
 
 export const ATTACH_POINTS = {
   // lever: computed dynamically in getAttachPx (tiltSide-dependent)
+  ball:          { center: [0.5, 0.5] },
   pulley:        { mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { center: [0.5, 0.5] },
