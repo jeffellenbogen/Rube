@@ -1,7 +1,7 @@
 import { getAttachPx } from './attachPoints.js';
 import { getConnDrag } from '../drag.js';
 import { getSurfaces } from './environment.js';
-import { cmToPx } from '../canvas.js';
+import { cmToPx, pxToCm, getFloorPx } from '../canvas.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const CORD_SUBTYPES = new Set(['string', 'matchboxTrack']);
@@ -107,7 +107,8 @@ function ensureArrowDef(svgEl) {
 
 export function renderFallLines(state, layer) {
   const allSurfaces = state.environment.flatMap(item => getSurfaces(item));
-  allSurfaces.push({ x1: 0, x2: 99999, y: 300 }); // floor at 300cm
+  const floorCm = pxToCm(getFloorPx());
+  allSurfaces.push({ x1: 0, x2: 99999, y: floorCm }); // floor
 
   for (const comp of state.components) {
     if (comp.type === 'marker') continue;
