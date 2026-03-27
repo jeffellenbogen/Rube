@@ -1,6 +1,9 @@
 import { initCanvas, getLayers, cmToPx, getRoomDimensions, screenToCanvas, setOnViewChange, setRoomWidth } from './canvas.js';
 import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, expandCanvas, loadState, setTitle } from './state.js';
 import { render } from './render/index.js';
+import { drawMachineIcon } from './render/machines.js';
+import { drawMaterialIcon } from './render/materials.js';
+import { drawEnvIcon } from './render/environment.js';
 import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
 import { toggleComment, repositionOverlays } from './comments.js';
 import { updateTrackerUI } from './tracker-ui.js';
@@ -44,13 +47,29 @@ const CATALOG = {
   ]
 };
 
-function placeholderEmoji(subtype) {
-  const map = { lever:'⚖️', pulley:'🎡', inclinedPlane:'📐', wheelAxle:'⚙️', wedge:'🔺', screw:'🔩',
-    domino:'🁣', ball:'⚽', toyCar:'🚗', string:'🧵', cup:'🥤', bucket:'🪣', tube:'🫙', box:'📦',
-    cardboard:'🗂️', tape:'📼', magnet:'🧲', track:'🛤️', yardstick:'📏', protractor:'📐',
-    matchboxTrack:'🛣️', custom:'❓',
-    desk:'🪑', chair:'🪑', stairs:'🪜', bookshelf:'📚', couch:'🛋️' };
-  return map[subtype] || '?';
+function makeComponentIcon(item) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const SIZE = 36, PAD = 3, INNER = SIZE - PAD * 2;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', SIZE);
+  svg.setAttribute('height', SIZE);
+  svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+  svg.setAttribute('overflow', 'hidden');
+  svg.style.flexShrink = '0';
+
+  const scale = Math.min(INNER / item.defaultW, INNER / item.defaultH);
+  const iw = Math.max(item.defaultW * scale, 8);
+  const ih = Math.max(item.defaultH * scale, 8);
+  const ox = PAD + (INNER - iw) / 2;
+  const oy = PAD + (INNER - ih) / 2;
+
+  const g = document.createElementNS(NS, 'g');
+  svg.appendChild(g);
+
+  if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  return svg;
 }
 
 function buildLibrary() {
@@ -61,7 +80,10 @@ function buildLibrary() {
       div.className = 'lib-item';
       div.draggable = true;
       div.dataset.catalog = JSON.stringify(item);
-      div.innerHTML = `<span style="font-size:24px">${placeholderEmoji(item.subtype)}</span><span>${item.label}</span>`;
+      div.appendChild(makeComponentIcon(item));
+      const label = document.createElement('span');
+      label.textContent = item.label;
+      div.appendChild(label);
       div.addEventListener('dragstart', e => {
         e.dataTransfer.setData('catalog', JSON.stringify(item));
         e.dataTransfer.effectAllowed = 'copy';

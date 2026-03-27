@@ -205,3 +205,14 @@ function drawScrew(g, x, y, w, h) {
 }
 
 export { drawMachine };
+
+export function drawMachineIcon(subtype, g, x, y, w, h) {
+  switch (subtype) {
+    case 'lever':         drawLever(g, x, y, w, h); break;
+    case 'pulley':        drawPulley(g, x, y, w, h, { leftCordLength: 0, rightCordLength: 0 }); break;
+    case 'inclinedPlane': drawInclinedPlane(g, x, y, w, h); break;
+    case 'wheelAxle':     drawWheelAxle(g, x, y, w, h); break;
+    case 'wedge':         drawWedge(g, x, y, w, h); break;
+    case 'screw':         drawScrew(g, x, y, w, h); break;
+  }
+}

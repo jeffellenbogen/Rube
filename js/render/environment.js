@@ -191,3 +191,13 @@ export function getSurfaces(item) {
   }
   return surfaces;
 }
+
+export function drawEnvIcon(subtype, g, x, y, w, h) {
+  switch (subtype) {
+    case 'desk':      drawDesk(g, x, y, w, h); break;
+    case 'chair':     drawChair(g, x, y, w, h); break;
+    case 'stairs':    drawStairs(g, x, y, w, h, 4); break;
+    case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
+    case 'couch':     drawCouch(g, x, y, w, h); break;
+  }
+}
