@@ -138,20 +138,39 @@ function drawCup(g, x, y, w, h) {
 }
 
 function drawCrate(g, x, y, w, h) {
-  const wood  = '#c8973c';
-  const plank = '#a07030';
-  const post  = '#7a4e18';
-  const postW = Math.max(2, w * 0.07);
-  // Background
-  el('rect', { x, y, width: w, height: h, fill: wood, stroke: post, 'stroke-width': 1.5, rx: 1 }, g);
-  // Horizontal slat lines (3 dividers = 4 planks)
-  for (let i = 1; i <= 3; i++) {
-    el('line', { x1: x+postW, y1: y+i*h/4, x2: x+w-postW, y2: y+i*h/4, stroke: plank, 'stroke-width': 1 }, g);
+  const blue   = '#2276e0';
+  const blueDk = '#0e4a8f';
+  const rimH   = h * 0.13;
+  const postW  = Math.max(2, w * 0.09);
+  const lx = x + postW, ly = y + rimH;
+  const lw = w - postW * 2, lh = h - rimH * 2;
+
+  // Dark interior visible through lattice openings
+  el('rect', { x, y, width: w, height: h, fill: blueDk, rx: 2 }, g);
+
+  // Diagonal lattice ribs clipped to the inner panel
+  const clipId = `crate${++_clipUid}`;
+  const defs = el('defs', {}, g);
+  const clip = el('clipPath', { id: clipId }, defs);
+  el('rect', { x: lx, y: ly, width: lw, height: lh }, clip);
+  const lg = el('g', { 'clip-path': `url(#${clipId})` }, g);
+  const sp = Math.min(lw, lh) * 0.26;
+  const ribW = Math.max(1, sp * 0.35);
+  for (let i = -Math.ceil((lw + lh) / sp) - 1; i <= Math.ceil((lw + lh) / sp) + 1; i++) {
+    el('line', { x1: lx+i*sp,      y1: ly,    x2: lx+i*sp+lh,  y2: ly+lh, stroke: blue, 'stroke-width': ribW }, lg);
+    el('line', { x1: lx+i*sp+lh,   y1: ly,    x2: lx+i*sp,     y2: ly+lh, stroke: blue, 'stroke-width': ribW }, lg);
   }
-  // Vertical posts: left, center, right
-  el('rect', { x,                    y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
-  el('rect', { x: x+w-postW,         y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
-  el('rect', { x: x+w/2-postW/2,     y, width: postW, height: h, fill: plank, stroke: post, 'stroke-width': 0.5 }, g);
+
+  // Solid rim bands (top and bottom)
+  el('rect', { x, y,            width: w, height: rimH, fill: blue, rx: 2 }, g);
+  el('rect', { x, y: y+h-rimH, width: w, height: rimH, fill: blue }, g);
+
+  // Solid corner posts
+  el('rect', { x,            y: ly, width: postW, height: lh, fill: blue }, g);
+  el('rect', { x: x+w-postW, y: ly, width: postW, height: lh, fill: blue }, g);
+
+  // Outer border
+  el('rect', { x, y, width: w, height: h, fill: 'none', stroke: blueDk, 'stroke-width': 1.5, rx: 2 }, g);
 }
 
 function drawCardboard(g, x, y, w, h) {
