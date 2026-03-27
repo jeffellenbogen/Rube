@@ -72,10 +72,11 @@ const DOT_PATTERNS = [
 function drawBall(g, x, y, w, h) {
   const cx = x + w/2, cy = y + h/2, r = Math.min(w, h) / 2;
   el('circle', { cx, cy, r, fill: '#c8e444' }, g);
-  // Classic tennis ball seam: two mirrored C-curves
-  const sw = Math.max(1, r * 0.12);
-  el('path', { d: `M${cx},${cy-r*0.75} Q${cx-r*0.9},${cy} ${cx},${cy+r*0.75}`, fill: 'none', stroke: 'rgba(255,255,255,0.85)', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
-  el('path', { d: `M${cx},${cy-r*0.75} Q${cx+r*0.9},${cy} ${cx},${cy+r*0.75}`, fill: 'none', stroke: 'rgba(255,255,255,0.85)', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+  // Classic tennis ball seam: two C-curves with a small gap between endpoints
+  const sw = Math.max(1.5, r * 0.18);
+  const ex = r * 0.2, ey = r * 0.88; // endpoint offsets from center
+  el('path', { d: `M${cx-ex},${cy-ey} Q${cx-r*1.2},${cy} ${cx-ex},${cy+ey}`, fill: 'none', stroke: '#fff', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+  el('path', { d: `M${cx+ex},${cy-ey} Q${cx+r*1.2},${cy} ${cx+ex},${cy+ey}`, fill: 'none', stroke: '#fff', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
 }
 
 function drawDomino(g, x, y, w, h, topVal, botVal) {
