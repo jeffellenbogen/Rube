@@ -31,7 +31,7 @@ const CATALOG = {
     { subtype: 'box', label: 'Box', type: 'material', defaultW: 12, defaultH: 12 },
     { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 60, defaultH: 10 },
     { subtype: 'magnet', label: 'Magnet', type: 'material', defaultW: 6, defaultH: 8 },
-    { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 36, defaultH: 2 },
+    { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 54, defaultH: 3 },
     { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 10, defaultH: 5 },
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 20, defaultH: 4 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 12, defaultH: 12 },
