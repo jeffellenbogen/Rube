@@ -267,3 +267,167 @@ main {
   width: 120px;
   z-index: 20;
 }
+
+/* ── Help Modal ─────────────────────────────────────────────────── */
+#help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#help-modal.help-hidden { display: none; }
+
+#help-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+}
+#help-panel {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 620px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+#help-header > span {
+  font-family: var(--font-display);
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+#help-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: var(--font-main);
+}
+#help-close:hover { color: var(--accent); border-color: transparent; }
+#help-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.help-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 20px;
+  font-family: var(--font-main);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  margin-bottom: -1px;
+}
+.help-tab:hover { color: var(--text); border-bottom-color: var(--border); }
+.help-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+#help-body { flex: 1; overflow-y: auto; }
+
+/* Guide tab — card layout */
+.help-card {
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.help-card-art {
+  width: 140px;
+  height: 110px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.help-card-text { flex: 1; }
+.help-card-step {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.help-card-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.help-card-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.help-card-desc em { color: var(--accent); font-style: normal; }
+.help-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.help-nav-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-main);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 3px;
+  min-width: 60px;
+}
+.help-nav-btn:hover:not(:disabled) { color: var(--accent); }
+.help-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.help-dots { display: flex; gap: 6px; align-items: center; }
+.help-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.help-dot.active { background: var(--accent); }
+
+/* Reference tab */
+.help-ref-section { padding: 14px 16px 4px; }
+.help-ref-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.help-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.help-ref-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.help-ref-icon { flex-shrink: 0; }
+.help-ref-info { min-width: 0; }
+.help-ref-name { font-size: 10px; color: var(--text); margin-bottom: 2px; }
+.help-ref-desc { font-size: 9px; color: var(--text-dim); line-height: 1.4; }

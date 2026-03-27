@@ -14,6 +14,7 @@
     <div class="toolbar-actions">
       <button id="btn-undo" disabled>Undo</button>
       <button id="btn-redo" disabled>Redo</button>
+      <button id="btn-help">? Help</button>
       <button id="btn-download">Download</button>
       <label id="btn-upload">Upload<input type="file" accept="image/png" hidden></label>
     </div>
@@ -53,6 +54,20 @@
       <div id="version-label">v2.3.64</div>
     </aside>
   </main>
+  <div id="help-modal" class="help-hidden">
+    <div id="help-backdrop"></div>
+    <div id="help-panel">
+      <div id="help-header">
+        <span>? HELP</span>
+        <button id="help-close">✕</button>
+      </div>
+      <div id="help-tabs">
+        <button class="help-tab active" data-tab="guide">GETTING STARTED</button>
+        <button class="help-tab" data-tab="ref">QUICK REFERENCE</button>
+      </div>
+      <div id="help-body"></div>
+    </div>
+  </div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
