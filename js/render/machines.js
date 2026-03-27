@@ -88,7 +88,7 @@ function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5, tiltSide = 'none' } = {
   el('polygon', { points: `${fx},${fulcrumTipY} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
 }
 
-function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0 } = {}) {
+function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0, cordPixels } = {}) {
   const cx = x + w/2, cy = y + h*0.3, r = Math.min(w,h)*0.35;
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
@@ -97,8 +97,9 @@ function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, 
   const hangerW = r * 0.45;
   const hangerTop = cy - r * 1.3;
   el('rect', { x: cx - hangerW/2, y: hangerTop, width: hangerW, height: r * 1.3, fill: '#777', stroke: '#555', 'stroke-width': 1 }, g);
-  // Cords — angled from wheel origin
-  const lcl = cmToPx(leftCordLength), rcl = cmToPx(rightCordLength);
+  // Cords — angled from wheel origin (cordPixels bypasses cmToPx for icon use)
+  const lcl = cordPixels !== undefined ? cordPixels : cmToPx(leftCordLength);
+  const rcl = cordPixels !== undefined ? cordPixels : cmToPx(rightCordLength);
   const lRad = leftCordAngle * Math.PI / 180;
   const rRad = rightCordAngle * Math.PI / 180;
   const lox = cx - r*0.7, loy = cy;
@@ -209,7 +210,7 @@ export { drawMachine };
 export function drawMachineIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
     case 'lever':         drawLever(g, x, y, w, h); break;
-    case 'pulley':        drawPulley(g, x, y, w, h, { leftCordLength: 0, rightCordLength: 0 }); break;
+    case 'pulley':        drawPulley(g, x, y, w, h, { cordPixels: h * 0.35 }); break;
     case 'inclinedPlane': drawInclinedPlane(g, x, y, w, h); break;
     case 'wheelAxle':     drawWheelAxle(g, x, y, w, h); break;
     case 'wedge':         drawWedge(g, x, y, w, h); break;
