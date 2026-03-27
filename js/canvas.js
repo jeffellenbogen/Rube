@@ -27,16 +27,21 @@ export function initCanvas(svg) {
 function computeScale() {
   const wrapper = svgEl.parentElement;
   const availW = wrapper.clientWidth || 800;
-  const availH = wrapper.clientHeight || 600;
-  return Math.min((availW * 0.99) / roomW, (availH * 0.97) / roomH);
+  return availW / roomW;
 }
 
 function updateSvgSize() {
+  const wrapper = svgEl.parentElement;
+  const availH = wrapper.clientHeight || 600;
   const w = Math.round(cmToPx(roomW));
-  const h = Math.round(cmToPx(roomH));
   svgEl.setAttribute('width', w);
-  svgEl.setAttribute('height', h);
-  svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svgEl.setAttribute('height', availH);
+  svgEl.setAttribute('viewBox', `0 0 ${w} ${availH}`);
+}
+
+export function getFloorPx() {
+  const availH = svgEl ? svgEl.parentElement.clientHeight : 600;
+  return availH - 50;
 }
 
 export function getLayers() { return LAYERS; }
