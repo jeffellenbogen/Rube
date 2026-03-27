@@ -104,7 +104,7 @@ function drawBucket(g, x, y, w, h) {
   const cx = x + w / 2;
   // Metal handle arc (2× taller) — drawn first so body sits in front
   el('path', {
-    d: `M${x+w*0.11},${bodyY} Q${cx},${y-h*0.196} ${x+w*0.89},${bodyY}`,
+    d: `M${x+w*0.02},${bodyY} Q${cx},${y-h*0.612} ${x+w*0.98},${bodyY}`,
     fill: 'none', stroke: '#bbb', 'stroke-width': Math.max(1.5, w*0.05), 'stroke-linecap': 'round',
   }, g);
   // Body: trapezoid wider at top (opening faces up)
