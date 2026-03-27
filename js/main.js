@@ -58,8 +58,10 @@ function makeComponentIcon(item) {
   svg.style.flexShrink = '0';
 
   const scale = Math.min(INNER / item.defaultW, INNER / item.defaultH);
-  const iw = Math.max(item.defaultW * scale, 8);
-  const ih = Math.max(item.defaultH * scale, 8);
+  let iw = Math.max(item.defaultW * scale, 8);
+  let ih = Math.max(item.defaultH * scale, 8);
+  // Lever is very flat by default; give it more height so the bar and fulcrum are legible
+  if (item.subtype === 'lever') { ih = INNER * 0.65; iw = INNER; }
   const ox = PAD + (INNER - iw) / 2;
   const oy = PAD + (INNER - ih) / 2;
 
