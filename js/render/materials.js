@@ -104,7 +104,7 @@ function drawBucket(g, x, y, w, h) {
   const cx = x + w / 2;
   // Metal handle arc (2× taller) — drawn first so body sits in front
   el('path', {
-    d: `M${x+w*0.2},${bodyY} Q${cx},${y-h*0.10} ${x+w*0.8},${bodyY}`,
+    d: `M${x+w*0.11},${bodyY} Q${cx},${y-h*0.196} ${x+w*0.89},${bodyY}`,
     fill: 'none', stroke: '#bbb', 'stroke-width': Math.max(1.5, w*0.05), 'stroke-linecap': 'round',
   }, g);
   // Body: trapezoid wider at top (opening faces up)
@@ -128,7 +128,7 @@ function drawCup(g, x, y, w, h) {
   // Handle: D-curve on right side
   el('path', {
     d: `M${hx},${y+h*0.22} C${hx+hw},${y+h*0.22} ${hx+hw},${y+h*0.75} ${hx},${y+h*0.75}`,
-    fill: 'none', stroke: CREAM, 'stroke-width': Math.max(2, w*0.10), 'stroke-linecap': 'butt',
+    fill: 'none', stroke: CREAM, 'stroke-width': Math.max(2, w*0.125), 'stroke-linecap': 'butt',
   }, g);
   // Handle outline for definition
   el('path', {
