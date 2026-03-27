@@ -25,7 +25,7 @@ const CATALOG = {
     { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 6, defaultH: 6 },
     { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 12, defaultH: 7 },
     { subtype: 'string', label: 'String', type: 'material', defaultW: 20, defaultH: 1 },
-    { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 7, defaultH: 9 },
+    { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 11, defaultH: 7 },
     { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 10, defaultH: 12 },
     { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 20, defaultH: 5 },
     { subtype: 'box', label: 'Box', type: 'material', defaultW: 12, defaultH: 12 },

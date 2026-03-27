@@ -100,11 +100,11 @@ function drawCar(g, x, y, w, h) {
 }
 
 function drawBucket(g, x, y, w, h) {
-  const bodyY = y + h * 0.18;
+  const bodyY = y + h * 0.22;
   const cx = x + w / 2;
-  // Metal handle arc — drawn first so body sits in front
+  // Metal handle arc (2× taller) — drawn first so body sits in front
   el('path', {
-    d: `M${x+w*0.2},${bodyY} Q${cx},${y+h*0.02} ${x+w*0.8},${bodyY}`,
+    d: `M${x+w*0.2},${bodyY} Q${cx},${y-h*0.10} ${x+w*0.8},${bodyY}`,
     fill: 'none', stroke: '#bbb', 'stroke-width': Math.max(1.5, w*0.05), 'stroke-linecap': 'round',
   }, g);
   // Body: trapezoid wider at top (opening faces up)
@@ -117,17 +117,23 @@ function drawBucket(g, x, y, w, h) {
 }
 
 function drawCup(g, x, y, w, h) {
+  const CREAM = '#f5e6c8';
   const bw = w * 0.65; // body width, right portion reserved for handle
   const hx = x + bw;
   const hw = w * 0.30; // how far the handle curves right
   // Body
-  el('rect', { x, y, width: bw, height: h, fill: TEAL, rx: 2 }, g);
+  el('rect', { x, y, width: bw, height: h, fill: CREAM, rx: 2, stroke: '#c8a060', 'stroke-width': 1 }, g);
   // Rim highlight
-  el('line', { x1: x+2, y1: y+2, x2: x+bw-2, y2: y+2, stroke: '#00a08a', 'stroke-width': 2 }, g);
+  el('line', { x1: x+2, y1: y+2, x2: x+bw-2, y2: y+2, stroke: '#c8a060', 'stroke-width': 2 }, g);
   // Handle: D-curve on right side
   el('path', {
     d: `M${hx},${y+h*0.22} C${hx+hw},${y+h*0.22} ${hx+hw},${y+h*0.75} ${hx},${y+h*0.75}`,
-    fill: 'none', stroke: TEAL, 'stroke-width': Math.max(2, w*0.10),
+    fill: 'none', stroke: CREAM, 'stroke-width': Math.max(2, w*0.10), 'stroke-linecap': 'butt',
+  }, g);
+  // Handle outline for definition
+  el('path', {
+    d: `M${hx},${y+h*0.22} C${hx+hw},${y+h*0.22} ${hx+hw},${y+h*0.75} ${hx},${y+h*0.75}`,
+    fill: 'none', stroke: '#c8a060', 'stroke-width': 1,
   }, g);
 }
 
