@@ -44,7 +44,7 @@ function drawMaterial(comp) {
     case 'tube':     drawTube(g, x, y, w, h); break;
     case 'box':      el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                      el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
-    case 'cardboard':el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#999', 'stroke-width': 1 }, g); break;
+    case 'cardboard':drawCardboard(g, x, y, w, h); break;
     case 'tape':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':   drawMagnet(g, x, y, w, h); break;
     case 'track':    el('rect', { x, y, width: w, height: h, fill: '#888', stroke: '#555', 'stroke-width': 2 }, g); break;
@@ -138,6 +138,19 @@ function drawCup(g, x, y, w, h) {
   }, g);
 }
 
+function drawCardboard(g, x, y, w, h) {
+  const fold = '#b8864a';
+  const sw = Math.max(0.75, Math.min(w, h) * 0.03);
+  el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#999', 'stroke-width': 1 }, g);
+  // Vertical fold lines 15% from each edge
+  const lx = x + w * 0.15, rx = x + w * 0.85;
+  el('line', { x1: lx, y1: y, x2: lx, y2: y+h, stroke: fold, 'stroke-width': sw }, g);
+  el('line', { x1: rx, y1: y, x2: rx, y2: y+h, stroke: fold, 'stroke-width': sw }, g);
+  // Horizontal midline connecting between the two vertical folds
+  const my = y + h * 0.5;
+  el('line', { x1: lx, y1: my, x2: rx, y2: my, stroke: fold, 'stroke-width': sw }, g);
+}
+
 function drawTube(g, x, y, w, h) {
   const gray = '#b8b8b8';
   const spiralColor = '#949494';
@@ -217,7 +230,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'tube':          drawTube(g, x, y, w, h); break;
     case 'box':           el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#8B4513', 'stroke-width': 2 }, g);
                           el('line', { x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#8B4513', 'stroke-width': 1 }, g); break;
-    case 'cardboard':     el('rect', { x, y, width: w, height: h, fill: '#d4a96a', stroke: '#999', 'stroke-width': 1 }, g); break;
+    case 'cardboard':     drawCardboard(g, x, y, w, h); break;
     case 'tape':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: 'none', stroke: '#aaa', 'stroke-width': Math.min(w,h)*0.3 }, g); break;
     case 'magnet':        drawMagnet(g, x, y, w, h); break;
     case 'track':         el('rect', { x, y, width: w, height: h, fill: '#888', stroke: '#555', 'stroke-width': 2 }, g); break;
