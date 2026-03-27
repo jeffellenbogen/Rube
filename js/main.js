@@ -137,6 +137,7 @@ function defaultSubParts(subtype) {
     wheelAxle: {},
     screw: {},
     matchboxTrack: { angle: 0 },
+    domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
   };
   return defaults[subtype] || {};
 }

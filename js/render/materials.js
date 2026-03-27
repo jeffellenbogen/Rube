@@ -34,8 +34,7 @@ function drawMaterial(comp) {
   const x = cmToPx(comp.x), y = cmToPx(comp.y), w = cmToPx(comp.width), h = cmToPx(comp.height);
   switch (comp.subtype) {
     case 'ball':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: '#e74c3c' }, g); break;
-    case 'domino':   el('rect', { x, y, width: w, height: h, fill: '#222', stroke: '#fff', 'stroke-width': 1, rx: 2 }, g);
-                     el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#fff', 'stroke-width': 1 }, g); break;
+    case 'domino':   drawDomino(g, x, y, w, h, comp.subParts?.topValue ?? 0, comp.subParts?.bottomValue ?? 0); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
     case 'string':   el('rect', { x, y, width: w, height: Math.max(h, 12), fill: 'transparent' }, g);
                      el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
@@ -58,6 +57,29 @@ function drawMaterial(comp) {
   }
   if (comp.type !== 'marker') applyTransform(g, comp);
   return g;
+}
+
+const DOT_PATTERNS = [
+  [],
+  [[0.5, 0.5]],
+  [[0.3, 0.3], [0.7, 0.7]],
+  [[0.3, 0.3], [0.5, 0.5], [0.7, 0.7]],
+  [[0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7]],
+  [[0.3, 0.25], [0.7, 0.25], [0.5, 0.5], [0.3, 0.75], [0.7, 0.75]],
+  [[0.3, 0.2], [0.7, 0.2], [0.3, 0.5], [0.7, 0.5], [0.3, 0.8], [0.7, 0.8]],
+];
+
+function drawDomino(g, x, y, w, h, topVal, botVal) {
+  const halfH = h / 2;
+  const dotR = Math.min(w, halfH) * 0.13;
+  el('rect', { x, y, width: w, height: h, fill: '#222', stroke: '#fff', 'stroke-width': 1, rx: 2 }, g);
+  el('line', { x1: x, y1: y+halfH, x2: x+w, y2: y+halfH, stroke: '#fff', 'stroke-width': 1 }, g);
+  for (const [fx, fy] of (DOT_PATTERNS[topVal] || [])) {
+    el('circle', { cx: x + fx*w, cy: y + fy*halfH, r: dotR, fill: '#fff' }, g);
+  }
+  for (const [fx, fy] of (DOT_PATTERNS[botVal] || [])) {
+    el('circle', { cx: x + fx*w, cy: y + halfH + fy*halfH, r: dotR, fill: '#fff' }, g);
+  }
 }
 
 function drawCar(g, x, y, w, h) {
@@ -118,8 +140,7 @@ function drawMarker(g, x, y, w, h, label, color) {
 export function drawMaterialIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
     case 'ball':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: '#e74c3c' }, g); break;
-    case 'domino':        el('rect', { x, y, width: w, height: h, fill: '#222', stroke: '#fff', 'stroke-width': 1, rx: 2 }, g);
-                          el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#fff', 'stroke-width': 1 }, g); break;
+    case 'domino':        drawDomino(g, x, y, w, h, 2, 3); break;
     case 'toyCar':        drawCar(g, x, y, w, h); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
     case 'cup':           el('path', { d: `M${x+w*0.1},${y} L${x},${y+h} L${x+w},${y+h} L${x+w*0.9},${y} Z`, fill: TEAL, opacity: 0.8 }, g); break;
