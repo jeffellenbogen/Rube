@@ -83,9 +83,9 @@ function drawStairs(g, x, y, w, h, steps) {
   svgLine(g, x, y, x+w, y, '#aaa', 3);
 }
 
-function drawBookshelf(g, x, y, w, h) {
+function drawBookshelf(g, x, y, w, h, borderWidth = 6) {
   const outer = svgRect(g, x, y, w, h, '#8B4513', '#5a3010');
-  outer.setAttribute('stroke-width', 6);
+  outer.setAttribute('stroke-width', borderWidth);
   // 1 shelf line (2 sections)
   svgLine(g, x+w*0.05, y+h*0.5, x+w*0.95, y+h*0.5, '#5a3010', 3);
 }
@@ -174,8 +174,9 @@ export function getSurfaces(item) {
       }
       break;
     case 'bookshelf':
-      surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
       surfaces.push({ x1: x, x2: x+w, y: y });        // top
+      surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
+      surfaces.push({ x1: x, x2: x+w, y: y+h });      // bottom shelf floor
       break;
     case 'couch': {
       const armW  = w * 0.08;
@@ -198,7 +199,7 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
     case 'desk':      drawDesk(g, x, y, w, h); break;
     case 'chair':     drawChair(g, x, y, w, h); break;
     case 'stairs':    drawStairs(g, x, y, w, h, 4); break;
-    case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
+    case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
     case 'couch':     drawCouch(g, x, y, w, h); break;
   }
 }
