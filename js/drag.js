@@ -32,10 +32,12 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
   if (shiftHeld) return { x: newX, y: newY };
   const state = getState();
   const allSurfaces = state.environment.flatMap(item => getSurfaces(item));
-  // Add top edges of other machine components as snap surfaces
+  // Add top edges of other components as snap surfaces — but skip same-subtype
+  // books so they don't stack on each other vertically
   for (const other of state.components) {
     if (other.id === comp.id) continue;
     if (other.subtype === 'start' || other.subtype === 'finish' || other.subtype === 'marker') continue;
+    if (comp.subtype === 'book' && other.subtype === 'book') continue;
     allSurfaces.push({ x1: other.x, x2: other.x + other.width, y: other.y });
   }
   allSurfaces.push({ x1: 0, x2: 99999, y: pxToCm(getFloorPx()) });
@@ -56,8 +58,31 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
     s.x1 <= compMidX && s.x2 >= compMidX &&
     s.y >= compBottom - snapDist && s.y <= compBottom + snapDist
   ).sort((a, b) => Math.abs(a.y - compBottom) - Math.abs(b.y - compBottom));
-  if (nearby.length > 0) return { x: newX, y: nearby[0].y - comp.height };
-  return { x: newX, y: newY };
+
+  let snappedX = newX;
+  let snappedY = nearby.length > 0 ? nearby[0].y - comp.height : newY;
+
+  // Side-by-side snap for books: align flush horizontally, no overlap
+  if (comp.subtype === 'book') {
+    const sideDist = comp.width * 1.2; // snap zone roughly one book-width
+    for (const other of state.components) {
+      if (other.id === comp.id || other.subtype !== 'book') continue;
+      if (Math.abs(snappedY - other.y) > snapDist) continue; // must be on same shelf level
+      const gapRight = Math.abs(snappedX - (other.x + other.width)); // my left near their right
+      const gapLeft  = Math.abs((snappedX + comp.width) - other.x);  // my right near their left
+      if (gapRight < sideDist && gapRight <= gapLeft) {
+        snappedX = other.x + other.width;
+        snappedY = other.y;
+        break;
+      } else if (gapLeft < sideDist) {
+        snappedX = other.x - comp.width;
+        snappedY = other.y;
+        break;
+      }
+    }
+  }
+
+  return { x: snappedX, y: snappedY };
 }
 
 export function initDrag(svgEl) {
