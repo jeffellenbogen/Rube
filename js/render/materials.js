@@ -49,6 +49,7 @@ function drawMaterial(comp) {
     case 'yardstick':drawYardstick(g, x, y, w, h); break;
     case 'protractor':drawProtractor(g, x, y, w, h); break;
     case 'matchboxTrack': drawMatchboxTrack(g, x, y, w, h, comp.subParts); break;
+    case 'book':     drawBook(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
     case 'custom':   drawCustom(g, x, y, w, h, comp.name); break;
     case 'start':    drawMarker(g, x, y, w, h, 'START', '#06d6a0'); break;
     case 'finish':   drawMarker(g, x, y, w, h, 'FINISH', '#ef476f'); break;
@@ -259,6 +260,33 @@ function drawMatchboxTrack(g, x, y, w, h, { angle = 0 } = {}) {
   el('rect', { x, y: y+h*0.3, width: w, height: h*0.4, fill: '#c0392b' }, g);
 }
 
+const BOOK_COLORS = [
+  { cover: '#c0392b', spine: '#7b241c', band: '#f1948a' }, // red
+  { cover: '#1a5276', spine: '#0e2f44', band: '#7fb3d3' }, // navy
+  { cover: '#1e8449', spine: '#145a32', band: '#7dcea0' }, // green
+  { cover: '#784212', spine: '#4a2608', band: '#d4a76a' }, // brown
+  { cover: '#6c3483', spine: '#4a235a', band: '#c39bd3' }, // purple
+];
+
+function drawBook(g, x, y, w, h, colorIndex = 0) {
+  const c = BOOK_COLORS[colorIndex % BOOK_COLORS.length];
+  const spineW = w * 0.22;
+  const sw = Math.max(1.5, Math.min(w, h) * 0.03);
+  // Cover
+  el('rect', { x, y, width: w, height: h, fill: c.cover, stroke: c.spine, 'stroke-width': sw, rx: 1 }, g);
+  // Spine strip
+  el('rect', { x, y, width: spineW, height: h, fill: c.spine, rx: 1 }, g);
+  // Title band
+  el('rect', { x: x + spineW, y: y + h * 0.2, width: w - spineW, height: h * 0.22, fill: c.band, opacity: 0.7 }, g);
+  // Page lines
+  const pgX1 = x + spineW + (w - spineW) * 0.1;
+  const pgX2 = x + w - (w - spineW) * 0.1;
+  for (let i = 0; i < 3; i++) {
+    el('line', { x1: pgX1, y1: y + h * (0.58 + i * 0.1), x2: pgX2, y2: y + h * (0.58 + i * 0.1),
+      stroke: c.band, 'stroke-width': Math.max(0.5, h * 0.012), opacity: 0.45 }, g);
+  }
+}
+
 function drawCustom(g, x, y, w, h, name) {
   el('rect', { x, y, width: w, height: h, fill: '#1a3a5c', stroke: '#ff7b2e', 'stroke-width': 2, rx: 4, 'stroke-dasharray': '6 3' }, g);
   const t = document.createElementNS(NS, 'text');
@@ -296,6 +324,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'yardstick':     drawYardstick(g, x, y, w, h); break;
     case 'protractor':    drawProtractor(g, x, y, w, h); break;
     case 'matchboxTrack': drawMatchboxTrack(g, x, y, w, h); break;
+    case 'book':          drawBook(g, x, y, w, h, 0); break;
     case 'custom':        drawCustom(g, x, y, w, h, '?'); break;
   }
 }

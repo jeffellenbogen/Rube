@@ -33,6 +33,7 @@ const CATALOG = {
     { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 108, defaultH: 6 },
     { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 20, defaultH: 10 },
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 40, defaultH: 8 },
+    { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
   ],
   environment: [
@@ -145,6 +146,7 @@ function defaultSubParts(subtype) {
     matchboxTrack: { angle: 0 },
     domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
     box:    { colorIndex: Math.floor(Math.random() * 4) },
+    book:   { colorIndex: Math.floor(Math.random() * 5) },
   };
   return defaults[subtype] || {};
 }
