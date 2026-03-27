@@ -85,10 +85,8 @@ function drawStairs(g, x, y, w, h, steps) {
 
 function drawBookshelf(g, x, y, w, h) {
   svgRect(g, x, y, w, h, '#8B4513', '#5a3010');
-  // 3 shelf lines
-  for (let i = 1; i <= 3; i++) {
-    svgLine(g, x+w*0.05, y+h*(i/4), x+w*0.95, y+h*(i/4), '#5a3010', 3);
-  }
+  // 1 shelf line (2 sections)
+  svgLine(g, x+w*0.05, y+h*0.5, x+w*0.95, y+h*0.5, '#5a3010', 3);
 }
 
 function drawCouch(g, x, y, w, h) {
@@ -175,7 +173,8 @@ export function getSurfaces(item) {
       }
       break;
     case 'bookshelf':
-      [1,2,3].forEach(i => surfaces.push({ x1: x, x2: x+w, y: y+h*(i/4) }));
+      surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
+      surfaces.push({ x1: x, x2: x+w, y: y });        // top
       break;
     case 'couch': {
       const armW  = w * 0.08;
