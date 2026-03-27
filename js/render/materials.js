@@ -222,8 +222,34 @@ function drawYardstick(g, x, y, w, h) {
 }
 
 function drawProtractor(g, x, y, w, h) {
-  el('path', { d: `M${x},${y+h} A${w/2},${h} 0 0,1 ${x+w},${y+h} Z`, fill: 'rgba(100,180,255,0.3)', stroke: '#4a90d9', 'stroke-width': 2 }, g);
-  el('line', { x1: x+w/2-3, y1: y+h, x2: x+w/2+3, y2: y+h, stroke: '#4a90d9', 'stroke-width': 2 }, g);
+  const cx = x + w / 2, base = y + h;
+  const rx = w / 2, ry = h;
+  const sw = Math.max(1.5, w * 0.03);
+
+  // Main filled semicircle
+  el('path', { d: `M${x},${base} A${rx},${ry} 0 0,1 ${x+w},${base} Z`, fill: 'rgba(100,180,255,0.25)', stroke: '#4a90d9', 'stroke-width': sw }, g);
+
+  // Center void — small semicircle of negative space
+  const vr = Math.min(rx, ry) * 0.22;
+  el('path', { d: `M${cx - vr},${base} A${vr},${vr} 0 0,1 ${cx + vr},${base} Z`, fill: '#0d1f33', stroke: '#4a90d9', 'stroke-width': Math.max(1, sw * 0.6) }, g);
+
+  // Tick marks along arc at 15° increments (0° = right end, 180° = left end)
+  for (let deg = 0; deg <= 180; deg += 15) {
+    const rad = (deg * Math.PI) / 180;
+    // Point on ellipse arc (measured from right, going counterclockwise in SVG)
+    const ex = cx + rx * Math.cos(Math.PI - rad);
+    const ey = base - ry * Math.sin(rad);
+    // Normal direction pointing outward from center
+    const nx = Math.cos(Math.PI - rad);
+    const ny = -Math.sin(rad);
+    const isMajor = deg % 30 === 0;
+    const tickLen = isMajor ? Math.min(w, h) * 0.14 : Math.min(w, h) * 0.08;
+    el('line', {
+      x1: ex, y1: ey,
+      x2: ex - nx * tickLen, y2: ey - ny * tickLen,
+      stroke: '#4a90d9', 'stroke-width': Math.max(0.8, sw * 0.5),
+    }, g);
+  }
 }
 
 function drawMatchboxTrack(g, x, y, w, h, { angle = 0 } = {}) {

@@ -15,7 +15,7 @@ export const ATTACH_POINTS = {
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
   screw:         { tip: [0.5, 1] },
   yardstick:     { left: [0, 0.5], center: [0.5, 0.5], right: [1, 0.5] },
-  protractor:    { base: [0.5, 1] },
+  protractor:    { base: [0.5, 1], top: [0.5, 0] },
   matchboxTrack: { left: [0, 0.5], right: [1, 0.5] },
   start:         { output: [1, 0.5] },
   finish:        { input: [0, 0.5] },
