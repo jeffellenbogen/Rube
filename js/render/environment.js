@@ -25,9 +25,13 @@ function makeEnvItem(item) {
   switch (item.subtype) {
     case 'desk': drawDesk(g, x, y, w, h); break;
     case 'chair': drawChair(g, x, y, w, h); break;
-    case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 4); break;
+    case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
     case 'couch': drawCouch(g, x, y, w, h); break;
+  }
+  if (item.flipped) {
+    const cx = x + w / 2;
+    g.setAttribute('transform', `translate(${cx},0) scale(-1,1) translate(${-cx},0)`);
   }
   return g;
 }
@@ -79,8 +83,16 @@ function drawStairs(g, x, y, w, h, steps) {
   for (let i = 0; i < steps; i++) {
     svgRect(g, x + i*sw, y + (steps-1-i)*sh, sw, h - (steps-1-i)*sh, '#888', '#555');
   }
-  // Railing
-  svgLine(g, x, y, x+w, y, '#aaa', 3);
+  // Railing: diagonal handrail parallel to stair slope + vertical posts at each end
+  const railH = h * 0.30;
+  const railColor = '#bbb', postColor = '#999';
+  const railW = 2.5;
+  // Vertical post at bottom-left (base of lowest step)
+  svgLine(g, x,   y+h,         x,   y+h-railH,   postColor, railW);
+  // Vertical post at top-right (top of highest step)
+  svgLine(g, x+w, y,           x+w, y-railH,      postColor, railW);
+  // Diagonal handrail connecting tops of both posts
+  svgLine(g, x,   y+h-railH,   x+w, y-railH,      railColor, railW + 0.5);
 }
 
 function drawBookshelf(g, x, y, w, h, borderWidth = 6) {
@@ -167,12 +179,19 @@ export function getSurfaces(item) {
     case 'chair':
       surfaces.push({ x1: x, x2: x+w, y: y+h*0.4 }); // seat
       break;
-    case 'stairs':
-      for (let i = 0; i < (item.stepCount||4); i++) {
-        const sw = w/(item.stepCount||4);
-        surfaces.push({ x1: x+i*sw, x2: x+(i+1)*sw, y: y+h*((item.stepCount||4)-1-i)/(item.stepCount||4) });
+    case 'stairs': {
+      const steps = item.stepCount || 6;
+      const sw = w / steps;
+      for (let i = 0; i < steps; i++) {
+        const stepY = y + h * (steps - 1 - i) / steps;
+        if (item.flipped) {
+          surfaces.push({ x1: x + (steps-1-i)*sw, x2: x + (steps-i)*sw, y: stepY });
+        } else {
+          surfaces.push({ x1: x + i*sw, x2: x + (i+1)*sw, y: stepY });
+        }
       }
       break;
+    }
     case 'bookshelf':
       surfaces.push({ x1: x, x2: x+w, y: y });        // top
       surfaces.push({ x1: x, x2: x+w, y: y+h*0.5 }); // mid shelf
@@ -198,7 +217,7 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
     case 'desk':      drawDesk(g, x, y, w, h); break;
     case 'chair':     drawChair(g, x, y, w, h); break;
-    case 'stairs':    drawStairs(g, x, y, w, h, 4); break;
+    case 'stairs':    drawStairs(g, x, y, w, h, 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
     case 'couch':     drawCouch(g, x, y, w, h); break;
   }

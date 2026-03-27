@@ -120,6 +120,25 @@ export function renderUI(state, layer) {
     layer.appendChild(flipBtn);
   }
 
+  // Flip-only button for stairs (env item)
+  const isStairs = !!state.environment.find(e => e.id === selId && e.subtype === 'stairs');
+  if (isStairs) {
+    const flipPos = { x: aMinX - pad - 8, y: aMaxY + pad + 8 };
+    const flipBtn = document.createElementNS(NS, 'g');
+    flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
+    flipBtn.setAttribute('cursor', 'pointer');
+    const fbg = document.createElementNS(NS, 'circle');
+    fbg.setAttribute('cx', flipPos.x); fbg.setAttribute('cy', flipPos.y);
+    fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
+    fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
+    const ft = document.createElementNS(NS, 'text');
+    ft.setAttribute('x', flipPos.x); ft.setAttribute('y', flipPos.y);
+    ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
+    ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
+    flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
+    layer.appendChild(flipBtn);
+  }
+
   // Attachment point dots (for selected component only)
   if (state.components.find(c => c.id === selId)) {
     const pts = getAttachPx(comp);

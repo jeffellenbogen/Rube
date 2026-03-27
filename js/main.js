@@ -1,5 +1,5 @@
 import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, getFloorPx } from './canvas.js';
-import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, loadState, setTitle } from './state.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle } from './state.js';
 import { render } from './render/index.js';
 import { drawMachineIcon } from './render/machines.js';
 import { drawMaterialIcon } from './render/materials.js';
@@ -211,8 +211,11 @@ svgEl.addEventListener('click', e => {
     }
     if (action === 'flip') {
       undoPush();
-      const comp = getState().components.find(c => c.id === targetId);
-      if (comp) { updateComponent(targetId, { flipped: !comp.flipped }); render(); }
+      const state = getState();
+      const comp = state.components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { flipped: !comp.flipped }); render(); return; }
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) { updateEnvItem(targetId, { flipped: !envItem.flipped }); render(); }
       return;
     }
 
@@ -295,7 +298,7 @@ canvasWrapper.addEventListener('drop', e => {
 
   undoPush();
   if (item.type === 'environment') {
-    addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 4 } : {}) });
+    addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 6 } : {}) });
   } else {
     const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false, rotation: 0, flipped: false });
     if (item.subtype === 'custom') promptCustomName(newId);
