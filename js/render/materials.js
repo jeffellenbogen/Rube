@@ -33,7 +33,7 @@ function drawMaterial(comp) {
   g.dataset.type = comp.subtype;
   const x = cmToPx(comp.x), y = cmToPx(comp.y), w = cmToPx(comp.width), h = cmToPx(comp.height);
   switch (comp.subtype) {
-    case 'ball':     el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: '#e74c3c' }, g); break;
+    case 'ball':     drawBall(g, x, y, w, h); break;
     case 'domino':   drawDomino(g, x, y, w, h, comp.subParts?.topValue ?? 0, comp.subParts?.bottomValue ?? 0); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
     case 'string':   el('rect', { x, y, width: w, height: Math.max(h, 12), fill: 'transparent' }, g);
@@ -68,6 +68,15 @@ const DOT_PATTERNS = [
   [[0.3, 0.25], [0.7, 0.25], [0.5, 0.5], [0.3, 0.75], [0.7, 0.75]],
   [[0.3, 0.2], [0.7, 0.2], [0.3, 0.5], [0.7, 0.5], [0.3, 0.8], [0.7, 0.8]],
 ];
+
+function drawBall(g, x, y, w, h) {
+  const cx = x + w/2, cy = y + h/2, r = Math.min(w, h) / 2;
+  el('circle', { cx, cy, r, fill: '#c8e444' }, g);
+  // Classic tennis ball seam: two mirrored C-curves
+  const sw = Math.max(1, r * 0.12);
+  el('path', { d: `M${cx},${cy-r*0.75} Q${cx-r*0.9},${cy} ${cx},${cy+r*0.75}`, fill: 'none', stroke: 'rgba(255,255,255,0.85)', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+  el('path', { d: `M${cx},${cy-r*0.75} Q${cx+r*0.9},${cy} ${cx},${cy+r*0.75}`, fill: 'none', stroke: 'rgba(255,255,255,0.85)', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+}
 
 function drawDomino(g, x, y, w, h, topVal, botVal) {
   const halfH = h / 2;
@@ -139,7 +148,7 @@ function drawMarker(g, x, y, w, h, label, color) {
 
 export function drawMaterialIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
-    case 'ball':          el('circle', { cx: x+w/2, cy: y+h/2, r: Math.min(w,h)/2, fill: '#e74c3c' }, g); break;
+    case 'ball':          drawBall(g, x, y, w, h); break;
     case 'domino':        drawDomino(g, x, y, w, h, 2, 3); break;
     case 'toyCar':        drawCar(g, x, y, w, h); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
