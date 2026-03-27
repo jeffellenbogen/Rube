@@ -1,5 +1,5 @@
 import { updateComponent, updateEnvItem, getState } from './state.js';
-import { screenToCanvas, cmToPx, pxToCm } from './canvas.js';
+import { screenToCanvas, cmToPx, pxToCm, getFloorPx } from './canvas.js';
 import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection } from './connections.js';
@@ -15,6 +15,19 @@ let hasMoved = false;     // tracks whether current drag has actually moved
 export function getSelected() { return selected; }
 export function setSelected(id) { selected = id; }
 
+function getLeverBarTopY(lever, compMidX) {
+  const { tiltSide = 'none' } = lever.subParts || {};
+  const barFy = 0.4, tiltAmt = 0.25;
+  let leftFy, rightFy;
+  if (tiltSide === 'left')       { leftFy = barFy - tiltAmt; rightFy = barFy + tiltAmt; }
+  else if (tiltSide === 'right') { leftFy = barFy + tiltAmt; rightFy = barFy - tiltAmt; }
+  else                           { leftFy = rightFy = barFy; }
+  const t = (compMidX - lever.x) / lever.width;
+  const fy = leftFy + (rightFy - leftFy) * t;
+  const thick = lever.height * 0.1;
+  return lever.y + fy * lever.height - thick; // top surface of bar at this X
+}
+
 function snapToSurface(comp, newX, newY, shiftHeld) {
   if (shiftHeld) return { x: newX, y: newY };
   const state = getState();
@@ -25,10 +38,20 @@ function snapToSurface(comp, newX, newY, shiftHeld) {
     if (other.subtype === 'start' || other.subtype === 'finish' || other.subtype === 'marker') continue;
     allSurfaces.push({ x1: other.x, x2: other.x + other.width, y: other.y });
   }
-  allSurfaces.push({ x1: 0, x2: 99999, y: 300 });
+  allSurfaces.push({ x1: 0, x2: 99999, y: pxToCm(getFloorPx()) });
+
   const compBottom = newY + comp.height;
   const compMidX = newX + comp.width / 2;
   const snapDist = 10;
+
+  // Check lever bar surface (tilted) — uses interpolated Y at compMidX
+  for (const other of state.components) {
+    if (other.id === comp.id || other.subtype !== 'lever') continue;
+    if (compMidX < other.x || compMidX > other.x + other.width) continue;
+    const leverY = getLeverBarTopY(other, compMidX);
+    allSurfaces.push({ x1: other.x, x2: other.x + other.width, y: leverY });
+  }
+
   const nearby = allSurfaces.filter(s =>
     s.x1 <= compMidX && s.x2 >= compMidX &&
     s.y >= compBottom - snapDist && s.y <= compBottom + snapDist

@@ -105,6 +105,19 @@ function ensureArrowDef(svgEl) {
   arrowDefAdded = true;
 }
 
+function getLeverBarTopY(lever, compMidX) {
+  const { tiltSide = 'none' } = lever.subParts || {};
+  const barFy = 0.4, tiltAmt = 0.25;
+  let leftFy, rightFy;
+  if (tiltSide === 'left')       { leftFy = barFy - tiltAmt; rightFy = barFy + tiltAmt; }
+  else if (tiltSide === 'right') { leftFy = barFy + tiltAmt; rightFy = barFy - tiltAmt; }
+  else                           { leftFy = rightFy = barFy; }
+  const t = (compMidX - lever.x) / lever.width;
+  const fy = leftFy + (rightFy - leftFy) * t;
+  const thick = lever.height * 0.1;
+  return lever.y + fy * lever.height - thick;
+}
+
 export function renderFallLines(state, layer) {
   const allSurfaces = state.environment.flatMap(item => getSurfaces(item));
   const floorCm = pxToCm(getFloorPx());
@@ -114,8 +127,17 @@ export function renderFallLines(state, layer) {
     if (comp.type === 'marker') continue;
     const compBottom = comp.y + comp.height;
     const compLeft = comp.x, compRight = comp.x + comp.width;
+    const compMidX = (compLeft + compRight) / 2;
 
-    const below = allSurfaces
+    // Build surface list including lever bar surfaces at this comp's midX
+    const surfaces = [...allSurfaces];
+    for (const other of state.components) {
+      if (other.id === comp.id || other.subtype !== 'lever') continue;
+      if (compMidX < other.x || compMidX > other.x + other.width) continue;
+      surfaces.push({ x1: other.x, x2: other.x + other.width, y: getLeverBarTopY(other, compMidX) });
+    }
+
+    const below = surfaces
       .filter(s => s.y >= compBottom && s.x2 > compLeft && s.x1 < compRight)
       .sort((a, b) => a.y - b.y);
 
