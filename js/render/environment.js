@@ -69,8 +69,9 @@ function drawChair(g, x, y, w, h) {
   // Back
   svgRect(g, x, y, w*0.1, h*0.45, '#4a90d9', '#2a6ab9');
   // Legs
-  svgLine(g, x+w*0.1, y+h*0.5, x+w*0.1, y+h, '#2a6ab9', 3);
-  svgLine(g, x+w*0.9, y+h*0.5, x+w*0.9, y+h, '#2a6ab9', 3);
+  const legW = w * 0.1;
+  svgRect(g, x + w*0.1, y+h*0.5, legW, h*0.5, '#4a90d9', '#2a6ab9');
+  svgRect(g, x + w*0.9 - legW, y+h*0.5, legW, h*0.5, '#4a90d9', '#2a6ab9');
 }
 
 function drawStairs(g, x, y, w, h, steps) {
