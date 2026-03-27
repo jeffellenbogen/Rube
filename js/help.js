@@ -3,6 +3,8 @@ import { drawMaterialIcon } from './render/materials.js';
 import { drawEnvIcon } from './render/environment.js';
 
 const NS = 'http://www.w3.org/2000/svg';
+let currentCard = 0;
+let currentTab  = 'guide';
 
 // ── SVG helper ────────────────────────────────────────────────────────
 function el(tag, attrs, parent) {
@@ -58,17 +60,10 @@ function drawAddingIllustration(svg) {
   el('rect', { x:65, y:48, width:46, height:8,  fill:'#8B4513', stroke:'#5a3010', 'stroke-width':1, rx:1 }, svg);
   el('rect', { x:68, y:56, width:4,  height:20, fill:'#6B3410', stroke:'#5a3010', 'stroke-width':1 }, svg);
   el('rect', { x:103,y:56, width:4,  height:20, fill:'#6B3410', stroke:'#5a3010', 'stroke-width':1 }, svg);
-  // Drag arrow
-  const defs = document.createElementNS(NS, 'defs');
-  const marker = document.createElementNS(NS, 'marker');
-  marker.setAttribute('id', 'arr-add'); marker.setAttribute('markerWidth', '6');
-  marker.setAttribute('markerHeight', '6'); marker.setAttribute('refX', '3');
-  marker.setAttribute('refY', '3'); marker.setAttribute('orient', 'auto');
-  const poly = document.createElementNS(NS, 'polygon');
-  poly.setAttribute('points', '0,0 6,3 0,6'); poly.setAttribute('fill', '#ff7b2e');
-  marker.appendChild(poly); defs.appendChild(marker); svg.appendChild(defs);
-  el('line', { x1:28, y1:22, x2:60, y2:52, stroke:'#ff7b2e', 'stroke-width':1.5,
-    'stroke-dasharray':'3 2', 'marker-end':'url(#arr-add)' }, svg);
+  // Drag arrow (line + explicit arrowhead)
+  el('line', { x1:28, y1:22, x2:58, y2:50, stroke:'#ff7b2e', 'stroke-width':1.5,
+    'stroke-dasharray':'3 2' }, svg);
+  el('polygon', { points:'54,46 64,50 58,56', fill:'#ff7b2e' }, svg);
 }
 
 function drawConnectingIllustration(svg) {
@@ -150,17 +145,10 @@ function drawSavingIllustration(svg) {
   fn.setAttribute('x', 36); fn.setAttribute('y', 84); fn.setAttribute('fill', '#5a7a9a');
   fn.setAttribute('font-size', '6'); fn.setAttribute('font-family', 'monospace');
   fn.setAttribute('text-anchor', 'middle'); fn.textContent = 'plan.png'; svg.appendChild(fn);
-  // Arrow from upload to file
-  const defs = document.createElementNS(NS, 'defs');
-  const m = document.createElementNS(NS, 'marker');
-  m.setAttribute('id', 'arr-save'); m.setAttribute('markerWidth', '6');
-  m.setAttribute('markerHeight', '6'); m.setAttribute('refX', '3');
-  m.setAttribute('refY', '3'); m.setAttribute('orient', 'auto');
-  const p = document.createElementNS(NS, 'polygon');
-  p.setAttribute('points', '0,0 6,3 0,6'); p.setAttribute('fill', '#ff7b2e');
-  m.appendChild(p); defs.appendChild(m); svg.appendChild(defs);
-  el('line', { x1:103, y1:50, x2:52, y2:72, stroke:'#ff7b2e', 'stroke-width':1.5,
-    'stroke-dasharray':'3 2', 'marker-end':'url(#arr-save)' }, svg);
+  // Arrow from upload to file (line + explicit arrowhead)
+  el('line', { x1:100, y1:50, x2:56, y2:70, stroke:'#ff7b2e', 'stroke-width':1.5,
+    'stroke-dasharray':'3 2' }, svg);
+  el('polygon', { points:'60,65 52,74 64,74', fill:'#ff7b2e' }, svg);
 }
 
 // ── Guide content ─────────────────────────────────────────────────────
@@ -252,10 +240,6 @@ function renderGuideTab() {
   body.innerHTML = '';
   body.append(cardDiv, nav);
 }
-
-// ── Modal state ───────────────────────────────────────────────────────
-let currentCard = 0;
-let currentTab  = 'guide';
 
 // ── Public API ────────────────────────────────────────────────────────
 export function openHelp() {
