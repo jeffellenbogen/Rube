@@ -220,7 +220,7 @@ export function initDrag(svgEl) {
         const dxCm = pxToCm(dx), dyCm = pxToCm(dy);
         let newW = handleDrag.origW, newH = handleDrag.origH;
         let newX = handleDrag.origX, newY = handleDrag.origY;
-        const MIN = 18; // cm — keeps components large enough to click on (300% of old 6cm)
+        const MIN = 11; // cm — keeps components large enough to click on
 
         if (corner === 'se') {
           newW = Math.max(MIN, handleDrag.origW + dxCm);

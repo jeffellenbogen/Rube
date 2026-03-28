@@ -363,7 +363,8 @@ export function renderUI(state, layer) {
   }
 
   // Resize handles (4 corners) — positioned at rotated corners, squares stay axis-aligned
-  if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish') {
+  // Books have no resize handles — their proportions are fixed
+  if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish' && selComp.subtype !== 'book') {
     const corners = [
       { name: 'nw', lx: -w2-pad, ly: -h2-pad },
       { name: 'ne', lx:  w2+pad, ly: -h2-pad },
