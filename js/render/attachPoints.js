@@ -2,6 +2,51 @@ import { cmToPx } from '../canvas.js';
 
 const DEFAULT_ATTACH = { input: [0, 0.5], output: [1, 0.5] };
 
+// Static attachment points for environment items (as [fx, fy] fractions)
+const ENV_ATTACH = {
+  desk: {
+    leftLegTop:   [0.07, 0.12],
+    rightLegTop:  [0.93, 0.12],
+    leftLegMid:   [0.07, 0.56],
+    rightLegMid:  [0.93, 0.56],
+  },
+  chair: {
+    seatCenter: [0.50, 0.45],
+    seatBack:   [0.05, 0.22],
+  },
+  couch: {
+    leftArmTop:  [0.04,  0.13],
+    rightArmTop: [0.96,  0.13],
+    seatLeft:    [0.285, 0.50],
+    seatCenter:  [0.50,  0.50],
+    seatRight:   [0.715, 0.50],
+  },
+};
+
+function computeStairsAttach(item) {
+  const N = item.stepCount || 6;
+  const { x, y, width: w, height: h, flipped } = item;
+  const railH = h * 0.30;
+  const pts = {};
+
+  // One point per stair step (center-top of each step), accounting for flip
+  for (let i = 0; i < N; i++) {
+    const fx = flipped ? (N - 1 - i + 0.5) / N : (i + 0.5) / N;
+    const fy = (N - 1 - i) / N;
+    pts[`step${i}`] = { x: cmToPx(x + fx * w), y: cmToPx(y + fy * h) };
+  }
+
+  // Railing: low end (bottom post top), high end (top post top — above bbox), center
+  const lowX  = flipped ? x + w : x;
+  const highX = flipped ? x     : x + w;
+  pts['railLow']     = { x: cmToPx(lowX),      y: cmToPx(y + h - railH) };
+  pts['railHigh']    = { x: cmToPx(highX),     y: cmToPx(y - railH) };
+  pts['railCenter']  = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.20) };
+  pts['railStayMid'] = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.35) };
+
+  return pts;
+}
+
 export const ATTACH_POINTS = {
   // lever: computed dynamically in getAttachPx (tiltSide-dependent)
   ball:          { center: [0.5, 0.5] },
@@ -80,6 +125,19 @@ export function getAttachPx(comp) {
       cordLeft:  applyTransform(-r * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad)),
       cordRight: applyTransform( r * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad)),
     };
+  }
+
+  // Env items with static attachment fractions
+  if (ENV_ATTACH[comp.subtype]) {
+    const result = {};
+    for (const [name, [fx, fy]] of Object.entries(ENV_ATTACH[comp.subtype])) {
+      result[name] = { x: cmToPx(comp.x + fx * comp.width), y: cmToPx(comp.y + fy * comp.height) };
+    }
+    return result;
+  }
+  // Stairs: dynamic attach points based on step count
+  if (comp.subtype === 'stairs') {
+    return computeStairsAttach(comp);
   }
 
   const pts = ATTACH_POINTS[comp.subtype] || DEFAULT_ATTACH;

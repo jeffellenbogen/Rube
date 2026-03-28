@@ -75,12 +75,22 @@ export function countSteps(state) {
   return steps;
 }
 
+const ENV_ATTACH_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
+
 export function findNearestAttachment(state, px, py, excludeId, snapDist = 15) {
   for (const comp of state.components) {
     if (comp.id === excludeId) continue;
     const pts = getAttachPx(comp);
     for (const [name, pos] of Object.entries(pts)) {
       if (Math.hypot(pos.x - px, pos.y - py) < snapDist) return { compId: comp.id, pointName: name };
+    }
+  }
+  for (const item of (state.environment || [])) {
+    if (item.id === excludeId) continue;
+    if (!ENV_ATTACH_SUBTYPES.has(item.subtype)) continue;
+    const pts = getAttachPx(item);
+    for (const [name, pos] of Object.entries(pts)) {
+      if (Math.hypot(pos.x - px, pos.y - py) < snapDist) return { compId: item.id, pointName: name };
     }
   }
   return null;

@@ -250,7 +250,9 @@ export function renderUI(state, layer) {
 
   // Attachment point dots (for selected component only)
   // Pulley cord ends are rendered as larger balls below — skip them here
-  if (state.components.find(c => c.id === selId)) {
+  const ENV_ATTACH_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
+  const isEnvWithAttach = !!state.environment.find(e => e.id === selId && ENV_ATTACH_SUBTYPES.has(e.subtype));
+  if (state.components.find(c => c.id === selId) || isEnvWithAttach) {
     const pts = getAttachPx(comp);
     for (const [name, pos] of Object.entries(pts)) {
       if (comp.subtype === 'pulley' && (name === 'cordLeft' || name === 'cordRight')) continue;
@@ -378,7 +380,11 @@ export function renderUI(state, layer) {
   const cd = getConnDrag();
   if (cd) {
     const HOVER_DIST = 40; // SVG px — lights up before snap (snap is 15px)
-    for (const otherComp of state.components) {
+    const allItems = [
+      ...state.components,
+      ...(state.environment || []).filter(e => ENV_ATTACH_SUBTYPES.has(e.subtype)),
+    ];
+    for (const otherComp of allItems) {
       if (otherComp.id === cd.fromId) continue;
       const pts = getAttachPx(otherComp);
       for (const [, pos] of Object.entries(pts)) {

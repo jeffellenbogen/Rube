@@ -7,12 +7,16 @@ const NS = 'http://www.w3.org/2000/svg';
 const CORD_SUBTYPES = new Set(['string', 'matchboxTrack']);
 const CORD_POINTS = new Set(['cordLeft', 'cordRight']);
 
+function findItem(state, id) {
+  return state.components.find(c => c.id === id) || (state.environment || []).find(e => e.id === id);
+}
+
 export function renderConnections(state, layer) {
   layer.innerHTML = '';
 
   for (const conn of state.connections) {
-    const from = state.components.find(c => c.id === conn.fromId);
-    const to = state.components.find(c => c.id === conn.toId);
+    const from = findItem(state, conn.fromId);
+    const to = findItem(state, conn.toId);
     if (!from || !to) continue;
     const fromPts = getAttachPx(from);
     const toPts = getAttachPx(to);
@@ -97,7 +101,7 @@ export function renderConnections(state, layer) {
   // Draw in-progress connection drag
   const cd = getConnDrag();
   if (cd) {
-    const fromComp = state.components.find(c => c.id === cd.fromId);
+    const fromComp = findItem(state, cd.fromId);
     if (fromComp) {
       const pts = getAttachPx(fromComp);
       const p1 = pts[cd.fromPoint];
