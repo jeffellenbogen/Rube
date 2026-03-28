@@ -113,15 +113,17 @@ export async function downloadPNG(svgEl) {
     return { machines: toList(machines), materials: toList(materials) };
   })();
 
-  // === Page: landscape letter at 150 DPI (11" × 8.5") ===
+  // === Page: landscape letter at 300 DPI (11" × 8.5") ===
+  // Logical layout coordinates stay at 150 DPI; canvas is 2× for crispness.
   const PAGE_W = 1650, PAGE_H = 1275;
   const MARGIN = 54;
   const HEADER_H = 130;
   const FRAME = MARGIN - 12;
 
   const canvas = document.createElement('canvas');
-  canvas.width = PAGE_W; canvas.height = PAGE_H;
+  canvas.width = PAGE_W * 2; canvas.height = PAGE_H * 2;
   const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
   const mono = size => `bold ${size}px "Courier New", Courier, monospace`;
 
   // White background + outer frame
