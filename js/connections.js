@@ -39,6 +39,7 @@ export function countSteps(state) {
   const eligible = state.components
     .map(c => c.id)
     .filter(id => id !== startId && id !== finishId);
+  const eligibleSet = new Set(eligible);
 
   for (const nodeId of eligible) {
     if (groupOf[nodeId] !== undefined) continue;
@@ -51,7 +52,7 @@ export function countSteps(state) {
       const curSubtype = compById[cur]?.subtype;
       for (const nb of adj[cur] || []) {
         if (group.has(nb) || groupOf[nb] !== undefined) continue;
-        if (!eligible.includes(nb)) continue;
+        if (!eligibleSet.has(nb)) continue;
         if (compById[nb]?.subtype === curSubtype || isSnap(cur, nb)) {
           queue.push(nb);
         }
