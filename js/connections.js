@@ -6,9 +6,13 @@ export function countSteps(state) {
 
   const startComp = state.components.find(c => c.subtype === 'start');
   if (!startComp) return 0;
-  const finishId = state.components.find(c => c.subtype === 'finish')?.id;
+  const finishComp = state.components.find(c => c.subtype === 'finish');
+  if (!finishComp) return 0;
 
-  // Build undirected adjacency (all connections) for reachability
+  const startId = startComp.id;
+  const finishId = finishComp.id;
+
+  // Build undirected adjacency map over all component IDs
   const adj = {};
   for (const comp of state.components) adj[comp.id] = [];
   for (const conn of state.connections) {
@@ -16,63 +20,96 @@ export function countSteps(state) {
     adj[conn.toId]?.push(conn.fromId);
   }
 
-  // Snap-connected pairs merge into the same step regardless of subtype
-  // (e.g. a car sitting on an inclined plane = one action, not two)
+  // Build snap-pair set for merging different-subtype components into one step
   const snapPairs = new Set();
   for (const conn of state.connections) {
-    if (conn.snap) {
-      const key = [conn.fromId, conn.toId].sort().join('|');
-      snapPairs.add(key);
-    }
+    if (conn.snap) snapPairs.add([conn.fromId, conn.toId].sort().join('|'));
   }
-  function isSnap(a, b) {
-    return snapPairs.has([a, b].sort().join('|'));
-  }
+  const isSnap = (a, b) => snapPairs.has([a, b].sort().join('|'));
 
-  // BFS from Start — collect every reachable node except Start and Finish
-  const reachable = new Set();
-  const visited = new Set([startComp.id]);
-  const queue = [startComp.id];
-  while (queue.length) {
-    const cur = queue.shift();
-    for (const nb of adj[cur] || []) {
-      if (visited.has(nb)) continue;
-      visited.add(nb);
-      queue.push(nb);
-      if (nb !== finishId) reachable.add(nb);
-    }
-  }
-
-  // Group into steps:
-  //   • Snap-connected components (any subtype) → same step
-  //     (a car on a ramp is one action, not two)
-  //   • Same-subtype directly-connected components → same step
-  //     (a row of dominoes is one action)
-  //   • Everything else → separate step
   const compById = Object.fromEntries(state.components.map(c => [c.id, c]));
-  const stepSeen = new Set();
-  let steps = 0;
 
-  for (const nodeId of reachable) {
-    if (stepSeen.has(nodeId)) continue;
-    const subtype = compById[nodeId]?.subtype;
-    const gq = [nodeId];
-    stepSeen.add(nodeId);
-    while (gq.length) {
-      const cur = gq.shift();
+  // ── Step 1: Build step-groups ────────────────────────────────────────────
+  // Group non-START, non-FINISH nodes where:
+  //   • same subtype AND directly connected  →  same group
+  //   • snap-connected (any subtype)         →  same group
+  const groupOf = {};   // nodeId → group index
+  const groups = [];    // array of Sets of node IDs
+
+  const eligible = state.components
+    .map(c => c.id)
+    .filter(id => id !== startId && id !== finishId);
+
+  for (const nodeId of eligible) {
+    if (groupOf[nodeId] !== undefined) continue;
+    const group = new Set();
+    const queue = [nodeId];
+    while (queue.length) {
+      const cur = queue.shift();
+      if (group.has(cur)) continue;
+      group.add(cur);
       const curSubtype = compById[cur]?.subtype;
       for (const nb of adj[cur] || []) {
-        if (stepSeen.has(nb) || !reachable.has(nb)) continue;
+        if (group.has(nb) || groupOf[nb] !== undefined) continue;
+        if (!eligible.includes(nb)) continue;
         if (compById[nb]?.subtype === curSubtype || isSnap(cur, nb)) {
-          stepSeen.add(nb);
-          gq.push(nb);
+          queue.push(nb);
         }
       }
     }
-    steps++;
+    const gi = groups.length;
+    groups.push(group);
+    for (const m of group) groupOf[m] = gi;
   }
 
-  return steps;
+  const G = groups.length;
+  if (G === 0) return 0;
+
+  // ── Step 2: Build group-level adjacency ──────────────────────────────────
+  // Also identify which groups are adjacent to START and to FINISH.
+  const gAdj = Array.from({ length: G }, () => new Set());
+  const startGroups = new Set();
+  const finishGroups = new Set();
+
+  for (const conn of state.connections) {
+    const fg = groupOf[conn.fromId];
+    const tg = groupOf[conn.toId];
+
+    if (fg !== undefined && tg !== undefined && fg !== tg) {
+      gAdj[fg].add(tg);
+      gAdj[tg].add(fg);
+    }
+    if (conn.fromId === startId && tg !== undefined) startGroups.add(tg);
+    if (conn.toId === startId && fg !== undefined) startGroups.add(fg);
+    if (conn.fromId === finishId && tg !== undefined) finishGroups.add(tg);
+    if (conn.toId === finishId && fg !== undefined) finishGroups.add(fg);
+  }
+
+  if (startGroups.size === 0 || finishGroups.size === 0) return 0;
+
+  // ── Step 3: Longest path in group graph from startGroups to finishGroups ─
+  // DFS with visited-set for cycle safety.
+  // Returns: number of groups from `gi` (inclusive) to any finishGroup.
+  //          -1 if no path to finish exists from here.
+  function dfs(gi, visited) {
+    if (finishGroups.has(gi)) return 1;
+    let best = -1;
+    for (const next of gAdj[gi]) {
+      if (visited.has(next)) continue;
+      visited.add(next);
+      const sub = dfs(next, visited);
+      visited.delete(next);
+      if (sub !== -1) best = Math.max(best, 1 + sub);
+    }
+    return best;
+  }
+
+  let maxSteps = 0;
+  for (const sg of startGroups) {
+    const result = dfs(sg, new Set([sg]));
+    if (result !== -1) maxSteps = Math.max(maxSteps, result);
+  }
+  return maxSteps;
 }
 
 const ENV_ATTACH_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
