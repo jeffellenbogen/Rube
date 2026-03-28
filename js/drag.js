@@ -202,7 +202,17 @@ export function initDrag(svgEl) {
     selected = id;
     render();
     const pos = screenToCanvas(e.clientX, e.clientY);
-    dragging = { id, isEnv: !!state.environment.find(ev => ev.id === id), startCanvasX: pos.x, startCanvasY: pos.y, compX: item.x, compY: item.y };
+    const isEnvItem = !!state.environment.find(ev => ev.id === id);
+    dragging = { id, isEnv: isEnvItem, startCanvasX: pos.x, startCanvasY: pos.y, compX: item.x, compY: item.y };
+    // String: store original endpoint positions so body drag shifts them correctly
+    if (!isEnvItem && item.subtype === 'string') {
+      const sp = item.subParts || {};
+      dragging.origSubParts = { ...sp };
+      dragging.strX1 = sp.x1 ?? item.x;
+      dragging.strY1 = sp.y1 ?? (item.y + item.height / 2);
+      dragging.strX2 = sp.x2 ?? (item.x + item.width);
+      dragging.strY2 = sp.y2 ?? (item.y + item.height / 2);
+    }
     hasMoved = false;
     window.__dragActive = true;
     e.stopPropagation();
@@ -221,7 +231,15 @@ export function initDrag(svgEl) {
       const comp = state.components.find(c => c.id === handleDrag.compId);
       if (!comp) { handleDrag = null; return; }
 
-      if (handleDrag.type === 'free-rotate') {
+      if (handleDrag.type === 'end1' || handleDrag.type === 'end2') {
+        const canvasPos = screenToCanvas(e.clientX, e.clientY);
+        const sp = comp.subParts || {};
+        if (handleDrag.type === 'end1') {
+          updateComponent(handleDrag.compId, { subParts: { ...sp, x1: canvasPos.x, y1: canvasPos.y } });
+        } else {
+          updateComponent(handleDrag.compId, { subParts: { ...sp, x2: canvasPos.x, y2: canvasPos.y } });
+        }
+      } else if (handleDrag.type === 'free-rotate') {
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
         const currentAngle = Math.atan2(canvasPos.y - handleDrag.centerY, canvasPos.x - handleDrag.centerX) * 180 / Math.PI;
         const newRotation = (handleDrag.origRotation + currentAngle - handleDrag.startAngle) % 360;
@@ -324,10 +342,27 @@ export function initDrag(svgEl) {
         y: Math.max(0, Math.min(maxY - comp.height, newY)),
       };
     } else {
-      snapped = (!dragging.isEnv && comp) ? snapToSurface(comp, newX, newY, e.shiftKey) : { x: newX, y: newY };
+      // Strings float freely — skip surface snapping
+      const skipSnap = dragging.isEnv || !comp || comp.subtype === 'string';
+      snapped = skipSnap ? { x: newX, y: newY } : snapToSurface(comp, newX, newY, e.shiftKey);
     }
-    if (dragging.isEnv) updateEnvItem(dragging.id, { x: snapped.x, y: snapped.y });
-    else updateComponent(dragging.id, { x: snapped.x, y: snapped.y });
+    if (dragging.isEnv) {
+      updateEnvItem(dragging.id, { x: snapped.x, y: snapped.y });
+    } else if (dragging.strX1 !== undefined) {
+      // String body drag: shift both endpoints by the same delta as the component
+      const dxCm = snapped.x - dragging.compX;
+      const dyCm = snapped.y - dragging.compY;
+      updateComponent(dragging.id, {
+        x: snapped.x, y: snapped.y,
+        subParts: {
+          ...dragging.origSubParts,
+          x1: dragging.strX1 + dxCm, y1: dragging.strY1 + dyCm,
+          x2: dragging.strX2 + dxCm, y2: dragging.strY2 + dyCm,
+        },
+      });
+    } else {
+      updateComponent(dragging.id, { x: snapped.x, y: snapped.y });
+    }
     render();
   });
 
@@ -336,6 +371,36 @@ export function initDrag(svgEl) {
     const upX = e.clientX - rect.left, upY = e.clientY - rect.top;
 
     if (handleDrag) {
+      // String ends: snap to nearest connector on release
+      if (handleDrag.type === 'end1' || handleDrag.type === 'end2') {
+        const state = getState();
+        const comp = state.components.find(c => c.id === handleDrag.compId);
+        // Remove existing connection for this end
+        const existing = state.connections.find(c =>
+          (c.fromId === handleDrag.compId && c.fromPoint === handleDrag.type) ||
+          (c.toId   === handleDrag.compId && c.toPoint   === handleDrag.type)
+        );
+        if (existing) deleteConnection(existing.id);
+        // Snap to nearest connector
+        const nearest = findNearestAttachment(state, upX, upY, handleDrag.compId, 20);
+        if (nearest && comp) {
+          const targetComp = [...state.components, ...(state.environment || [])].find(c => c.id === nearest.compId);
+          if (targetComp) {
+            const targetPos = getAttachPx(targetComp)[nearest.pointName];
+            if (targetPos) {
+              const sp = comp.subParts || {};
+              if (handleDrag.type === 'end1') {
+                updateComponent(handleDrag.compId, { subParts: { ...sp, x1: pxToCm(targetPos.x), y1: pxToCm(targetPos.y) } });
+              } else {
+                updateComponent(handleDrag.compId, { subParts: { ...sp, x2: pxToCm(targetPos.x), y2: pxToCm(targetPos.y) } });
+              }
+              createConnection(handleDrag.compId, handleDrag.type, nearest.compId, nearest.pointName);
+            }
+          }
+        }
+        render();
+        handleDrag = null; hasMoved = false; return;
+      }
       // Cord ends: snap-connect to nearest attachment point on release
       if (handleDrag.type === 'cordLeft' || handleDrag.type === 'cordRight') {
         const state = getState();

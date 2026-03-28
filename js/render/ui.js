@@ -1,6 +1,6 @@
 import { cmToPx } from '../canvas.js';
 import { getSelected, getConnDrag } from '../drag.js';
-import { getAttachPx } from './attachPoints.js';
+import { getAttachPx, getStringEndpoints } from './attachPoints.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -26,6 +26,83 @@ export function renderUI(state, layer) {
     const rdx = lx * Math.cos(rad) - ly * Math.sin(rad);
     const rdy = lx * Math.sin(rad) + ly * Math.cos(rad);
     return { x: compCx + rdx * flipX, y: compCy + rdy };
+  }
+
+  // String: render end-point handle balls instead of standard ring/handles
+  const isString = isComp && comp.subtype === 'string';
+  if (isString) {
+    const { x1, y1, x2, y2 } = getStringEndpoints(comp, state);
+    // Selection highlight line
+    const hl = document.createElementNS(NS, 'line');
+    hl.setAttribute('x1', x1); hl.setAttribute('y1', y1);
+    hl.setAttribute('x2', x2); hl.setAttribute('y2', y2);
+    hl.setAttribute('stroke', '#ff7b2e'); hl.setAttribute('stroke-width', 5);
+    hl.setAttribute('opacity', 0.35); hl.setAttribute('stroke-linecap', 'round');
+    layer.appendChild(hl);
+    // Delete button at midpoint
+    if (comp.subtype !== 'start' && comp.subtype !== 'finish') {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'delete'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', mx - 18); bg.setAttribute('cy', my); bg.setAttribute('r', 7);
+      bg.setAttribute('fill', '#ef476f'); bg.setAttribute('stroke', '#fff'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', mx - 18); t.setAttribute('y', my);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = '×';
+      btn.appendChild(bg); btn.appendChild(t); layer.appendChild(btn);
+    }
+    // Comment button at midpoint
+    {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const commentBtn = document.createElementNS(NS, 'g');
+      commentBtn.dataset.action = 'comment'; commentBtn.dataset.targetId = selId;
+      commentBtn.setAttribute('cursor', 'pointer');
+      const cbg = document.createElementNS(NS, 'circle');
+      cbg.setAttribute('cx', mx + 2); cbg.setAttribute('cy', my - 18); cbg.setAttribute('r', 8);
+      cbg.setAttribute('fill', comp.comment ? '#ff7b2e' : '#1a3a5c');
+      cbg.setAttribute('stroke', '#ff7b2e'); cbg.setAttribute('stroke-width', 1);
+      const ct = document.createElementNS(NS, 'text');
+      ct.setAttribute('x', mx + 2); ct.setAttribute('y', my - 18);
+      ct.setAttribute('text-anchor', 'middle'); ct.setAttribute('dominant-baseline', 'middle');
+      ct.setAttribute('fill', '#fff'); ct.setAttribute('font-size', 9); ct.textContent = '💬';
+      commentBtn.appendChild(cbg); commentBtn.appendChild(ct); layer.appendChild(commentBtn);
+    }
+    // End-point handle balls
+    for (const [name, px, py] of [['end1', x1, y1], ['end2', x2, y2]]) {
+      const ball = document.createElementNS(NS, 'circle');
+      ball.setAttribute('cx', px); ball.setAttribute('cy', py);
+      ball.setAttribute('r', 7); ball.setAttribute('fill', '#00c9a7');
+      ball.setAttribute('stroke', '#fff'); ball.setAttribute('stroke-width', 1.5);
+      ball.dataset.handle = name; ball.dataset.compId = selId;
+      ball.setAttribute('cursor', 'grab');
+      layer.appendChild(ball);
+    }
+    // Hover highlights for connectable attachment points during conn drag
+    const cd2 = getConnDrag();
+    if (cd2) {
+      const HOVER_DIST = 40;
+      const ENV_ATTACH_SUBTYPES2 = new Set(['couch', 'stairs', 'chair', 'desk']);
+      const allItems2 = [...state.components, ...(state.environment || []).filter(e => ENV_ATTACH_SUBTYPES2.has(e.subtype))];
+      for (const otherComp of allItems2) {
+        if (otherComp.id === cd2.fromId) continue;
+        const pts2 = getAttachPx(otherComp);
+        for (const [, pos2] of Object.entries(pts2)) {
+          const dist2 = Math.hypot(pos2.x - cd2.curPx, pos2.y - cd2.curPy);
+          if (dist2 > HOVER_DIST) continue;
+          const inSnap2 = dist2 < 15;
+          const dot2 = document.createElementNS(NS, 'circle');
+          dot2.setAttribute('cx', pos2.x); dot2.setAttribute('cy', pos2.y);
+          dot2.setAttribute('r', inSnap2 ? 8 : 6); dot2.setAttribute('fill', '#00ff88');
+          dot2.setAttribute('stroke', '#fff'); dot2.setAttribute('stroke-width', inSnap2 ? 2.5 : 1.5);
+          dot2.setAttribute('opacity', inSnap2 ? 1 : 0.75);
+          layer.appendChild(dot2);
+        }
+      }
+    }
+    return;
   }
 
   // Selection ring — rotated polygon following the component's actual orientation
@@ -381,7 +458,7 @@ export function renderUI(state, layer) {
 
   // Resize handles (4 corners) — positioned at rotated corners, squares stay axis-aligned
   // Books have no resize handles — their proportions are fixed
-  if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish' && selComp.subtype !== 'book') {
+  if (selComp && selComp.subtype !== 'start' && selComp.subtype !== 'finish' && selComp.subtype !== 'book' && selComp.subtype !== 'string') {
     const corners = [
       { name: 'nw', lx: -w2-pad, ly: -h2-pad },
       { name: 'ne', lx:  w2+pad, ly: -h2-pad },

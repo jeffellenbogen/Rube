@@ -46,6 +46,30 @@ function computeStairsAttach(item) {
   return pts;
 }
 
+// Returns live pixel positions for string endpoints, resolving connected components.
+// Used by rendering and UI so the string visually tracks what it's attached to.
+export function getStringEndpoints(comp, state) {
+  let x1 = cmToPx(comp.subParts?.x1 ?? comp.x);
+  let y1 = cmToPx(comp.subParts?.y1 ?? (comp.y + comp.height / 2));
+  let x2 = cmToPx(comp.subParts?.x2 ?? (comp.x + comp.width));
+  let y2 = cmToPx(comp.subParts?.y2 ?? (comp.y + comp.height / 2));
+  for (const conn of state.connections) {
+    let endKey, otherKey, otherId;
+    if (conn.fromId === comp.id && (conn.fromPoint === 'end1' || conn.fromPoint === 'end2')) {
+      endKey = conn.fromPoint; otherKey = conn.toPoint; otherId = conn.toId;
+    } else if (conn.toId === comp.id && (conn.toPoint === 'end1' || conn.toPoint === 'end2')) {
+      endKey = conn.toPoint; otherKey = conn.fromPoint; otherId = conn.fromId;
+    } else continue;
+    const other = [...(state.components || []), ...(state.environment || [])].find(c => c.id === otherId);
+    if (!other) continue;
+    const pt = getAttachPx(other)[otherKey];
+    if (!pt) continue;
+    if (endKey === 'end1') { x1 = pt.x; y1 = pt.y; }
+    else                   { x2 = pt.x; y2 = pt.y; }
+  }
+  return { x1, y1, x2, y2 };
+}
+
 export const ATTACH_POINTS = {
   // lever: computed dynamically in getAttachPx (tiltSide-dependent)
   ball:          { center: [0.5, 0.5] },
@@ -109,6 +133,18 @@ export function getAttachPx(comp) {
     return {
       lowEnd:  applyTransform(-w / 2,  h / 2),
       highEnd: applyTransform( w / 2,  h / 2 - blockH),
+    };
+  }
+
+  // String: endpoints stored as absolute canvas positions in subParts
+  if (comp.subtype === 'string') {
+    const x1 = comp.subParts?.x1 ?? comp.x;
+    const y1 = comp.subParts?.y1 ?? (comp.y + comp.height / 2);
+    const x2 = comp.subParts?.x2 ?? (comp.x + comp.width);
+    const y2 = comp.subParts?.y2 ?? (comp.y + comp.height / 2);
+    return {
+      end1: { x: cmToPx(x1), y: cmToPx(y1) },
+      end2: { x: cmToPx(x2), y: cmToPx(y2) },
     };
   }
 

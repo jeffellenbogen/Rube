@@ -1,4 +1,5 @@
 import { cmToPx } from '../canvas.js';
+import { getStringEndpoints } from './attachPoints.js';
 const NS = 'http://www.w3.org/2000/svg';
 const TEAL = '#00c9a7';
 let _clipUid = 0;
@@ -14,9 +15,21 @@ export function renderMaterials(state, layer) {
   layer.innerHTML = '';
   for (const comp of state.components) {
     if (comp.type !== 'material' && comp.type !== 'marker') continue;
-    const g = drawMaterial(comp);
+    const g = comp.subtype === 'string' ? drawStringComp(comp, state) : drawMaterial(comp);
     if (g) layer.appendChild(g);
   }
+}
+
+function drawStringComp(comp, state) {
+  const g = document.createElementNS(NS, 'g');
+  g.dataset.id = comp.id;
+  g.dataset.type = comp.subtype;
+  const { x1, y1, x2, y2 } = getStringEndpoints(comp, state);
+  // Wide transparent line for easy click/drag targeting
+  el('line', { x1, y1, x2, y2, stroke: 'transparent', 'stroke-width': 14 }, g);
+  // Visible string: dark brown, thicker dashed
+  el('line', { x1, y1, x2, y2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g);
+  return g;
 }
 
 function applyTransform(g, comp) {
@@ -37,8 +50,7 @@ function drawMaterial(comp) {
     case 'ball':     drawBall(g, x, y, w, h); break;
     case 'domino':   drawDomino(g, x, y, w, h, comp.subParts?.topValue ?? 0, comp.subParts?.bottomValue ?? 0); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
-    case 'string':   el('rect', { x, y, width: w, height: Math.max(h, 12), fill: 'transparent' }, g);
-                     el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
+    case 'string':   break; // handled by drawStringComp above
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
     case 'tube':     drawTube(g, x, y, w, h); break;
@@ -318,7 +330,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'ball':          drawBall(g, x, y, w, h); break;
     case 'domino':        drawDomino(g, x, y, w, h, 2, 3); break;
     case 'toyCar':        drawCar(g, x, y, w, h); break;
-    case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#f0d080', 'stroke-width': 2, 'stroke-dasharray': '4 2' }, g); break;
+    case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g); break;
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
     case 'tube':          drawTube(g, x, y, w, h); break;

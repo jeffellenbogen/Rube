@@ -5,7 +5,7 @@ import { cmToPx, pxToCm, getFloorPx } from '../canvas.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const CORD_SUBTYPES = new Set(['string', 'matchboxTrack']);
-const CORD_POINTS = new Set(['cordLeft', 'cordRight']);
+const CORD_POINTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
 
 function findItem(state, id) {
   return state.components.find(c => c.id === id) || (state.environment || []).find(e => e.id === id);
