@@ -39,9 +39,9 @@ function computeStairsAttach(item) {
   // Railing: low end (bottom post top), high end (top post top — above bbox), center
   const lowX  = flipped ? x + w : x;
   const highX = flipped ? x     : x + w;
-  pts['railLow']     = { x: cmToPx(lowX),      y: cmToPx(y + h - railH) };
-  pts['railHigh']    = { x: cmToPx(highX),     y: cmToPx(y - railH) };
-  pts['railStayMid'] = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.35) };
+  pts['railLow']    = { x: cmToPx(lowX),      y: cmToPx(y + h - railH) };
+  pts['railCenter'] = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.20) };
+  pts['railHigh']   = { x: cmToPx(highX),     y: cmToPx(y - railH) };
 
   return pts;
 }

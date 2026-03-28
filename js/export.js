@@ -1,5 +1,5 @@
 import { getState, loadState } from './state.js';
-import { getRequirements } from './tracker.js';
+import { cmToPx } from './canvas.js';
 
 const KEYWORD = 'RubeGoldbergState';
 const PNG_SIG = [137,80,78,71,13,10,26,10];
@@ -97,10 +97,9 @@ export async function downloadPNG(svgEl) {
   const state = getState();
   if (svgEl.clientWidth === 0 || svgEl.clientHeight === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
 
-  const req = getRequirements(state);
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
 
-  // Split BOM into machines vs materials (environment items are in state.environment, not state.components)
+  // Build BOM (components only — env items excluded per spec)
   const bom = (() => {
     const machines = {}, materials = {};
     for (const c of state.components) {
@@ -116,169 +115,129 @@ export async function downloadPNG(svgEl) {
   // === Page: landscape letter at 150 DPI (11" × 8.5") ===
   const PAGE_W = 1650, PAGE_H = 1275;
   const MARGIN = 54;
-  const HEADER_H = 160;  // header area height (top rule → bottom rule)
-  const FRAME = MARGIN - 12; // outer frame inset
+  const HEADER_H = 130;
+  const FRAME = MARGIN - 12;
 
   const canvas = document.createElement('canvas');
   canvas.width = PAGE_W; canvas.height = PAGE_H;
   const ctx = canvas.getContext('2d');
   const mono = size => `bold ${size}px "Courier New", Courier, monospace`;
 
-  // White background
+  // White background + outer frame
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
-
-  // Outer page frame
   ctx.strokeStyle = '#0d1f35';
   ctx.lineWidth = 3;
   ctx.strokeRect(FRAME, FRAME, PAGE_W - 2*FRAME, PAGE_H - 2*FRAME);
 
-  // ── HEADER ──────────────────────────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────────────────
   ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, MARGIN, PAGE_W - 2*MARGIN, 4);  // top rule
+  ctx.fillRect(MARGIN, MARGIN, PAGE_W - 2*MARGIN, 4); // top rule
 
-  // Requirements panel — top-right of header
-  const REQ_W = 320, REQ_PAD = 10;
-  const reqX = PAGE_W - MARGIN - REQ_W;
-  const reqY = MARGIN + 14;
-  const reqH = HEADER_H - 22;
-
-  ctx.strokeStyle = '#b0c8e0';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(reqX, reqY, REQ_W, reqH);
-
-  ctx.font = mono(11);
-  ctx.fillStyle = '#0d1f35';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText('REQUIREMENTS', reqX + REQ_PAD, reqY + REQ_PAD);
-
-  const machOK = req.machinesMet;
-  ctx.font = `${11}px "Courier New", Courier, monospace`;
-  ctx.fillStyle = machOK ? '#1a6a3a' : '#aa3333';
-  ctx.fillText(`Simple Machines: ${req.machineTypes.length} of 3+  ${machOK ? '✓' : '✗'}`, reqX + REQ_PAD, reqY + REQ_PAD + 18);
-
-  let rY = reqY + REQ_PAD + 34;
-  for (const sub of req.allMachines) {
-    const used = req.machineTypes.includes(sub);
-    ctx.fillStyle = used ? '#1a6a3a' : '#aaaaaa';
-    ctx.fillText(`  ${used ? '✓' : '○'}  ${ITEM_LABELS[sub]}`, reqX + REQ_PAD, rY);
-    rY += 14;
-  }
-  rY += 4;
-  const stOK = req.stepsMet;
-  ctx.fillStyle = stOK ? '#1a6a3a' : '#aa3333';
-  ctx.fillText(`Steps: ${req.steps} of 5+  ${stOK ? '✓' : '✗'}`, reqX + REQ_PAD, rY);
-
-  // "RUBE GOLDBERG PLAN" — large, same target size as team name
-  const titleAreaW = reqX - MARGIN - 24;
+  const titleAreaW = PAGE_W - 2*MARGIN - 140; // leave room for date on right
   const TITLE_TEXT = 'RUBE GOLDBERG PLAN';
-  let titleSize = 42;
+  let titleSize = 52;
   ctx.font = mono(titleSize);
   while (ctx.measureText(TITLE_TEXT).width > titleAreaW && titleSize > 18) {
     titleSize -= 2; ctx.font = mono(titleSize);
   }
 
-  // Team name — same font size as title (scale down independently if longer)
   let nameSize = titleSize;
   ctx.font = mono(nameSize);
   while (ctx.measureText(teamName).width > titleAreaW && nameSize > 18) {
     nameSize -= 2; ctx.font = mono(nameSize);
   }
 
-  // Date — small, top-right of left region, same line as title
+  // Date — small, top-right
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   ctx.font = `12px "Courier New", Courier, monospace`;
   ctx.fillStyle = '#4a7a9a';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
-  ctx.fillText(dateStr, reqX - 16, MARGIN + 10);
+  ctx.fillText(dateStr, PAGE_W - MARGIN, MARGIN + 10);
 
-  // Title line
+  // Title
   ctx.font = mono(titleSize);
   ctx.fillStyle = '#4a7a9a';
   ctx.textAlign = 'left';
   ctx.fillText(TITLE_TEXT, MARGIN, MARGIN + 10);
 
-  // Team name line
+  // Team name
   ctx.font = mono(nameSize);
   ctx.fillStyle = '#0d1f35';
-  const nameY = MARGIN + 10 + titleSize + 10;
-  ctx.fillText(teamName, MARGIN, nameY, titleAreaW);
+  ctx.fillText(teamName, MARGIN, MARGIN + 10 + titleSize + 8);
 
   // Header bottom rule
   ctx.fillStyle = '#0d1f35';
   ctx.fillRect(MARGIN, MARGIN + HEADER_H, PAGE_W - 2*MARGIN, 2);
 
-  // ── MAIN AREA: canvas (left) + BOM panel (right) ─────────────────────
+  // ── MAIN AREA: canvas (left) + unified materials panel (right) ───────────
   const mainY = MARGIN + HEADER_H + 10;
-  const mainH = PAGE_H - mainY - MARGIN - 10;  // reaches inner bottom frame edge
-  const BOM_W = 270, BOM_GAP = 12;
-  const bomX = PAGE_W - MARGIN - BOM_W;
-  const canvasAreaW = bomX - MARGIN - BOM_GAP;
+  const mainH = PAGE_H - mainY - MARGIN - 10;
+  const PANEL_W = 260, PANEL_GAP = 12;
+  const panelX = PAGE_W - MARGIN - PANEL_W;
+  const canvasAreaW = panelX - MARGIN - PANEL_GAP;
 
-  // BOM panel border
+  // Panel border
   ctx.strokeStyle = '#b0c8e0';
   ctx.lineWidth = 1;
-  ctx.strokeRect(bomX, mainY, BOM_W, mainH);
+  ctx.strokeRect(panelX, mainY, PANEL_W, mainH);
 
-  const BOM_PAD = 10;
-  let bY = mainY + BOM_PAD;
+  const PAD = 10;
+  const COUNT_COL = panelX + PANEL_W - PAD;
+  let pY = mainY + PAD;
 
-  // BOM header
+  // Panel title
   ctx.font = mono(12);
   ctx.fillStyle = '#0d1f35';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('BILL OF MATERIALS', bomX + BOM_PAD, bY);
-  bY += 6;
+  ctx.fillText('MATERIALS USED', panelX + PAD, pY);
+  pY += 5;
   ctx.strokeStyle = '#0d1f35';
   ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY + 8); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY + 8); ctx.stroke();
-  bY += 18;
+  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 9); ctx.lineTo(panelX + PANEL_W - PAD, pY + 9); ctx.stroke();
+  pY += 18;
 
-  const COUNT_COL = bomX + BOM_W - BOM_PAD; // right edge for count numbers
-
-  function bomSection(title, items) {
-    // Section label
-    ctx.font = mono(10);
+  function panelSection(title, items) {
+    ctx.font = `bold 10px "Courier New", Courier, monospace`;
     ctx.fillStyle = '#4a7a9a';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(title, bomX + BOM_PAD, bY);
-    bY += 3;
+    ctx.fillText(title, panelX + PAD, pY);
+    pY += 3;
     ctx.strokeStyle = '#c0d4e8';
     ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY + 10); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY + 10); ctx.stroke();
-    bY += 14;
+    ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 10); ctx.lineTo(panelX + PANEL_W - PAD, pY + 10); ctx.stroke();
+    pY += 14;
 
     if (items.length === 0) {
-      ctx.font = `italic 10px "Courier New", Courier, monospace`;
+      ctx.font = `11px "Courier New", Courier, monospace`;
       ctx.fillStyle = '#aaaaaa';
       ctx.textAlign = 'left';
-      ctx.fillText('none added', bomX + BOM_PAD + 4, bY);
-      bY += 16;
+      ctx.textBaseline = 'top';
+      ctx.fillText('none added', panelX + PAD + 4, pY);
+      pY += 15;
     } else {
       for (const { name, count } of items) {
-        // Count — right aligned
         ctx.font = `11px "Courier New", Courier, monospace`;
+        ctx.textBaseline = 'top';
         ctx.fillStyle = '#4a7a9a';
         ctx.textAlign = 'right';
-        ctx.fillText(`${count}×`, COUNT_COL, bY);
-        // Name — left aligned with indent
+        ctx.fillText(`${count}×`, COUNT_COL, pY);
         ctx.fillStyle = '#1a1a3a';
         ctx.textAlign = 'left';
-        ctx.fillText(name, bomX + BOM_PAD + 4, bY);
-        bY += 15;
+        ctx.fillText(name, panelX + PAD + 4, pY);
+        pY += 15;
       }
     }
-    bY += 10;
+    pY += 10;
   }
 
-  bomSection('SIMPLE MACHINES', bom.machines);
-  bomSection('MATERIALS', bom.materials);
+  panelSection('SIMPLE MACHINES', bom.machines);
+  panelSection('MATERIALS', bom.materials);
 
-  // ── SVG CANVAS ──────────────────────────────────────────────────────────
+  // ── SVG CANVAS ───────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
   const svgStr = serializer.serializeToString(svgEl);
   const svgBlob = new Blob([svgStr], { type: 'image/svg+xml' });
@@ -298,7 +257,61 @@ export async function downloadPNG(svgEl) {
   ctx.lineWidth = 1;
   ctx.strokeRect(drawX, drawY, drawW, drawH);
 
-  // ── INJECT METADATA & SAVE ──────────────────────────────────────────────
+  // ── VISIBLE COMMENTS ─────────────────────────────────────────────────────
+  const allItems = [...state.components, ...(state.environment || [])];
+  const BOX_W = 130, BOX_PAD = 6, FONT_SIZE = 9, LINE_H = FONT_SIZE + 3;
+
+  for (const item of allItems) {
+    if (!item.commentVisible || !item.comment) continue;
+    // Map component center-top from cm → SVG px → print canvas px
+    const cx = drawX + cmToPx(item.x + item.width / 2) * scale;
+    const cy = drawY + cmToPx(item.y) * scale;
+
+    // Word-wrap text into lines
+    ctx.font = `${FONT_SIZE}px "Courier New", Courier, monospace`;
+    const words = item.comment.split(' ');
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > BOX_W - BOX_PAD * 2 && line) {
+        lines.push(line); line = word;
+      } else { line = test; }
+    }
+    if (line) lines.push(line);
+
+    const boxH = lines.length * LINE_H + BOX_PAD * 2;
+    const ARROW = 6;
+    // Position above component, clamped inside drawn canvas area
+    let boxX = Math.max(drawX, Math.min(cx - BOX_W / 2, drawX + drawW - BOX_W));
+    let boxY = cy - boxH - ARROW - 2;
+    if (boxY < drawY) boxY = cy + ARROW + 2; // flip below if too high
+
+    // Background box
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.strokeStyle = '#00c9a7';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, BOX_W, boxH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Connector dot
+    ctx.fillStyle = '#00c9a7';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = '#0d1f35';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], boxX + BOX_PAD, boxY + BOX_PAD + i * LINE_H);
+    }
+  }
+
+  // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
   const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(state));
