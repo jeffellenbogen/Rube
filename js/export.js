@@ -225,40 +225,55 @@ export async function downloadPNG(svgEl) {
   const BOM_PAD = 10;
   let bY = mainY + BOM_PAD;
 
-  function bomSection(title, items) {
-    ctx.font = mono(10);
-    ctx.fillStyle = '#4a7a9a';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(title, bomX + BOM_PAD, bY);
-    bY += 14;
-    ctx.fillStyle = '#0d1f35';
-    ctx.strokeStyle = '#b0c8e0';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY); ctx.stroke();
-    bY += 6;
-    if (items.length === 0) {
-      ctx.font = `italic 10px "Courier New", Courier, monospace`;
-      ctx.fillStyle = '#aaaaaa';
-      ctx.fillText('none added', bomX + BOM_PAD, bY);
-      bY += 14;
-    } else {
-      ctx.font = `11px "Courier New", Courier, monospace`;
-      ctx.fillStyle = '#1a1a3a';
-      for (const { name, count } of items) {
-        ctx.fillText(`${count}×  ${name}`, bomX + BOM_PAD, bY);
-        bY += 14;
-      }
-    }
-    bY += 8;
-  }
-
+  // BOM header
   ctx.font = mono(12);
   ctx.fillStyle = '#0d1f35';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('BILL OF MATERIALS', bomX + BOM_PAD, bY);
+  bY += 6;
+  ctx.strokeStyle = '#0d1f35';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY + 8); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY + 8); ctx.stroke();
   bY += 18;
+
+  const COUNT_COL = bomX + BOM_W - BOM_PAD; // right edge for count numbers
+
+  function bomSection(title, items) {
+    // Section label
+    ctx.font = mono(10);
+    ctx.fillStyle = '#4a7a9a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(title, bomX + BOM_PAD, bY);
+    bY += 3;
+    ctx.strokeStyle = '#c0d4e8';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY + 10); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY + 10); ctx.stroke();
+    bY += 14;
+
+    if (items.length === 0) {
+      ctx.font = `italic 10px "Courier New", Courier, monospace`;
+      ctx.fillStyle = '#aaaaaa';
+      ctx.textAlign = 'left';
+      ctx.fillText('none added', bomX + BOM_PAD + 4, bY);
+      bY += 16;
+    } else {
+      for (const { name, count } of items) {
+        // Count — right aligned
+        ctx.font = `11px "Courier New", Courier, monospace`;
+        ctx.fillStyle = '#4a7a9a';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${count}×`, COUNT_COL, bY);
+        // Name — left aligned with indent
+        ctx.fillStyle = '#1a1a3a';
+        ctx.textAlign = 'left';
+        ctx.fillText(name, bomX + BOM_PAD + 4, bY);
+        bY += 15;
+      }
+    }
+    bY += 10;
+  }
 
   bomSection('SIMPLE MACHINES', bom.machines);
   bomSection('MATERIALS', bom.materials);

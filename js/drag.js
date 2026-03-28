@@ -207,7 +207,7 @@ export function initDrag(svgEl) {
       if (handleDrag.type === 'fulcrum') {
         const newOffset = Math.max(0.05, Math.min(0.95, (curPx - handleDrag.compX) / handleDrag.compW));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, fulcrumOffset: newOffset } });
-      } else if (handleDrag.type === 'angle' || handleDrag.type === 'trackAngle') {
+      } else if (handleDrag.type === 'angle') {
         const dyCm = pxToCm(dy);
         const wCm = comp.width;
         const newAngle = Math.max(5, Math.min(80, Math.atan2(-dyCm, wCm) * 180 / Math.PI));

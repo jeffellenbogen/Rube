@@ -2,6 +2,13 @@ import { getRequirements, getBOM } from './tracker.js';
 import { getState } from './state.js';
 
 const MACHINE_LABELS = { lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane', wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw' };
+const ITEM_LABELS = {
+  ...MACHINE_LABELS,
+  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
+  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
+  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
+  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
+};
 
 export function updateTrackerUI() {
   const state = getState();
@@ -30,7 +37,8 @@ export function updateTrackerUI() {
     bomUl.innerHTML = '';
     for (const { name, count } of bom) {
       const li = document.createElement('li');
-      li.innerHTML = `<span>${name}</span><span>${count}</span>`;
+      const label = ITEM_LABELS[name] || name;
+      li.innerHTML = `<span>${label}</span><span>${count}</span>`;
       bomUl.appendChild(li);
     }
   }

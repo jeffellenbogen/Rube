@@ -310,15 +310,6 @@ export function renderUI(state, layer) {
       layer.appendChild(handle);
     }
 
-    if (selComp.subtype === 'matchboxTrack' && sp.angle !== undefined) {
-      const pos = L(w2, 0);
-      const handle = document.createElementNS(NS, 'circle');
-      handle.setAttribute('cx', pos.x); handle.setAttribute('cy', pos.y);
-      handle.setAttribute('r', 6); handle.setAttribute('fill', '#ffd166'); handle.setAttribute('stroke', '#fff'); handle.setAttribute('stroke-width', 1);
-      handle.dataset.handle = 'trackAngle'; handle.dataset.compId = selId;
-      handle.setAttribute('cursor', 'ns-resize');
-      layer.appendChild(handle);
-    }
 
     if (selComp.subtype === 'pulley') {
       const pr = Math.min(w, h) * 0.35;
