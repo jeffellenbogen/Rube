@@ -250,7 +250,12 @@ export function initDrag(svgEl) {
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordAngle: newAngle, rightCordLength: newLen } });
       } else if (handleDrag.type.startsWith('resize-')) {
         const corner = handleDrag.type.slice(7); // 'nw', 'ne', 'sw', 'se'
-        const dxCm = pxToCm(dx), dyCm = pxToCm(dy);
+        // Project screen drag delta onto component's local axes so resize works
+        // correctly at any rotation angle (pulling outward always grows the component).
+        const rad = (comp.rotation || 0) * Math.PI / 180;
+        const fX = comp.flipped ? -1 : 1;
+        const dxCm = pxToCm(dx * fX * Math.cos(rad) + dy * Math.sin(rad));
+        const dyCm = pxToCm(-dx * fX * Math.sin(rad) + dy * Math.cos(rad));
         let newW = handleDrag.origW, newH = handleDrag.origH;
         let newX = handleDrag.origX, newY = handleDrag.origY;
         const MIN = 11; // cm — keeps components large enough to click on

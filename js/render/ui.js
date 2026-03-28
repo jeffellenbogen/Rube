@@ -47,9 +47,9 @@ export function renderUI(state, layer) {
   const aMaxY = Math.max(...rotPts.map(p => p.y));
   const aMidX = (aMinX + aMaxX) / 2;
 
-  // Delete button — left side of component, vertically centered
+  // Delete button — left-center in component local space
   if (comp.subtype !== 'start' && comp.subtype !== 'finish') {
-    const pos = { x: aMinX - pad - 8, y: (aMinY + aMaxY) / 2 };
+    const pos = L(-w2 - pad - 8, 0);
     const btn = document.createElementNS(NS, 'g');
     btn.dataset.action = 'delete'; btn.dataset.targetId = selId;
     btn.setAttribute('cursor', 'pointer');
@@ -65,9 +65,9 @@ export function renderUI(state, layer) {
     layer.appendChild(btn);
   }
 
-  // Comment bubble button — top-center of visual bounds
+  // Comment bubble button — top-center in component local space
   {
-    const pos = { x: aMidX, y: aMinY - pad };
+    const pos = L(0, -h2 - pad - 8);
     const commentBtn = document.createElementNS(NS, 'g');
     commentBtn.dataset.action = 'comment'; commentBtn.dataset.targetId = selId;
     commentBtn.setAttribute('cursor', 'pointer');
@@ -90,8 +90,8 @@ export function renderUI(state, layer) {
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
   if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
-    // Rotate ↻ — always screen-bottom-right of visual bounds
-    const rotPos = { x: aMaxX + pad, y: aMaxY + pad + 8 };
+    // Rotate ↻ — bottom-right in component local space
+    const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
     rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
     rotBtn.setAttribute('cursor', 'pointer');
@@ -106,8 +106,8 @@ export function renderUI(state, layer) {
     rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
     layer.appendChild(rotBtn);
 
-    // Flip ↔ — always screen-bottom-left of visual bounds
-    const flipPos = { x: aMinX - pad - 8, y: aMaxY + pad + 8 };
+    // Flip ↔ — bottom-left in component local space
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
     const flipBtn = document.createElementNS(NS, 'g');
     flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
     flipBtn.setAttribute('cursor', 'pointer');
@@ -126,7 +126,7 @@ export function renderUI(state, layer) {
   // Rotate-only button for bookshelf (env item)
   const isBookshelf = !!state.environment.find(e => e.id === selId && e.subtype === 'bookshelf');
   if (isBookshelf) {
-    const rotPos = { x: aMaxX + pad + 8, y: aMaxY + pad + 8 };
+    const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
     rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
     rotBtn.setAttribute('cursor', 'pointer');
@@ -144,7 +144,7 @@ export function renderUI(state, layer) {
 
   // Free-rotate dot for tube, yardstick, matchboxTrack — yellow circle with blue ∠ at bottom-right
   if (isComp && FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
-    const rotPos = { x: aMaxX + pad + 8, y: aMaxY + pad + 8 };
+    const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rBtn = document.createElementNS(NS, 'g');
     rBtn.dataset.handle = 'free-rotate'; rBtn.dataset.compId = selId;
     rBtn.setAttribute('cursor', 'crosshair');
@@ -190,8 +190,9 @@ export function renderUI(state, layer) {
     const swatchR = 9;
     const spacing = swatchR * 2 + 6;
     const totalW = swatches.length * spacing - 6;
-    const startX = aMidX - totalW / 2 + swatchR;
-    const swatchY = aMaxY + 26;
+    const swatchCenter = L(0, h2 + 26);
+    const startX = swatchCenter.x - totalW / 2 + swatchR;
+    const swatchY = swatchCenter.y;
 
     for (let i = 0; i < swatches.length; i++) {
       const { key, fill } = swatches[i];
@@ -228,7 +229,7 @@ export function renderUI(state, layer) {
   const stairsItem = state.environment.find(e => e.id === selId && e.subtype === 'stairs');
   const isStairs = !!stairsItem;
   if (isStairs) {
-    const flipPos = { x: aMinX - pad - 8, y: aMaxY + pad + 8 };
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
     const flipBtn = document.createElementNS(NS, 'g');
     flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
     flipBtn.setAttribute('cursor', 'pointer');
@@ -245,12 +246,13 @@ export function renderUI(state, layer) {
 
     // Step count +/- buttons — centered at bottom of stairs bounding box
     const stepCount = stairsItem.stepCount || 6;
-    const btnY = aMaxY + pad + 8;
+    const stepsCenter = L(0, h2 + pad + 8);
+    const btnY = stepsCenter.y;
     for (const [offset, action, icon, atLimit] of [
       [-12, 'step-dec', '−', stepCount <= 3],
       [ 12, 'step-inc', '+', stepCount >= 12],
     ]) {
-      const bx = aMidX + offset;
+      const bx = stepsCenter.x + offset;
       const btn = document.createElementNS(NS, 'g');
       btn.dataset.action = action; btn.dataset.targetId = selId;
       btn.setAttribute('cursor', atLimit ? 'default' : 'pointer');
@@ -359,7 +361,7 @@ export function renderUI(state, layer) {
     if (selComp.subtype === 'lever') {
       const tiltSide = sp.tiltSide || 'none';
       const tiltIcon = tiltSide === 'left' ? '↖' : tiltSide === 'right' ? '↗' : '—';
-      const tiltPos = { x: aMidX, y: aMaxY + pad + 8 };
+      const tiltPos = L(0, h2 + pad + 8);
       const tiltBtn = document.createElementNS(NS, 'g');
       tiltBtn.dataset.action = 'tilt'; tiltBtn.dataset.targetId = selId;
       tiltBtn.setAttribute('cursor', 'pointer');
