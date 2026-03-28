@@ -211,10 +211,11 @@ export function initDrag(svgEl) {
         const dxCm = pxToCm(dx), dyCm = pxToCm(dy);
         let newW = handleDrag.origW, newH = handleDrag.origH;
         let newX = handleDrag.origX, newY = handleDrag.origY;
-        if (corner === 'se') { newW = Math.max(3, handleDrag.origW + dxCm); newH = Math.max(3, handleDrag.origH + dyCm); }
-        else if (corner === 'sw') { newW = Math.max(3, handleDrag.origW - dxCm); newH = Math.max(3, handleDrag.origH + dyCm); newX = handleDrag.origX + dxCm; }
-        else if (corner === 'ne') { newW = Math.max(3, handleDrag.origW + dxCm); newH = Math.max(3, handleDrag.origH - dyCm); newY = handleDrag.origY + dyCm; }
-        else if (corner === 'nw') { newW = Math.max(3, handleDrag.origW - dxCm); newH = Math.max(3, handleDrag.origH - dyCm); newX = handleDrag.origX + dxCm; newY = handleDrag.origY + dyCm; }
+        const MIN = 6; // cm — keeps components large enough to click on
+        if (corner === 'se') { newW = Math.max(MIN, handleDrag.origW + dxCm); newH = Math.max(MIN, handleDrag.origH + dyCm); }
+        else if (corner === 'sw') { newW = Math.max(MIN, handleDrag.origW - dxCm); newH = Math.max(MIN, handleDrag.origH + dyCm); newX = handleDrag.origX + dxCm; }
+        else if (corner === 'ne') { newW = Math.max(MIN, handleDrag.origW + dxCm); newH = Math.max(MIN, handleDrag.origH - dyCm); newY = handleDrag.origY + dyCm; }
+        else if (corner === 'nw') { newW = Math.max(MIN, handleDrag.origW - dxCm); newH = Math.max(MIN, handleDrag.origH - dyCm); newX = handleDrag.origX + dxCm; newY = handleDrag.origY + dyCm; }
         updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
       }
       render();

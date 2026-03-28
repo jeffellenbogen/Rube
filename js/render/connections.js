@@ -31,7 +31,7 @@ export function renderConnections(state, layer) {
       del.setAttribute('cursor', 'pointer');
       const dc = document.createElementNS(NS, 'circle');
       dc.setAttribute('cx', p1.x); dc.setAttribute('cy', p1.y - 12);
-      dc.setAttribute('r', 7); dc.setAttribute('fill', '#ef476f');
+      dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
       dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
       const dt = document.createElementNS(NS, 'text');
       dt.setAttribute('x', p1.x); dt.setAttribute('y', p1.y - 12);
@@ -69,7 +69,7 @@ export function renderConnections(state, layer) {
     del.setAttribute('cursor', 'pointer');
     const dc = document.createElementNS(NS, 'circle');
     dc.setAttribute('cx', mx); dc.setAttribute('cy', my);
-    dc.setAttribute('r', 7); dc.setAttribute('fill', '#ef476f');
+    dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
     dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
     const dt = document.createElementNS(NS, 'text');
     dt.setAttribute('x', mx); dt.setAttribute('y', my);
