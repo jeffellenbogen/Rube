@@ -307,7 +307,7 @@ function drawMarker(g, x, y, w, h, label, color) {
   const t = document.createElementNS(NS, 'text');
   t.setAttribute('x', x+w/2); t.setAttribute('y', y+h/2);
   t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
-  t.setAttribute('fill', '#fff'); t.setAttribute('font-size', Math.min(w*0.4, 12));
+  t.setAttribute('fill', '#fff'); t.setAttribute('font-size', Math.min(w * 0.25, h * 0.45));
   t.setAttribute('font-family', 'Orbitron,sans-serif'); t.setAttribute('font-weight', 'bold');
   t.textContent = label;
   g.appendChild(t);

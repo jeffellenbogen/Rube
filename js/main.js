@@ -349,7 +349,7 @@ initWelcome();
 function initMarkers() {
   const state = getState();
   const { roomW } = getRoomDimensions();
-  const markerH = 14, markerW = 18;
+  const markerH = 21, markerW = 27;
   const floorY = pxToCm(getFloorPx()) - markerH;
   if (!state.components.find(c => c.subtype === 'start')) {
     addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: floorY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
