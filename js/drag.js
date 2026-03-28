@@ -114,10 +114,11 @@ export function initDrag(svgEl) {
     // Let action buttons (delete, comment) be handled by the click event
     if (e.target.closest('[data-action]')) return;
 
-    // Check for sub-part/resize handle
-    if (e.target.dataset.handle) {
-      const handle = e.target.dataset.handle;
-      const compId = e.target.dataset.compId;
+    // Check for sub-part/resize handle (use closest so grouped handles like free-rotate work)
+    const handleEl = e.target.closest('[data-handle]');
+    if (handleEl) {
+      const handle = handleEl.dataset.handle;
+      const compId = handleEl.dataset.compId;
       const state = getState();
       const comp = state.components.find(c => c.id === compId);
       if (comp) {
