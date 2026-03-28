@@ -261,7 +261,15 @@ export function initDrag(svgEl) {
         const state = getState();
         const comp = state.components.find(c => c.id === handleDrag.compId);
         const nearest = findNearestAttachment(state, upX, upY, handleDrag.compId, 20);
-        if (nearest && comp) {
+        // If released without connecting, clear any existing cord connection
+      if (!nearest) {
+        const existing = state.connections.find(c =>
+          (c.fromId === handleDrag.compId && c.fromPoint === handleDrag.type) ||
+          (c.toId   === handleDrag.compId && c.toPoint   === handleDrag.type)
+        );
+        if (existing) { undoPush(); deleteConnection(existing.id); render(); }
+      }
+      if (nearest && comp) {
           // Remove any existing connection for this cord end
           const existing = state.connections.find(c =>
             (c.fromId === handleDrag.compId && c.fromPoint === handleDrag.type) ||

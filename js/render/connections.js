@@ -43,8 +43,12 @@ export function renderConnections(state, layer) {
       continue;
     }
 
-    const isCord = CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)
-                 || CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
+    // Pulley cord connections are drawn by machines.js (drawPulley) as the cord visual.
+    // Rendering a separate line here would create an orphan strand when the connected
+    // object is moved (the cord end position is static but the object end is dynamic).
+    if (CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)) continue;
+
+    const isCord = CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
     if (from.subtype === 'matchboxTrack' && to.subtype === 'matchboxTrack') continue;
 
     const l = document.createElementNS(NS, 'line');
