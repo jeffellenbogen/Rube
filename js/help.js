@@ -378,6 +378,10 @@ export function initHelp() {
   document.querySelectorAll('.help-tab').forEach(btn => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
   });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeHelp();
+  });
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────

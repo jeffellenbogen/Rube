@@ -16,6 +16,11 @@ export function initWelcome() {
 
   document.getElementById('welcome-start').addEventListener('click', dismiss);
   document.getElementById('welcome-close').addEventListener('click', dismiss);
+  document.getElementById('welcome-backdrop').addEventListener('click', dismiss);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display !== 'none') dismiss();
+  });
 
   welcomeInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') dismiss();
