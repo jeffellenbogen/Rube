@@ -83,9 +83,14 @@ function injectChunk(pngBuffer, chunkBuf) {
   return result.buffer;
 }
 
-const MACHINE_LABELS = {
-  lever: 'Lever', pulley: 'Pulley', inclinedPlane: 'Inclined Plane',
-  wheelAxle: 'Wheel & Axle', wedge: 'Wedge', screw: 'Screw',
+const MACHINE_SUBTYPES = new Set(['lever','pulley','inclinedPlane','wheelAxle','wedge','screw']);
+const ITEM_LABELS = {
+  lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane',
+  wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw',
+  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
+  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
+  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
+  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
 };
 
 export async function downloadPNG(svgEl) {
@@ -95,15 +100,29 @@ export async function downloadPNG(svgEl) {
   const req = getRequirements(state);
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
 
+  // Split BOM into machines vs materials (environment items are in state.environment, not state.components)
+  const bom = (() => {
+    const machines = {}, materials = {};
+    for (const c of state.components) {
+      if (c.type === 'marker') continue;
+      const label = ITEM_LABELS[c.subtype] || (c.name || c.subtype);
+      const bin = MACHINE_SUBTYPES.has(c.subtype) ? machines : materials;
+      bin[label] = (bin[label] || 0) + 1;
+    }
+    const toList = obj => Object.entries(obj).sort((a,b) => a[0].localeCompare(b[0])).map(([name,count]) => ({ name, count }));
+    return { machines: toList(machines), materials: toList(materials) };
+  })();
+
   // === Page: landscape letter at 150 DPI (11" × 8.5") ===
   const PAGE_W = 1650, PAGE_H = 1275;
   const MARGIN = 54;
-  const HEADER_H = 180;
-  const FOOTER_H = 48;
+  const HEADER_H = 160;  // header area height (top rule → bottom rule)
+  const FRAME = MARGIN - 12; // outer frame inset
 
   const canvas = document.createElement('canvas');
   canvas.width = PAGE_W; canvas.height = PAGE_H;
   const ctx = canvas.getContext('2d');
+  const mono = size => `bold ${size}px "Courier New", Courier, monospace`;
 
   // White background
   ctx.fillStyle = '#ffffff';
@@ -112,85 +131,139 @@ export async function downloadPNG(svgEl) {
   // Outer page frame
   ctx.strokeStyle = '#0d1f35';
   ctx.lineWidth = 3;
-  ctx.strokeRect(MARGIN - 12, MARGIN - 12, PAGE_W - 2*(MARGIN-12), PAGE_H - 2*(MARGIN-12));
+  ctx.strokeRect(FRAME, FRAME, PAGE_W - 2*FRAME, PAGE_H - 2*FRAME);
 
   // ── HEADER ──────────────────────────────────────────────────────────────
-  // Top rule
   ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, MARGIN, PAGE_W - 2*MARGIN, 4);
+  ctx.fillRect(MARGIN, MARGIN, PAGE_W - 2*MARGIN, 4);  // top rule
 
-  // Brand + date row
-  ctx.font = 'bold 13px "Courier New", Courier, monospace';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = '#4a7a9a';
-  ctx.textAlign = 'left';
-  ctx.fillText('RUBE GOLDBERG PLANNING SITE', MARGIN, MARGIN + 10);
-  ctx.textAlign = 'right';
-  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  ctx.fillText(dateStr, PAGE_W - MARGIN, MARGIN + 10);
-
-  // Requirements panel — right side of header
-  const REQ_W = 330, REQ_PAD = 10;
+  // Requirements panel — top-right of header
+  const REQ_W = 320, REQ_PAD = 10;
   const reqX = PAGE_W - MARGIN - REQ_W;
-  const reqY = MARGIN + 32;
-  const reqH = HEADER_H - 40;
+  const reqY = MARGIN + 14;
+  const reqH = HEADER_H - 22;
 
   ctx.strokeStyle = '#b0c8e0';
   ctx.lineWidth = 1;
   ctx.strokeRect(reqX, reqY, REQ_W, reqH);
 
-  const mono = (size) => `${size}px "Courier New", Courier, monospace`;
-  ctx.font = `bold ${mono(11)}`;
+  ctx.font = mono(11);
   ctx.fillStyle = '#0d1f35';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('REQUIREMENTS', reqX + REQ_PAD, reqY + REQ_PAD);
 
-  // Machines
   const machOK = req.machinesMet;
-  ctx.font = mono(11);
+  ctx.font = `${11}px "Courier New", Courier, monospace`;
   ctx.fillStyle = machOK ? '#1a6a3a' : '#aa3333';
-  ctx.fillText(`Simple Machines: ${req.machineTypes.length} used  (3+ required)  ${machOK ? '✓' : '✗'}`, reqX + REQ_PAD, reqY + REQ_PAD + 18);
+  ctx.fillText(`Simple Machines: ${req.machineTypes.length} of 3+  ${machOK ? '✓' : '✗'}`, reqX + REQ_PAD, reqY + REQ_PAD + 18);
 
-  let mY = reqY + REQ_PAD + 34;
+  let rY = reqY + REQ_PAD + 34;
   for (const sub of req.allMachines) {
     const used = req.machineTypes.includes(sub);
     ctx.fillStyle = used ? '#1a6a3a' : '#aaaaaa';
-    ctx.fillText(`  ${used ? '✓' : '○'}  ${MACHINE_LABELS[sub]}`, reqX + REQ_PAD, mY);
-    mY += 14;
+    ctx.fillText(`  ${used ? '✓' : '○'}  ${ITEM_LABELS[sub]}`, reqX + REQ_PAD, rY);
+    rY += 14;
   }
-
-  // Steps
-  mY += 4;
+  rY += 4;
   const stOK = req.stepsMet;
   ctx.fillStyle = stOK ? '#1a6a3a' : '#aa3333';
-  ctx.fillText(`Steps: ${req.steps}  (5+ required)  ${stOK ? '✓' : '✗'}`, reqX + REQ_PAD, mY);
+  ctx.fillText(`Steps: ${req.steps} of 5+  ${stOK ? '✓' : '✗'}`, reqX + REQ_PAD, rY);
 
-  // Team name — large, left-aligned, vertically centered in header area left of req panel
-  const nameAreaW = reqX - MARGIN - 20;
-  const nameAreaMidY = MARGIN + 32 + (HEADER_H - 40) / 2;
-  let nameFontSize = 62;
-  ctx.font = `bold ${nameFontSize}px "Courier New", Courier, monospace`;
-  while (ctx.measureText(teamName).width > nameAreaW && nameFontSize > 22) {
-    nameFontSize -= 2;
-    ctx.font = `bold ${nameFontSize}px "Courier New", Courier, monospace`;
+  // "RUBE GOLDBERG PLAN" — large, same target size as team name
+  const titleAreaW = reqX - MARGIN - 24;
+  const TITLE_TEXT = 'RUBE GOLDBERG PLAN';
+  let titleSize = 42;
+  ctx.font = mono(titleSize);
+  while (ctx.measureText(TITLE_TEXT).width > titleAreaW && titleSize > 18) {
+    titleSize -= 2; ctx.font = mono(titleSize);
   }
-  ctx.fillStyle = '#0d1f35';
-  ctx.textBaseline = 'middle';
+
+  // Team name — same font size as title (scale down independently if longer)
+  let nameSize = titleSize;
+  ctx.font = mono(nameSize);
+  while (ctx.measureText(teamName).width > titleAreaW && nameSize > 18) {
+    nameSize -= 2; ctx.font = mono(nameSize);
+  }
+
+  // Date — small, top-right of left region, same line as title
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  ctx.font = `12px "Courier New", Courier, monospace`;
+  ctx.fillStyle = '#4a7a9a';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText(dateStr, reqX - 16, MARGIN + 10);
+
+  // Title line
+  ctx.font = mono(titleSize);
+  ctx.fillStyle = '#4a7a9a';
   ctx.textAlign = 'left';
-  ctx.fillText(teamName, MARGIN, nameAreaMidY, nameAreaW);
+  ctx.fillText(TITLE_TEXT, MARGIN, MARGIN + 10);
+
+  // Team name line
+  ctx.font = mono(nameSize);
+  ctx.fillStyle = '#0d1f35';
+  const nameY = MARGIN + 10 + titleSize + 10;
+  ctx.fillText(teamName, MARGIN, nameY, titleAreaW);
 
   // Header bottom rule
   ctx.fillStyle = '#0d1f35';
   ctx.fillRect(MARGIN, MARGIN + HEADER_H, PAGE_W - 2*MARGIN, 2);
 
-  // ── SVG CANVAS AREA ─────────────────────────────────────────────────────
-  const areaX = MARGIN;
-  const areaY = MARGIN + HEADER_H + 10;
-  const areaW = PAGE_W - 2*MARGIN;
-  const areaH = PAGE_H - areaY - FOOTER_H - MARGIN - 10;
+  // ── MAIN AREA: canvas (left) + BOM panel (right) ─────────────────────
+  const mainY = MARGIN + HEADER_H + 10;
+  const mainH = PAGE_H - mainY - MARGIN - 10;  // reaches inner bottom frame edge
+  const BOM_W = 270, BOM_GAP = 12;
+  const bomX = PAGE_W - MARGIN - BOM_W;
+  const canvasAreaW = bomX - MARGIN - BOM_GAP;
 
-  // Render the live SVG
+  // BOM panel border
+  ctx.strokeStyle = '#b0c8e0';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bomX, mainY, BOM_W, mainH);
+
+  const BOM_PAD = 10;
+  let bY = mainY + BOM_PAD;
+
+  function bomSection(title, items) {
+    ctx.font = mono(10);
+    ctx.fillStyle = '#4a7a9a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(title, bomX + BOM_PAD, bY);
+    bY += 14;
+    ctx.fillStyle = '#0d1f35';
+    ctx.strokeStyle = '#b0c8e0';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(bomX + BOM_PAD, bY); ctx.lineTo(bomX + BOM_W - BOM_PAD, bY); ctx.stroke();
+    bY += 6;
+    if (items.length === 0) {
+      ctx.font = `italic 10px "Courier New", Courier, monospace`;
+      ctx.fillStyle = '#aaaaaa';
+      ctx.fillText('none added', bomX + BOM_PAD, bY);
+      bY += 14;
+    } else {
+      ctx.font = `11px "Courier New", Courier, monospace`;
+      ctx.fillStyle = '#1a1a3a';
+      for (const { name, count } of items) {
+        ctx.fillText(`${count}×  ${name}`, bomX + BOM_PAD, bY);
+        bY += 14;
+      }
+    }
+    bY += 8;
+  }
+
+  ctx.font = mono(12);
+  ctx.fillStyle = '#0d1f35';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('BILL OF MATERIALS', bomX + BOM_PAD, bY);
+  bY += 18;
+
+  bomSection('SIMPLE MACHINES', bom.machines);
+  bomSection('MATERIALS', bom.materials);
+
+  // ── SVG CANVAS ──────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
   const svgStr = serializer.serializeToString(svgEl);
   const svgBlob = new Blob([svgStr], { type: 'image/svg+xml' });
@@ -200,31 +273,15 @@ export async function downloadPNG(svgEl) {
   URL.revokeObjectURL(svgUrl);
 
   const srcW = svgEl.clientWidth, srcH = svgEl.clientHeight;
-  const scale = Math.min(areaW / srcW, areaH / srcH);
+  const scale = Math.min(canvasAreaW / srcW, mainH / srcH);
   const drawW = srcW * scale, drawH = srcH * scale;
-  const drawX = areaX + (areaW - drawW) / 2;
-  const drawY = areaY + (areaH - drawH) / 2;
+  const drawX = MARGIN + (canvasAreaW - drawW) / 2;
+  const drawY = mainY + (mainH - drawH) / 2;
 
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
-
-  // Light border around SVG
   ctx.strokeStyle = '#b0c8e0';
   ctx.lineWidth = 1;
   ctx.strokeRect(drawX, drawY, drawW, drawH);
-
-  // ── FOOTER ──────────────────────────────────────────────────────────────
-  const footerY = PAGE_H - MARGIN - FOOTER_H;
-  ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, footerY, PAGE_W - 2*MARGIN, 2);
-
-  ctx.font = mono(11);
-  ctx.fillStyle = '#6a8aaa';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.fillText('RUBE GOLDBERG PLANNING SITE', PAGE_W / 2, footerY + FOOTER_H / 2);
-
-  ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, PAGE_H - MARGIN, PAGE_W - 2*MARGIN, 4);
 
   // ── INJECT METADATA & SAVE ──────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
