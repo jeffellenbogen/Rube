@@ -17,7 +17,7 @@ function el(tag, attrs, parent) {
 // ── Illustrations ─────────────────────────────────────────────────────
 function drawWelcomeIllustration(svg) {
   svg.setAttribute('viewBox', '0 0 140 110');
-  svg.setAttribute('width', '140'); svg.setAttribute('height', '110');
+  svg.setAttribute('width', '280'); svg.setAttribute('height', '220');
   el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
   // Left panel
   el('rect', { x:2, y:2, width:24, height:106, fill:'#0d1f35', stroke:'#1a3a5c', 'stroke-width':1 }, svg);
@@ -46,7 +46,7 @@ function drawWelcomeIllustration(svg) {
 
 function drawAddingIllustration(svg) {
   svg.setAttribute('viewBox', '0 0 140 110');
-  svg.setAttribute('width', '140'); svg.setAttribute('height', '110');
+  svg.setAttribute('width', '280'); svg.setAttribute('height', '220');
   el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
   // Left panel
   el('rect', { x:2, y:2, width:26, height:106, fill:'#0d1f35', stroke:'#1a3a5c', 'stroke-width':1 }, svg);
@@ -68,7 +68,7 @@ function drawAddingIllustration(svg) {
 
 function drawConnectingIllustration(svg) {
   svg.setAttribute('viewBox', '0 0 140 110');
-  svg.setAttribute('width', '140'); svg.setAttribute('height', '110');
+  svg.setAttribute('width', '280'); svg.setAttribute('height', '220');
   el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
   el('line', { x1:0, y1:100, x2:140, y2:100, stroke:'#4a7a9a', 'stroke-width':1.5 }, svg);
   // Lever
@@ -89,7 +89,7 @@ function drawConnectingIllustration(svg) {
 
 function drawChecklistIllustration(svg) {
   svg.setAttribute('viewBox', '0 0 140 110');
-  svg.setAttribute('width', '140'); svg.setAttribute('height', '110');
+  svg.setAttribute('width', '280'); svg.setAttribute('height', '220');
   el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
   el('rect', { x:10, y:6, width:120, height:98, fill:'#0d1f35', stroke:'#1a3a5c', 'stroke-width':1, rx:3 }, svg);
   const h = document.createElementNS(NS, 'text');
@@ -124,7 +124,7 @@ function drawChecklistIllustration(svg) {
 
 function drawSavingIllustration(svg) {
   svg.setAttribute('viewBox', '0 0 140 110');
-  svg.setAttribute('width', '140'); svg.setAttribute('height', '110');
+  svg.setAttribute('width', '280'); svg.setAttribute('height', '220');
   el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
   // Download button
   el('rect', { x:10, y:28, width:54, height:22, fill:'#0d1f35', stroke:'#1a3a5c', 'stroke-width':1.5, rx:3 }, svg);
@@ -182,7 +182,7 @@ const GUIDE_CARDS = [
 
 // ── Reference icon builder ────────────────────────────────────────────
 function makeRefIcon(item) {
-  const SIZE = 32, PAD = 3, INNER = SIZE - PAD * 2;
+  const SIZE = 52, PAD = 5, INNER = SIZE - PAD * 2;
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('width', SIZE); svg.setAttribute('height', SIZE);
   svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);

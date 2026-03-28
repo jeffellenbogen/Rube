@@ -290,8 +290,9 @@ main {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 700px;
-  max-height: 82vh;
+  width: 1100px;
+  max-width: 96vw;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -300,7 +301,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 18px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   flex-shrink: 0;
@@ -308,16 +309,16 @@ main {
 #help-header > span {
   font-family: var(--font-display);
   color: var(--accent);
-  font-size: 15px;
+  font-size: 22px;
   letter-spacing: 0.1em;
 }
 #help-close {
   background: none;
   border: none;
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: 22px;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 4px 12px;
   border-radius: 3px;
   font-family: var(--font-main);
 }
@@ -332,9 +333,9 @@ main {
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  padding: 12px 24px;
+  padding: 18px 36px;
   font-family: var(--font-main);
-  font-size: 13px;
+  font-size: 18px;
   color: var(--text-dim);
   cursor: pointer;
   letter-spacing: 0.05em;
@@ -346,14 +347,14 @@ main {
 
 /* Guide tab — card layout */
 .help-card {
-  padding: 20px;
+  padding: 36px;
   display: flex;
-  gap: 16px;
+  gap: 32px;
   align-items: flex-start;
 }
 .help-card-art {
-  width: 140px;
-  height: 110px;
+  width: 280px;
+  height: 220px;
   flex-shrink: 0;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -362,19 +363,19 @@ main {
 }
 .help-card-text { flex: 1; }
 .help-card-step {
-  font-size: 12px;
+  font-size: 18px;
   color: var(--accent);
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .help-card-title {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 28px;
   color: var(--text);
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 .help-card-desc {
-  font-size: 13px;
+  font-size: 20px;
   color: var(--text-dim);
   line-height: 1.8;
 }
@@ -383,7 +384,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px 16px;
+  padding: 16px 36px 24px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -391,46 +392,46 @@ main {
   background: none;
   border: none;
   font-family: var(--font-main);
-  font-size: 13px;
+  font-size: 18px;
   color: var(--text-dim);
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 10px 18px;
   border-radius: 3px;
-  min-width: 70px;
+  min-width: 110px;
 }
 .help-nav-btn:hover:not(:disabled) { color: var(--accent); }
 .help-nav-btn:disabled { opacity: 0.3; cursor: default; }
-.help-dots { display: flex; gap: 6px; align-items: center; }
-.help-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.help-dots { display: flex; gap: 10px; align-items: center; }
+.help-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
 .help-dot.active { background: var(--accent); }
 
 /* Reference tab */
-.help-ref-section { padding: 14px 16px 4px; }
+.help-ref-section { padding: 24px 28px 8px; }
 .help-ref-label {
-  font-size: 11px;
+  font-size: 16px;
   color: var(--text-dim);
   letter-spacing: 0.1em;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 .help-ref-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 .help-ref-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 6px 8px;
+  padding: 12px 14px;
 }
 .help-ref-icon { flex-shrink: 0; }
 .help-ref-info { min-width: 0; }
-.help-ref-name { font-size: 12px; color: var(--text); margin-bottom: 3px; }
-.help-ref-desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.help-ref-name { font-size: 16px; color: var(--text); margin-bottom: 5px; }
+.help-ref-desc { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
 
 /* ── Site Title ──────────────────────────────────────────────────── */
 #site-title {
