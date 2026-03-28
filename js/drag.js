@@ -122,6 +122,9 @@ export function initDrag(svgEl) {
       const comp = state.components.find(c => c.id === compId);
       if (comp) {
         const rect = svgEl.getBoundingClientRect();
+        const canvasPos = screenToCanvas(e.clientX, e.clientY);
+        const centerX = comp.x + comp.width / 2;
+        const centerY = comp.y + comp.height / 2;
         handleDrag = {
           type: handle,
           compId,
@@ -137,6 +140,10 @@ export function initDrag(svgEl) {
           minW: SPECIAL_LIMITS[comp.subtype] ? (DEFAULTS[comp.subtype]?.w ?? 0) * SPECIAL_LIMITS[comp.subtype].min : MIN,
           maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
           maxH: (DEFAULTS[comp.subtype]?.h ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
+          // free-rotate fields
+          centerX, centerY,
+          origRotation: comp.rotation || 0,
+          startAngle: Math.atan2(canvasPos.y - centerY, canvasPos.x - centerX) * 180 / Math.PI,
         };
         hasMoved = false;
         e.stopPropagation();
@@ -211,7 +218,12 @@ export function initDrag(svgEl) {
       const comp = state.components.find(c => c.id === handleDrag.compId);
       if (!comp) { handleDrag = null; return; }
 
-      if (handleDrag.type === 'fulcrum') {
+      if (handleDrag.type === 'free-rotate') {
+        const canvasPos = screenToCanvas(e.clientX, e.clientY);
+        const currentAngle = Math.atan2(canvasPos.y - handleDrag.centerY, canvasPos.x - handleDrag.centerX) * 180 / Math.PI;
+        const newRotation = (handleDrag.origRotation + currentAngle - handleDrag.startAngle) % 360;
+        updateComponent(handleDrag.compId, { rotation: newRotation });
+      } else if (handleDrag.type === 'fulcrum') {
         const newOffset = Math.max(0.05, Math.min(0.95, (curPx - handleDrag.compX) / handleDrag.compW));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, fulcrumOffset: newOffset } });
       } else if (handleDrag.type === 'angle') {

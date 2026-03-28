@@ -84,9 +84,12 @@ export function renderUI(state, layer) {
     layer.appendChild(commentBtn);
   }
 
+  // Subtypes that use a free-rotate yellow dot instead of the 90° ↻ button
+  const FREE_ROTATE_SUBTYPES = new Set(['tube', 'yardstick', 'matchboxTrack']);
+
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
-  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box') {
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
     // Rotate ↻ — always screen-bottom-right of visual bounds
     const rotPos = { x: aMaxX + pad, y: aMaxY + pad + 8 };
     const rotBtn = document.createElementNS(NS, 'g');
@@ -137,6 +140,25 @@ export function renderUI(state, layer) {
     rt.setAttribute('fill', '#fff'); rt.setAttribute('font-size', 11); rt.textContent = '↻';
     rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
     layer.appendChild(rotBtn);
+  }
+
+  // Free-rotate dot for tube, yardstick, matchboxTrack — yellow circle with blue ∠ at bottom-right
+  if (isComp && FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
+    const rotPos = { x: aMaxX + pad + 8, y: aMaxY + pad + 8 };
+    const rBtn = document.createElementNS(NS, 'g');
+    rBtn.dataset.handle = 'free-rotate'; rBtn.dataset.compId = selId;
+    rBtn.setAttribute('cursor', 'crosshair');
+    const rbg = document.createElementNS(NS, 'circle');
+    rbg.setAttribute('cx', rotPos.x); rbg.setAttribute('cy', rotPos.y);
+    rbg.setAttribute('r', 9); rbg.setAttribute('fill', '#ffd166');
+    rbg.setAttribute('stroke', '#e6b800'); rbg.setAttribute('stroke-width', 1);
+    const rt = document.createElementNS(NS, 'text');
+    rt.setAttribute('x', rotPos.x); rt.setAttribute('y', rotPos.y);
+    rt.setAttribute('text-anchor', 'middle'); rt.setAttribute('dominant-baseline', 'middle');
+    rt.setAttribute('fill', '#1a3a5c'); rt.setAttribute('font-size', 11);
+    rt.setAttribute('font-weight', 'bold'); rt.textContent = '∠';
+    rBtn.appendChild(rbg); rBtn.appendChild(rt);
+    layer.appendChild(rBtn);
   }
 
   // Color swatches for couch (env item)
