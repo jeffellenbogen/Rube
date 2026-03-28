@@ -86,14 +86,18 @@ export function countSteps(state) {
     if (conn.toId === finishId && fg !== undefined) finishGroups.add(fg);
   }
 
-  if (startGroups.size === 0 || finishGroups.size === 0) return 0;
+  if (startGroups.size === 0) return 0;
+
+  // When FINISH has no incoming connections, count longest path from START
+  // to any dead-end (backwards-compatible with designs that don't wire FINISH).
+  const requireFinish = finishGroups.size > 0;
 
   // ── Step 3: Longest path in group graph from startGroups to finishGroups ─
   // DFS with visited-set for cycle safety.
-  // Returns: number of groups from `gi` (inclusive) to any finishGroup.
-  //          -1 if no path to finish exists from here.
+  // Returns: number of groups from `gi` (inclusive) to a valid terminal.
+  //          -1 if no valid terminal reachable.
   function dfs(gi, visited) {
-    if (finishGroups.has(gi)) return 1;
+    if (requireFinish && finishGroups.has(gi)) return 1;
     let best = -1;
     for (const next of gAdj[gi]) {
       if (visited.has(next)) continue;
@@ -102,6 +106,8 @@ export function countSteps(state) {
       visited.delete(next);
       if (sub !== -1) best = Math.max(best, 1 + sub);
     }
+    // No FINISH required: treat dead-ends as valid terminals
+    if (best === -1 && !requireFinish) return 1;
     return best;
   }
 

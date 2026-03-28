@@ -40,14 +40,14 @@ test('disconnected component not counted', () => {
   }), 0);
 });
 
-test('component reachable from START but no path to FINISH = 0 steps', () => {
+test('component reachable from START but FINISH not wired = 1 step (counts dead-end chain)', () => {
   assertEqual(countSteps({
     components: [
       { id: 's', subtype: 'start' }, { id: 'f', subtype: 'finish' },
       { id: 'a', subtype: 'lever' }
     ],
     connections: [mkConn('s', 'a')]
-  }), 0);
+  }), 1);
 });
 
 // ── Single-component paths ───────────────────────────────────────────────────
