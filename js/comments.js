@@ -1,14 +1,18 @@
 import { canvasToScreen } from './canvas.js';
-import { updateComponent, getState } from './state.js';
+import { updateComponent, updateEnvItem, getState } from './state.js';
 import { push as undoPush } from './undo.js';
 
-const overlays = new Map(); // compId → div
+const overlays = new Map(); // id → div
 
-export function toggleComment(compId) {
-  const comp = getState().components.find(c => c.id === compId);
-  if (!comp) return;
+export function toggleComment(id) {
+  const state = getState();
+  const comp = state.components.find(c => c.id === id);
+  const envItem = !comp && (state.environment || []).find(e => e.id === id);
+  const item = comp || envItem;
+  if (!item) return;
   undoPush();
-  updateComponent(compId, { commentVisible: !comp.commentVisible });
+  if (comp) updateComponent(id, { commentVisible: !item.commentVisible });
+  else updateEnvItem(id, { commentVisible: !item.commentVisible });
   syncOverlays();
 }
 
@@ -17,32 +21,37 @@ export function syncOverlays() {
   const container = document.getElementById('comment-overlays');
   if (!container) return;
 
+  const allItems = [...state.components, ...(state.environment || [])];
+  const allIds = new Set(allItems.map(c => c.id));
+
   for (const [id, div] of overlays) {
-    if (!state.components.find(c => c.id === id)) { div.remove(); overlays.delete(id); }
+    if (!allIds.has(id)) { div.remove(); overlays.delete(id); }
   }
 
-  for (const comp of state.components) {
-    if (!comp.commentVisible) {
-      if (overlays.has(comp.id)) { overlays.get(comp.id).remove(); overlays.delete(comp.id); }
+  for (const item of allItems) {
+    if (!item.commentVisible) {
+      if (overlays.has(item.id)) { overlays.get(item.id).remove(); overlays.delete(item.id); }
       continue;
     }
-    let div = overlays.get(comp.id);
+    const isEnv = !state.components.find(c => c.id === item.id);
+    let div = overlays.get(item.id);
     if (!div) {
       div = document.createElement('div');
       div.className = 'comment-overlay';
       const ta = document.createElement('textarea');
       ta.maxLength = 200;
-      ta.value = comp.comment || '';
+      ta.value = item.comment || '';
       ta.placeholder = 'Describe this step...';
       ta.addEventListener('input', () => {
-        updateComponent(comp.id, { comment: ta.value });
+        if (isEnv) updateEnvItem(item.id, { comment: ta.value });
+        else updateComponent(item.id, { comment: ta.value });
       });
       div.appendChild(ta);
       container.appendChild(div);
-      overlays.set(comp.id, div);
+      overlays.set(item.id, div);
     }
     const wrapperRect = container.getBoundingClientRect();
-    const screen = canvasToScreen(comp.x + comp.width / 2, comp.y);
+    const screen = canvasToScreen(item.x + item.width / 2, item.y);
     div.style.left = `${screen.x - wrapperRect.left - 70}px`;
     div.style.top = `${screen.y - wrapperRect.top - 100}px`;
   }

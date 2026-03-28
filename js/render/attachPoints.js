@@ -41,7 +41,6 @@ function computeStairsAttach(item) {
   const highX = flipped ? x     : x + w;
   pts['railLow']     = { x: cmToPx(lowX),      y: cmToPx(y + h - railH) };
   pts['railHigh']    = { x: cmToPx(highX),     y: cmToPx(y - railH) };
-  pts['railCenter']  = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.20) };
   pts['railStayMid'] = { x: cmToPx(x + w / 2), y: cmToPx(y + h * 0.35) };
 
   return pts;
