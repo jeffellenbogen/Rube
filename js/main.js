@@ -212,7 +212,10 @@ svgEl.addEventListener('click', e => {
         const newCount = action === 'step-inc' ? Math.min(12, oldCount + 1) : Math.max(3, oldCount - 1);
         if (newCount !== oldCount) {
           undoPush();
-          updateEnvItem(targetId, { stepCount: newCount, width: newCount * (envItem.width / oldCount), height: newCount * (envItem.height / oldCount) });
+          const newWidth = newCount * (envItem.width / oldCount);
+          const newHeight = newCount * (envItem.height / oldCount);
+          const bottomY = envItem.y + envItem.height;
+          updateEnvItem(targetId, { stepCount: newCount, width: newWidth, height: newHeight, y: bottomY - newHeight });
           render(); updateUndoButtons();
         }
       }
