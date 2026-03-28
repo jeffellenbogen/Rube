@@ -204,6 +204,20 @@ svgEl.addEventListener('click', e => {
       render(); updateUndoButtons(); updateTrackerUI();
       return;
     }
+    if (action === 'step-inc' || action === 'step-dec') {
+      const state = getState();
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) {
+        const oldCount = envItem.stepCount || 6;
+        const newCount = action === 'step-inc' ? Math.min(12, oldCount + 1) : Math.max(3, oldCount - 1);
+        if (newCount !== oldCount) {
+          undoPush();
+          updateEnvItem(targetId, { stepCount: newCount, width: newCount * (envItem.width / oldCount) });
+          render(); updateUndoButtons();
+        }
+      }
+      return;
+    }
     if (action === 'comment') { toggleComment(targetId); render(); return; }
     if (action === 'rotate') {
       undoPush();

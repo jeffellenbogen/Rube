@@ -1,5 +1,5 @@
 import { updateComponent, updateEnvItem, getState } from './state.js';
-import { screenToCanvas, cmToPx, pxToCm, getFloorPx } from './canvas.js';
+import { screenToCanvas, cmToPx, pxToCm, getFloorPx, getRoomDimensions } from './canvas.js';
 import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection } from './connections.js';
@@ -131,7 +131,6 @@ export function initDrag(svgEl) {
     const state = getState();
     const item = state.components.find(c => c.id === id) || state.environment.find(ev => ev.id === id);
     if (!item) return;
-    if (item.subtype === 'start' || item.subtype === 'finish') { selected = id; render(); return; }
     selected = id;
     render();
     const pos = screenToCanvas(e.clientX, e.clientY);
@@ -209,7 +208,17 @@ export function initDrag(svgEl) {
     const newX = dragging.compX + dx, newY = dragging.compY + dy;
     const state = getState();
     const comp = state.components.find(c => c.id === dragging.id);
-    const snapped = (!dragging.isEnv && comp) ? snapToSurface(comp, newX, newY, e.shiftKey) : { x: newX, y: newY };
+    let snapped;
+    if (comp && (comp.subtype === 'start' || comp.subtype === 'finish')) {
+      const { roomW } = getRoomDimensions();
+      const maxY = pxToCm(getFloorPx());
+      snapped = {
+        x: Math.max(0, Math.min(roomW - comp.width, newX)),
+        y: Math.max(0, Math.min(maxY - comp.height, newY)),
+      };
+    } else {
+      snapped = (!dragging.isEnv && comp) ? snapToSurface(comp, newX, newY, e.shiftKey) : { x: newX, y: newY };
+    }
     if (dragging.isEnv) updateEnvItem(dragging.id, { x: snapped.x, y: snapped.y });
     else updateComponent(dragging.id, { x: snapped.x, y: snapped.y });
     render();

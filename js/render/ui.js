@@ -140,7 +140,8 @@ export function renderUI(state, layer) {
   }
 
   // Flip-only button for stairs (env item)
-  const isStairs = !!state.environment.find(e => e.id === selId && e.subtype === 'stairs');
+  const stairsItem = state.environment.find(e => e.id === selId && e.subtype === 'stairs');
+  const isStairs = !!stairsItem;
   if (isStairs) {
     const flipPos = { x: aMinX - pad - 8, y: aMaxY + pad + 8 };
     const flipBtn = document.createElementNS(NS, 'g');
@@ -156,6 +157,32 @@ export function renderUI(state, layer) {
     ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
     flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
     layer.appendChild(flipBtn);
+
+    // Step count +/- buttons — centered at bottom of stairs bounding box
+    const stepCount = stairsItem.stepCount || 6;
+    const btnY = aMaxY + pad + 8;
+    for (const [offset, action, icon, atLimit] of [
+      [-12, 'step-dec', '−', stepCount <= 3],
+      [ 12, 'step-inc', '+', stepCount >= 12],
+    ]) {
+      const bx = aMidX + offset;
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = action; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', atLimit ? 'default' : 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', bx); bg.setAttribute('cy', btnY);
+      bg.setAttribute('r', 8);
+      bg.setAttribute('fill', atLimit ? '#1a3a5c' : '#0d2a40');
+      bg.setAttribute('stroke', atLimit ? '#2a4a6c' : '#00c9a7');
+      bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', bx); t.setAttribute('y', btnY);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', atLimit ? '#3a5a7a' : '#00c9a7');
+      t.setAttribute('font-size', 13); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
   }
 
   // Attachment point dots (for selected component only)
