@@ -13,6 +13,17 @@ const LOCK_ASPECT = new Set([
   'protractor', 'book',
 ]);
 
+// Default dimensions (cm) per subtype — max resize = 7× these values
+const DEFAULTS = {
+  lever: { w: 60, h: 16 }, pulley: { w: 15, h: 20 }, inclinedPlane: { w: 80, h: 40 },
+  wheelAxle: { w: 20, h: 20 }, wedge: { w: 20, h: 15 }, screw: { w: 10, h: 20 },
+  domino: { w: 12, h: 24 }, ball: { w: 18, h: 18 }, toyCar: { w: 30, h: 18 },
+  string: { w: 40, h: 2 }, cup: { w: 22, h: 16 }, bucket: { w: 20, h: 24 },
+  tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
+  yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
+  book: { w: 10, h: 30 }, custom: { w: 24, h: 24 },
+};
+
 let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
 let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }
 let handleDrag = null;    // { type, compId, startPx, startPy, origValue }
@@ -117,6 +128,8 @@ export function initDrag(svgEl) {
           origX: comp.x, origY: comp.y,
           lockAspect: LOCK_ASPECT.has(comp.subtype),
           aspectRatio: comp.height / comp.width,
+          maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * 7,
+          maxH: (DEFAULTS[comp.subtype]?.h ?? Infinity) * 7,
         };
         hasMoved = false;
         e.stopPropagation();
@@ -222,28 +235,32 @@ export function initDrag(svgEl) {
         let newX = handleDrag.origX, newY = handleDrag.origY;
         const MIN = 11; // cm — keeps components large enough to click on
 
+        const { maxW, maxH } = handleDrag;
+
         if (corner === 'se') {
-          newW = Math.max(MIN, handleDrag.origW + dxCm);
-          newH = Math.max(MIN, handleDrag.origH + dyCm);
+          newW = Math.min(maxW, Math.max(MIN, handleDrag.origW + dxCm));
+          newH = Math.min(maxH, Math.max(MIN, handleDrag.origH + dyCm));
         } else if (corner === 'sw') {
-          newW = Math.max(MIN, handleDrag.origW - dxCm);
-          newH = Math.max(MIN, handleDrag.origH + dyCm);
+          newW = Math.min(maxW, Math.max(MIN, handleDrag.origW - dxCm));
+          newH = Math.min(maxH, Math.max(MIN, handleDrag.origH + dyCm));
           newX = handleDrag.origX + handleDrag.origW - newW;
         } else if (corner === 'ne') {
-          newW = Math.max(MIN, handleDrag.origW + dxCm);
-          newH = Math.max(MIN, handleDrag.origH - dyCm);
+          newW = Math.min(maxW, Math.max(MIN, handleDrag.origW + dxCm));
+          newH = Math.min(maxH, Math.max(MIN, handleDrag.origH - dyCm));
           newY = handleDrag.origY + handleDrag.origH - newH;
         } else if (corner === 'nw') {
-          newW = Math.max(MIN, handleDrag.origW - dxCm);
-          newH = Math.max(MIN, handleDrag.origH - dyCm);
+          newW = Math.min(maxW, Math.max(MIN, handleDrag.origW - dxCm));
+          newH = Math.min(maxH, Math.max(MIN, handleDrag.origH - dyCm));
           newX = handleDrag.origX + handleDrag.origW - newW;
           newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
         // Lock aspect ratio for components that have a fixed physical shape
         if (handleDrag.lockAspect) {
+          newW = Math.min(maxW, newW);
           newH = newW * handleDrag.aspectRatio;
-          if (newH < MIN) { newH = MIN; newW = newH / handleDrag.aspectRatio; }
+          if (newH > maxH) { newH = maxH; newW = newH / handleDrag.aspectRatio; }
+          if (newH < MIN)  { newH = MIN;  newW = newH / handleDrag.aspectRatio; }
           // Recalculate anchor-edge positions after aspect-ratio correction
           if (corner === 'sw' || corner === 'nw') newX = handleDrag.origX + handleDrag.origW - newW;
           if (corner === 'ne' || corner === 'nw') newY = handleDrag.origY + handleDrag.origH - newH;
