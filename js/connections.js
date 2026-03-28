@@ -92,6 +92,11 @@ export function countSteps(state) {
   // to any dead-end (backwards-compatible with designs that don't wire FINISH).
   const requireFinish = finishGroups.size > 0;
 
+  // DEBUG (temporary) — open browser DevTools Console to see this
+  console.log('[countSteps] groups:', groups.map((g,i) => `g${i}={${[...g].map(id=>compById[id]?.subtype).join(',')}}`));
+  console.log('[countSteps] startGroups:', [...startGroups], 'finishGroups:', [...finishGroups], 'requireFinish:', requireFinish);
+  console.log('[countSteps] gAdj:', gAdj.map((s,i) => `g${i}->[${[...s].map(n=>'g'+n).join(',')}]`));
+
   // ── Step 3: Longest path in group graph from startGroups to finishGroups ─
   // DFS with visited-set for cycle safety.
   // Returns: number of groups from `gi` (inclusive) to a valid terminal.
