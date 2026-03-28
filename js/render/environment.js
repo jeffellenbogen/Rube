@@ -27,7 +27,7 @@ function makeEnvItem(item) {
     case 'chair': drawChair(g, x, y, w, h); break;
     case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
-    case 'couch': drawCouch(g, x, y, w, h); break;
+    case 'couch': drawCouch(g, x, y, w, h, item.couchColor); break;
   }
   const cx = x + w / 2, cy = y + h / 2;
   const rotation = item.rotation || 0;
@@ -105,12 +105,27 @@ function drawBookshelf(g, x, y, w, h, borderWidth = 6) {
   svgLine(g, x+w*0.05, y+h*0.5, x+w*0.95, y+h*0.5, '#5a3010', 3);
 }
 
-function drawCouch(g, x, y, w, h) {
+function getCouchPalette(theme) {
+  switch (theme) {
+    case 'silver':  return { fabric: '#b0bcc8', shadow: '#7a8a9a', btn: '#909dab', wood: '#7a7a7a', woodDk: '#5a5a5a' };
+    case 'pink':    return { fabric: '#e8a0b4', shadow: '#c07080', btn: '#d0889c', wood: '#7a5230', woodDk: '#5a3a20' };
+    case 'purple':  return { fabric: '#9a7bc0', shadow: '#705898', btn: '#8568b0', wood: '#5a3a5a', woodDk: '#3a2040' };
+    case 'gold':    return { fabric: '#c8a050', shadow: '#9a7030', btn: '#b08840', wood: '#7a5230', woodDk: '#5a3a20' };
+    case 'rainbow': return {
+      rainbow: true,
+      armL: '#e85a5a', armR: '#9a5ae8',
+      backL: '#e8a050', backR: '#e8e050',
+      seatL: '#5ab860', seatR: '#5a90e8',
+      skirt: '#d060c0', btn: '#e85aa0',
+      shadow: '#2a3a5a', wood: '#7a5230', woodDk: '#5a3a20',
+    };
+    default:        return { fabric: '#7a9bb5', shadow: '#5a7a94', btn: '#5e7d96', wood: '#7a5230', woodDk: '#5a3a20' };
+  }
+}
+
+function drawCouch(g, x, y, w, h, theme = 'blue') {
   const NS = 'http://www.w3.org/2000/svg';
-  const fabric = '#7a9bb5';
-  const shadow = '#5a7a94';
-  const wood   = '#7a5230';
-  const woodDk = '#5a3a20';
+  const p = getCouchPalette(theme);
 
   const armW   = w * 0.08;
   const legH   = h * 0.16;
@@ -138,38 +153,37 @@ function drawCouch(g, x, y, w, h) {
     const poly = document.createElementNS(NS, 'polygon');
     const top = y + bodyH, bot = y + h;
     poly.setAttribute('points', `${lx},${top} ${lx+legW},${top} ${lx+legW*0.7},${bot} ${lx+legW*0.3},${bot}`);
-    poly.setAttribute('fill', wood); poly.setAttribute('stroke', woodDk); poly.setAttribute('stroke-width', 1);
+    poly.setAttribute('fill', p.wood); poly.setAttribute('stroke', p.woodDk); poly.setAttribute('stroke-width', 1);
     g.appendChild(poly);
   }
   drawLeg(x + armW * 0.3);
   drawLeg(x + w - armW * 0.3 - legW);
 
-  // — Arms: boxy, shorter than back cushions by 15% —
-  svgRect(g, x,           armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
-  svgRect(g, x + w - armW, armTopY, armW, bodyH - (armTopY - y), fabric, shadow);
+  // — Arms —
+  svgRect(g, x,            armTopY, armW, bodyH - (armTopY - y), p.rainbow ? p.armL  : p.fabric, p.shadow);
+  svgRect(g, x + w - armW, armTopY, armW, bodyH - (armTopY - y), p.rainbow ? p.armR  : p.fabric, p.shadow);
 
-  // — Back cushions: taller than arms, extend slightly below seat line —
-  svgRect(g, innerX,            y, cushW, backH, fabric, shadow);
-  svgRect(g, innerX+cushW+gap,  y, cushW, backH, fabric, shadow);
+  // — Back cushions —
+  svgRect(g, innerX,           y, cushW, backH, p.rainbow ? p.backL : p.fabric, p.shadow);
+  svgRect(g, innerX+cushW+gap, y, cushW, backH, p.rainbow ? p.backR : p.fabric, p.shadow);
 
   // — Cushion buttons —
-  const btnColor = '#5e7d96';
   const btnR = cushW * 0.044;
   function drawButton(cx, cy) {
     const c = document.createElementNS(NS, 'circle');
     c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', btnR);
-    c.setAttribute('fill', btnColor); c.setAttribute('stroke', shadow); c.setAttribute('stroke-width', 0.5);
+    c.setAttribute('fill', p.btn); c.setAttribute('stroke', p.shadow); c.setAttribute('stroke-width', 0.5);
     g.appendChild(c);
   }
   drawButton(innerX + cushW / 2,           y + backH * 0.50);
   drawButton(innerX+cushW+gap + cushW / 2, y + backH * 0.50);
 
   // — Seat cushions —
-  svgRect(g, innerX,            seatY, cushW, seatH, fabric, shadow);
-  svgRect(g, innerX+cushW+gap,  seatY, cushW, seatH, fabric, shadow);
+  svgRect(g, innerX,           seatY, cushW, seatH, p.rainbow ? p.seatL : p.fabric, p.shadow);
+  svgRect(g, innerX+cushW+gap, seatY, cushW, seatH, p.rainbow ? p.seatR : p.fabric, p.shadow);
 
   // — Skirt —
-  svgRect(g, innerX, seatY + seatH, innerW, skirtH, shadow, shadow);
+  svgRect(g, innerX, seatY + seatH, innerW, skirtH, p.rainbow ? p.skirt : p.shadow, p.shadow);
 }
 
 // Returns array of { x1, x2, y } surface segments (top of each surface on this item)
@@ -230,6 +244,6 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
     case 'chair':     drawChair(g, x, y, w, h); break;
     case 'stairs':    drawStairs(g, x, y, w, h, 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
-    case 'couch':     drawCouch(g, x, y, w, h); break;
+    case 'couch':     drawCouch(g, x, y, w, h, 'blue'); break;
   }
 }

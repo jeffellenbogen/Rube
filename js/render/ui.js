@@ -139,6 +139,69 @@ export function renderUI(state, layer) {
     layer.appendChild(rotBtn);
   }
 
+  // Color swatches for couch (env item)
+  const couchEnvItem = state.environment.find(e => e.id === selId && e.subtype === 'couch');
+  if (couchEnvItem) {
+    // Rainbow gradient def for swatch
+    const defs = document.createElementNS(NS, 'defs');
+    const grad = document.createElementNS(NS, 'linearGradient');
+    grad.setAttribute('id', 'ui-couch-rainbow');
+    grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%');
+    grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '0%');
+    for (const [off, col] of [['0%','#e85a5a'],['20%','#e8a050'],['40%','#e8d850'],['60%','#5ab860'],['80%','#5a90e8'],['100%','#9a5ae8']]) {
+      const stop = document.createElementNS(NS, 'stop');
+      stop.setAttribute('offset', off); stop.setAttribute('stop-color', col);
+      grad.appendChild(stop);
+    }
+    defs.appendChild(grad);
+    layer.appendChild(defs);
+
+    const currentColor = couchEnvItem.couchColor || 'blue';
+    const swatches = [
+      { key: 'blue',    fill: '#7a9bb5', label: 'Blue' },
+      { key: 'silver',  fill: '#b0bcc8', label: 'Silver' },
+      { key: 'pink',    fill: '#e8a0b4', label: 'Pink' },
+      { key: 'purple',  fill: '#9a7bc0', label: 'Purple' },
+      { key: 'gold',    fill: '#c8a050', label: 'Gold' },
+      { key: 'rainbow', fill: 'url(#ui-couch-rainbow)', label: 'Rainbow' },
+    ];
+    const swatchR = 9;
+    const spacing = swatchR * 2 + 6;
+    const totalW = swatches.length * spacing - 6;
+    const startX = aMidX - totalW / 2 + swatchR;
+    const swatchY = aMaxY + 26;
+
+    for (let i = 0; i < swatches.length; i++) {
+      const { key, fill } = swatches[i];
+      const isActive = key === currentColor;
+      const cx = startX + i * spacing;
+
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'couch-color';
+      btn.dataset.color = key;
+      btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+
+      if (isActive) {
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', cx); ring.setAttribute('cy', swatchY);
+        ring.setAttribute('r', swatchR + 3.5);
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#ffffff'); ring.setAttribute('stroke-width', 2);
+        btn.appendChild(ring);
+      }
+
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', cx); c.setAttribute('cy', swatchY);
+      c.setAttribute('r', swatchR);
+      c.setAttribute('fill', fill);
+      c.setAttribute('stroke', isActive ? '#ff7b2e' : '#4a6a8a');
+      c.setAttribute('stroke-width', isActive ? 2 : 1);
+      btn.appendChild(c);
+      layer.appendChild(btn);
+    }
+  }
+
   // Flip-only button for stairs (env item)
   const stairsItem = state.environment.find(e => e.id === selId && e.subtype === 'stairs');
   const isStairs = !!stairsItem;

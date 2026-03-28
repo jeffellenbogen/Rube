@@ -252,6 +252,12 @@ svgEl.addEventListener('click', e => {
       }
       return;
     }
+    if (action === 'couch-color') {
+      undoPush();
+      updateEnvItem(targetId, { couchColor: actionEl.dataset.color });
+      render(); updateUndoButtons();
+      return;
+    }
     return;
   }
   const connEl = e.target.closest('[data-conn-id]');
