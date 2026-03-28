@@ -2,37 +2,59 @@ import { getAttachPx } from './render/attachPoints.js';
 import { addConnection, removeConnection as removeConn } from './state.js';
 
 export function countSteps(state) {
-  if (!state || !state.components || !state.connections) return 0;
+  if (!state?.components || !state.connections) return 0;
+
   const startComp = state.components.find(c => c.subtype === 'start');
-  const finishComp = state.components.find(c => c.subtype === 'finish');
-  if (!startComp || !finishComp) return 0;
+  if (!startComp) return 0;
+  const finishId = state.components.find(c => c.subtype === 'finish')?.id;
 
-  // Build adjacency list
+  // Build undirected adjacency so reachability works regardless of connection direction
   const adj = {};
+  for (const comp of state.components) adj[comp.id] = [];
   for (const conn of state.connections) {
-    if (!adj[conn.fromId]) adj[conn.fromId] = [];
-    adj[conn.fromId].push(conn.toId);
+    adj[conn.fromId]?.push(conn.toId);
+    adj[conn.toId]?.push(conn.fromId);
   }
 
-  // Branch-local DFS: copies visited set per branch so different paths can share nodes.
-  // O(n!) worst case for highly connected graphs, but fine for student projects (dozens of components).
-  // Branch-local DFS: returns max edges from node to finish, or -1 if unreachable
-  function dfs(nodeId, visited) {
-    if (nodeId === finishComp.id) return 0;
-    if (visited.has(nodeId)) return -1; // cycle in this branch
-    const neighbors = adj[nodeId] || [];
-    if (neighbors.length === 0) return -1;
-    visited.add(nodeId);
-    let best = -1;
-    for (const next of neighbors) {
-      const result = dfs(next, new Set(visited)); // new Set = branch-local
-      if (result !== -1) best = Math.max(best, result + 1);
+  // BFS from Start — collect every reachable node except Start and Finish themselves
+  const reachable = new Set();
+  const visited = new Set([startComp.id]);
+  const queue = [startComp.id];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const nb of adj[cur] || []) {
+      if (visited.has(nb)) continue;
+      visited.add(nb);
+      queue.push(nb);
+      if (nb !== finishId) reachable.add(nb);
     }
-    return best;
   }
 
-  const result = dfs(startComp.id, new Set());
-  return result === -1 ? 0 : result;
+  // Group same-subtype components that are directly connected into one step.
+  // A row of dominoes all linked = 1 step; a lever = its own step; etc.
+  const compById = Object.fromEntries(state.components.map(c => [c.id, c]));
+  const stepSeen = new Set();
+  let steps = 0;
+
+  for (const nodeId of reachable) {
+    if (stepSeen.has(nodeId)) continue;
+    const subtype = compById[nodeId]?.subtype;
+    // BFS within the same-subtype connected cluster
+    const gq = [nodeId];
+    stepSeen.add(nodeId);
+    while (gq.length) {
+      const cur = gq.shift();
+      for (const nb of adj[cur] || []) {
+        if (!stepSeen.has(nb) && reachable.has(nb) && compById[nb]?.subtype === subtype) {
+          stepSeen.add(nb);
+          gq.push(nb);
+        }
+      }
+    }
+    steps++;
+  }
+
+  return steps;
 }
 
 export function findNearestAttachment(state, px, py, excludeId, snapDist = 15) {
