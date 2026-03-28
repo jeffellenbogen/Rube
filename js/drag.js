@@ -10,7 +10,7 @@ import { getAttachPx } from './render/attachPoints.js';
 const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
-  'protractor', 'book',
+  'protractor', 'book', 'matchboxTrack',
 ]);
 
 // Default dimensions (cm) per subtype — max resize = 7× these values
@@ -255,12 +255,14 @@ export function initDrag(svgEl) {
           newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
-        // Lock aspect ratio for components that have a fixed physical shape
+        // Lock aspect ratio for components that have a fixed physical shape.
+        // Drive from width; height follows. Do NOT enforce height MIN — for wide
+        // items (car track, yardstick) the height is naturally smaller than 11cm
+        // and forcing it up causes the width to jump to unreasonably large values.
         if (handleDrag.lockAspect) {
-          newW = Math.min(maxW, newW);
+          newW = Math.max(MIN, Math.min(maxW, newW));
           newH = newW * handleDrag.aspectRatio;
           if (newH > maxH) { newH = maxH; newW = newH / handleDrag.aspectRatio; }
-          if (newH < MIN)  { newH = MIN;  newW = newH / handleDrag.aspectRatio; }
           // Recalculate anchor-edge positions after aspect-ratio correction
           if (corner === 'sw' || corner === 'nw') newX = handleDrag.origX + handleDrag.origW - newW;
           if (corner === 'ne' || corner === 'nw') newY = handleDrag.origY + handleDrag.origH - newH;
