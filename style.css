@@ -475,10 +475,11 @@ main {
   display: flex;
   overflow: hidden;
   box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7);
-  width: 480px;
+  width: 960px;
+  max-width: 95vw;
 }
 #welcome-left {
-  width: 180px;
+  width: 360px;
   flex-shrink: 0;
   background: var(--bg);
   border-right: 1px solid var(--border);
@@ -486,46 +487,46 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 28px 16px;
+  gap: 28px;
+  padding: 56px 32px;
 }
 #welcome-left-caption {
-  font-size: 10px;
+  font-size: 16px;
   color: var(--text-dim);
   text-align: center;
   line-height: 1.5;
 }
 #welcome-right {
   flex: 1;
-  padding: 28px 24px;
+  padding: 48px 40px;
   display: flex;
   flex-direction: column;
 }
 #welcome-brand {
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 14px;
   color: var(--accent);
   letter-spacing: 0.2em;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 #welcome-title {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 #welcome-desc {
-  font-size: 11px;
+  font-size: 18px;
   color: var(--text-dim);
   line-height: 1.6;
-  margin-bottom: 18px;
+  margin-bottom: 32px;
 }
 .welcome-field-label {
-  font-size: 9px;
+  font-size: 14px;
   color: var(--text-dim);
   letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 #welcome-team-input {
   width: 100%;
@@ -534,16 +535,16 @@ main {
   border-radius: 4px;
   color: var(--text);
   font-family: var(--font-main);
-  font-size: 12px;
-  padding: 8px 10px;
-  margin-bottom: 18px;
+  font-size: 20px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
   box-sizing: border-box;
   outline: none;
 }
 #welcome-team-input:focus { border-color: var(--accent); }
 #welcome-buttons {
   display: flex;
-  gap: 8px;
+  gap: 16px;
 }
 #welcome-start {
   flex: 1;
@@ -551,9 +552,9 @@ main {
   color: #000;
   border: none;
   font-family: var(--font-main);
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 600;
-  padding: 10px 0;
+  padding: 18px 0;
   border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.05em;
@@ -564,8 +565,8 @@ main {
   border: 1px solid var(--border);
   color: var(--text-dim);
   font-family: var(--font-main);
-  font-size: 12px;
-  padding: 10px 14px;
+  font-size: 20px;
+  padding: 18px 24px;
   border-radius: 4px;
   cursor: pointer;
 }

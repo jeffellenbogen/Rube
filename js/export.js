@@ -93,12 +93,33 @@ export async function downloadPNG(svgEl) {
   await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
   URL.revokeObjectURL(url);
 
+  const HEADER_H = 48;
   const canvas = document.createElement('canvas');
   canvas.width = svgEl.clientWidth;
-  canvas.height = svgEl.clientHeight;
+  canvas.height = svgEl.clientHeight + HEADER_H;
   const ctx = canvas.getContext('2d');
-  if (canvas.width === 0 || canvas.height === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
-  ctx.drawImage(img, 0, 0);
+  if (svgEl.clientWidth === 0 || svgEl.clientHeight === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
+
+  // Header strip with team name
+  ctx.fillStyle = '#0d1f35';
+  ctx.fillRect(0, 0, canvas.width, HEADER_H);
+  ctx.fillStyle = '#1a3a5c';
+  ctx.fillRect(0, HEADER_H - 1, canvas.width, 1);
+
+  const teamName = state.meta.title && state.meta.title !== 'Team Name' ? state.meta.title : '';
+  ctx.textBaseline = 'middle';
+  if (teamName) {
+    ctx.fillStyle = '#c8d8e8';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText(teamName, 16, HEADER_H / 2);
+  }
+  ctx.fillStyle = '#5a7a9a';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('RUBE GOLDBERG PLANNING SITE', canvas.width - 16, HEADER_H / 2);
+  ctx.textAlign = 'left';
+
+  ctx.drawImage(img, 0, HEADER_H);
 
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
