@@ -195,8 +195,7 @@ export function initDrag(svgEl) {
         const originX = handleDrag.compX + handleDrag.compW / 2 - r * 0.7;
         const originY = handleDrag.compY + handleDrag.compH * 0.3;
         const dx2 = curPx - originX, dy2 = curPy - originY;
-        const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newAngle = Math.max(-60, Math.min(0, rawAngle)); // left cord stays left of midline
+        const newAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
         const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, leftCordAngle: newAngle, leftCordLength: newLen } });
       } else if (handleDrag.type === 'cordRight') {
@@ -204,8 +203,7 @@ export function initDrag(svgEl) {
         const originX = handleDrag.compX + handleDrag.compW / 2 + r * 0.7;
         const originY = handleDrag.compY + handleDrag.compH * 0.3;
         const dx2 = curPx - originX, dy2 = curPy - originY;
-        const rawAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newAngle = Math.max(0, Math.min(60, rawAngle)); // right cord stays right of midline
+        const newAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
         const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordAngle: newAngle, rightCordLength: newLen } });
       } else if (handleDrag.type.startsWith('resize-')) {
@@ -271,6 +269,23 @@ export function initDrag(svgEl) {
           );
           if (existing) deleteConnection(existing.id);
           createConnection(handleDrag.compId, handleDrag.type, nearest.compId, nearest.pointName);
+          // Sync cord angle/length to the connected position so the ball renders correctly
+          const targetComp = state.components.find(c => c.id === nearest.compId);
+          if (targetComp) {
+            const targetPos = getAttachPx(targetComp)[nearest.pointName];
+            if (targetPos) {
+              const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
+              const isLeft = handleDrag.type === 'cordLeft';
+              const ox = handleDrag.compX + handleDrag.compW / 2 + (isLeft ? -r * 0.7 : r * 0.7);
+              const oy = handleDrag.compY + handleDrag.compH * 0.3;
+              const angle = Math.atan2(targetPos.x - ox, targetPos.y - oy) * 180 / Math.PI;
+              const len = Math.max(5, pxToCm(Math.hypot(targetPos.x - ox, targetPos.y - oy)));
+              const key = isLeft
+                ? { leftCordAngle: angle, leftCordLength: len }
+                : { rightCordAngle: angle, rightCordLength: len };
+              updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, ...key } });
+            }
+          }
           render();
         }
       }
