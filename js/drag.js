@@ -6,6 +6,13 @@ import { findNearestAttachment, createConnection, deleteConnection } from './con
 import { getSurfaces } from './render/environment.js';
 import { getAttachPx } from './render/attachPoints.js';
 
+// Subtypes that must keep their aspect ratio when resized
+const LOCK_ASPECT = new Set([
+  'domino', 'ball', 'toyCar', 'bucket', 'cup',
+  'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
+  'protractor', 'book',
+]);
+
 let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
 let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }
 let handleDrag = null;    // { type, compId, startPx, startPy, origValue }
@@ -108,6 +115,8 @@ export function initDrag(svgEl) {
           compW: cmToPx(comp.width), compH: cmToPx(comp.height),
           origW: comp.width, origH: comp.height,
           origX: comp.x, origY: comp.y,
+          lockAspect: LOCK_ASPECT.has(comp.subtype),
+          aspectRatio: comp.height / comp.width,
         };
         hasMoved = false;
         e.stopPropagation();
@@ -211,11 +220,35 @@ export function initDrag(svgEl) {
         const dxCm = pxToCm(dx), dyCm = pxToCm(dy);
         let newW = handleDrag.origW, newH = handleDrag.origH;
         let newX = handleDrag.origX, newY = handleDrag.origY;
-        const MIN = 6; // cm — keeps components large enough to click on
-        if (corner === 'se') { newW = Math.max(MIN, handleDrag.origW + dxCm); newH = Math.max(MIN, handleDrag.origH + dyCm); }
-        else if (corner === 'sw') { newW = Math.max(MIN, handleDrag.origW - dxCm); newH = Math.max(MIN, handleDrag.origH + dyCm); newX = handleDrag.origX + dxCm; }
-        else if (corner === 'ne') { newW = Math.max(MIN, handleDrag.origW + dxCm); newH = Math.max(MIN, handleDrag.origH - dyCm); newY = handleDrag.origY + dyCm; }
-        else if (corner === 'nw') { newW = Math.max(MIN, handleDrag.origW - dxCm); newH = Math.max(MIN, handleDrag.origH - dyCm); newX = handleDrag.origX + dxCm; newY = handleDrag.origY + dyCm; }
+        const MIN = 18; // cm — keeps components large enough to click on (300% of old 6cm)
+
+        if (corner === 'se') {
+          newW = Math.max(MIN, handleDrag.origW + dxCm);
+          newH = Math.max(MIN, handleDrag.origH + dyCm);
+        } else if (corner === 'sw') {
+          newW = Math.max(MIN, handleDrag.origW - dxCm);
+          newH = Math.max(MIN, handleDrag.origH + dyCm);
+          newX = handleDrag.origX + handleDrag.origW - newW;
+        } else if (corner === 'ne') {
+          newW = Math.max(MIN, handleDrag.origW + dxCm);
+          newH = Math.max(MIN, handleDrag.origH - dyCm);
+          newY = handleDrag.origY + handleDrag.origH - newH;
+        } else if (corner === 'nw') {
+          newW = Math.max(MIN, handleDrag.origW - dxCm);
+          newH = Math.max(MIN, handleDrag.origH - dyCm);
+          newX = handleDrag.origX + handleDrag.origW - newW;
+          newY = handleDrag.origY + handleDrag.origH - newH;
+        }
+
+        // Lock aspect ratio for components that have a fixed physical shape
+        if (handleDrag.lockAspect) {
+          newH = newW * handleDrag.aspectRatio;
+          if (newH < MIN) { newH = MIN; newW = newH / handleDrag.aspectRatio; }
+          // Recalculate anchor-edge positions after aspect-ratio correction
+          if (corner === 'sw' || corner === 'nw') newX = handleDrag.origX + handleDrag.origW - newW;
+          if (corner === 'ne' || corner === 'nw') newY = handleDrag.origY + handleDrag.origH - newH;
+        }
+
         updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
       }
       render();
