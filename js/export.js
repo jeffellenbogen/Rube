@@ -1,5 +1,6 @@
 import { getState, loadState } from './state.js';
 import { cmToPx } from './canvas.js';
+import { getRequirements } from './tracker.js';
 
 const KEYWORD = 'RubeGoldbergState';
 const PNG_SIG = [137,80,78,71,13,10,26,10];
@@ -112,15 +113,17 @@ export async function downloadPNG(svgEl) {
     return { machines: toList(machines), materials: toList(materials) };
   })();
 
-  // === Page: landscape letter at 150 DPI (11" × 8.5") ===
+  // === Page: landscape letter at 300 DPI (11" × 8.5") ===
+  // Logical layout coordinates stay at 150 DPI; canvas is 2× for crispness.
   const PAGE_W = 1650, PAGE_H = 1275;
   const MARGIN = 54;
   const HEADER_H = 130;
   const FRAME = MARGIN - 12;
 
   const canvas = document.createElement('canvas');
-  canvas.width = PAGE_W; canvas.height = PAGE_H;
+  canvas.width = PAGE_W * 2; canvas.height = PAGE_H * 2;
   const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
   const mono = size => `bold ${size}px "Courier New", Courier, monospace`;
 
   // White background + outer frame
@@ -234,8 +237,27 @@ export async function downloadPNG(svgEl) {
     pY += 10;
   }
 
+  const req = getRequirements(state);
+
   panelSection('SIMPLE MACHINES', bom.machines);
   panelSection('MATERIALS', bom.materials);
+
+  // Steps counter
+  ctx.font = `bold 10px "Courier New", Courier, monospace`;
+  ctx.fillStyle = '#4a7a9a';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('STEPS', panelX + PAD, pY);
+  pY += 3;
+  ctx.strokeStyle = '#c0d4e8';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 10); ctx.lineTo(panelX + PANEL_W - PAD, pY + 10); ctx.stroke();
+  pY += 14;
+  ctx.font = `11px "Courier New", Courier, monospace`;
+  ctx.fillStyle = req.stepsMet ? '#00c9a7' : '#1a1a3a';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${req.steps} of 5+`, panelX + PAD + 4, pY);
+  pY += 15;
 
   // ── SVG CANVAS ───────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
