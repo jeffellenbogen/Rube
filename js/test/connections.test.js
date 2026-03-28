@@ -144,6 +144,49 @@ test('car (snap on lever) → pulley → domino chain = 3 steps', () => {
   assertEqual(countSteps({ components, connections }), 3);
 });
 
+// ── Material → machine collapsing ────────────────────────────────────────────
+
+test('material directly triggering machine = 1 step (toyCar→lever)', () => {
+  assertEqual(countSteps({
+    components: [
+      { id: 's', subtype: 'start' }, { id: 'f', subtype: 'finish' },
+      { id: 'car', subtype: 'toyCar', type: 'material' },
+      { id: 'lev', subtype: 'lever', type: 'simple_machine' }
+    ],
+    connections: [mkConn('s', 'car'), mkConn('car', 'lev'), mkConn('lev', 'f')]
+  }), 1);
+});
+
+test('toyCar → lever → pulley → domino chain = 3 steps (real-world design)', () => {
+  const components = [
+    { id: 's', subtype: 'start' }, { id: 'f', subtype: 'finish' },
+    { id: 'car', subtype: 'toyCar', type: 'material' },
+    { id: 'lev', subtype: 'lever', type: 'simple_machine' },
+    { id: 'pul', subtype: 'pulley', type: 'simple_machine' },
+    { id: 'd1', subtype: 'domino', type: 'material' },
+    { id: 'd2', subtype: 'domino', type: 'material' },
+    { id: 'd3', subtype: 'domino', type: 'material' }
+  ];
+  const connections = [
+    mkConn('s', 'car'), mkConn('car', 'lev'),
+    mkConn('lev', 'pul'),
+    mkConn('pul', 'd1'), mkConn('d1', 'd2'), mkConn('d2', 'd3'),
+    mkConn('d3', 'f')
+  ];
+  assertEqual(countSteps({ components, connections }), 3);
+});
+
+test('machine→material does NOT merge (pulley output to dominos = separate step)', () => {
+  assertEqual(countSteps({
+    components: [
+      { id: 's', subtype: 'start' }, { id: 'f', subtype: 'finish' },
+      { id: 'pul', subtype: 'pulley', type: 'simple_machine' },
+      { id: 'd1', subtype: 'domino', type: 'material' }
+    ],
+    connections: [mkConn('s', 'pul'), mkConn('pul', 'd1'), mkConn('d1', 'f')]
+  }), 2);
+});
+
 // ── Branching: longest path wins ─────────────────────────────────────────────
 
 test('forked paths: longest branch wins, parallel branch not double-counted', () => {

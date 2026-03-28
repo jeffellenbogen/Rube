@@ -27,12 +27,19 @@ export function countSteps(state) {
   }
   const isSnap = (a, b) => snapPairs.has([a, b].sort().join('|'));
 
+  // Build directed adjacency for material→machine merge detection
+  const dirAdj = {};
+  for (const comp of state.components) dirAdj[comp.id] = new Set();
+  for (const conn of state.connections) dirAdj[conn.fromId]?.add(conn.toId);
+
   const compById = Object.fromEntries(state.components.map(c => [c.id, c]));
 
   // ── Step 1: Build step-groups ────────────────────────────────────────────
   // Group non-START, non-FINISH nodes where:
-  //   • same subtype AND directly connected  →  same group
-  //   • snap-connected (any subtype)         →  same group
+  //   • same subtype AND directly connected        →  same group
+  //   • snap-connected (any subtype)               →  same group
+  //   • material with directed link to a machine   →  same group
+  //     (e.g. toyCar → lever = one step, not two)
   const groupOf = {};   // nodeId → group index
   const groups = [];    // array of Sets of node IDs
 
@@ -50,10 +57,15 @@ export function countSteps(state) {
       if (group.has(cur)) continue;
       group.add(cur);
       const curSubtype = compById[cur]?.subtype;
+      const curType = compById[cur]?.type;
       for (const nb of adj[cur] || []) {
         if (group.has(nb) || groupOf[nb] !== undefined) continue;
         if (!eligibleSet.has(nb)) continue;
-        if (compById[nb]?.subtype === curSubtype || isSnap(cur, nb)) {
+        const nbType = compById[nb]?.type;
+        const sameSubtype = compById[nb]?.subtype === curSubtype;
+        const matToMachine = curType === 'material' && nbType === 'simple_machine' && dirAdj[cur]?.has(nb);
+        const machineFromMat = curType === 'simple_machine' && nbType === 'material' && dirAdj[nb]?.has(cur);
+        if (sameSubtype || isSnap(cur, nb) || matToMachine || machineFromMat) {
           queue.push(nb);
         }
       }
