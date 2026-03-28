@@ -267,14 +267,14 @@ export function renderUI(state, layer) {
 
       const lHandle = document.createElementNS(NS, 'circle');
       lHandle.setAttribute('cx', lPos.x); lHandle.setAttribute('cy', lPos.y);
-      lHandle.setAttribute('r', 5); lHandle.setAttribute('fill', '#00c9a7'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1);
+      lHandle.setAttribute('r', 8); lHandle.setAttribute('fill', '#00c9a7'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1.5);
       lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
       lHandle.setAttribute('cursor', 'move');
       layer.appendChild(lHandle);
 
       const rHandle = document.createElementNS(NS, 'circle');
       rHandle.setAttribute('cx', rPos.x); rHandle.setAttribute('cy', rPos.y);
-      rHandle.setAttribute('r', 5); rHandle.setAttribute('fill', '#00c9a7'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1);
+      rHandle.setAttribute('r', 8); rHandle.setAttribute('fill', '#00c9a7'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1.5);
       rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
       rHandle.setAttribute('cursor', 'move');
       layer.appendChild(rHandle);

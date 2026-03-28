@@ -131,6 +131,33 @@ export function initDrag(svgEl) {
     const state = getState();
     const item = state.components.find(c => c.id === id) || state.environment.find(ev => ev.id === id);
     if (!item) return;
+
+    // Pulley: clicks near cord ends initiate cord handle drag, not body drag
+    if (item.subtype === 'pulley') {
+      const rect = svgEl.getBoundingClientRect();
+      const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
+      const pts = getAttachPx(item);
+      for (const name of ['cordLeft', 'cordRight']) {
+        const pt = pts[name];
+        if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
+          selected = id;
+          handleDrag = {
+            type: name, compId: id,
+            startPx: clickX, startPy: clickY,
+            origSubParts: { ...item.subParts },
+            compX: cmToPx(item.x), compY: cmToPx(item.y),
+            compW: cmToPx(item.width), compH: cmToPx(item.height),
+            origW: item.width, origH: item.height,
+            origX: item.x, origY: item.y,
+          };
+          hasMoved = false;
+          render();
+          e.stopPropagation();
+          return;
+        }
+      }
+    }
+
     selected = id;
     render();
     const pos = screenToCanvas(e.clientX, e.clientY);
