@@ -77,8 +77,8 @@ function drawConnectingIllustration(svg) {
   // Ball
   el('circle',  { cx:100, cy:48, r:12, fill:'#f5f5f5', stroke:'#ccc', 'stroke-width':1 }, svg);
   // Connector dots
-  el('circle',  { cx:54, cy:58, r:5, fill:'#ff7b2e', stroke:'#c0561e', 'stroke-width':1 }, svg);
-  el('circle',  { cx:88, cy:48, r:5, fill:'#ff7b2e', stroke:'#c0561e', 'stroke-width':1 }, svg);
+  el('circle',  { cx:54, cy:58, r:5, fill:'#00c9a7', stroke:'#009a80', 'stroke-width':1 }, svg);
+  el('circle',  { cx:88, cy:48, r:5, fill:'#00c9a7', stroke:'#009a80', 'stroke-width':1 }, svg);
   // Link line
   el('line', { x1:54, y1:58, x2:88, y2:48, stroke:'#00c9a7', 'stroke-width':2, 'stroke-dasharray':'4 2' }, svg);
   const lbl = document.createElementNS(NS, 'text');
@@ -165,7 +165,7 @@ const GUIDE_CARDS = [
   },
   {
     title: 'Connecting Steps',
-    description: 'Click the <em>orange connector dot</em> on one component, then click a dot on another to link them. Each link is one step in your machine. You need at least <em>5 connected steps</em> to meet the goal.',
+    description: 'Click the <em>teal connector dot</em> on one component, then click a dot on another to link them. Each link is one step in your machine. You need at least <em>5 connected steps</em> to meet the goal.',
     draw(svg) { drawConnectingIllustration(svg); }
   },
   {
