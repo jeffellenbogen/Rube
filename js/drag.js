@@ -132,7 +132,7 @@ export function initDrag(svgEl) {
     const item = state.components.find(c => c.id === id) || state.environment.find(ev => ev.id === id);
     if (!item) return;
 
-    // Pulley: clicks near cord ends initiate cord handle drag, not body drag
+    // Pulley: clicks near cord ends initiate connection drag, not body drag
     if (item.subtype === 'pulley') {
       const rect = svgEl.getBoundingClientRect();
       const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
@@ -141,16 +141,8 @@ export function initDrag(svgEl) {
         const pt = pts[name];
         if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
           selected = id;
-          handleDrag = {
-            type: name, compId: id,
-            startPx: clickX, startPy: clickY,
-            origSubParts: { ...item.subParts },
-            compX: cmToPx(item.x), compY: cmToPx(item.y),
-            compW: cmToPx(item.width), compH: cmToPx(item.height),
-            origW: item.width, origH: item.height,
-            origX: item.x, origY: item.y,
-          };
-          hasMoved = false;
+          const startPos = screenToCanvas(e.clientX, e.clientY);
+          connDrag = { fromId: id, fromPoint: name, curPx: cmToPx(startPos.x), curPy: cmToPx(startPos.y) };
           render();
           e.stopPropagation();
           return;
@@ -256,15 +248,8 @@ export function initDrag(svgEl) {
     const upX = e.clientX - rect.left, upY = e.clientY - rect.top;
 
     if (handleDrag) {
-      const moved = hasMoved;
-      const { type, compId } = handleDrag;
       handleDrag = null;
       hasMoved = false;
-      // Cord ends: use mouse release position to snap-connect (30px radius)
-      if (moved && (type === 'cordLeft' || type === 'cordRight')) {
-        const nearest = findNearestAttachment(getState(), upX, upY, compId, 30);
-        if (nearest) { createConnection(compId, type, nearest.compId, nearest.pointName, true); render(); }
-      }
       return;
     }
     if (connDrag) {

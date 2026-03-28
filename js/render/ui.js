@@ -186,9 +186,11 @@ export function renderUI(state, layer) {
   }
 
   // Attachment point dots (for selected component only)
+  // Pulley cord ends are rendered as larger balls below — skip them here
   if (state.components.find(c => c.id === selId)) {
     const pts = getAttachPx(comp);
     for (const [name, pos] of Object.entries(pts)) {
+      if (comp.subtype === 'pulley' && (name === 'cordLeft' || name === 'cordRight')) continue;
       const dot = document.createElementNS(NS, 'circle');
       dot.setAttribute('cx', pos.x); dot.setAttribute('cy', pos.y);
       dot.setAttribute('r', 5); dot.setAttribute('fill', '#00c9a7');
@@ -265,19 +267,15 @@ export function renderUI(state, layer) {
       const lPos = L(-pr * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad));
       const rPos = L( pr * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad));
 
-      const lHandle = document.createElementNS(NS, 'circle');
-      lHandle.setAttribute('cx', lPos.x); lHandle.setAttribute('cy', lPos.y);
-      lHandle.setAttribute('r', 8); lHandle.setAttribute('fill', '#00c9a7'); lHandle.setAttribute('stroke', '#fff'); lHandle.setAttribute('stroke-width', 1.5);
-      lHandle.dataset.handle = 'cordLeft'; lHandle.dataset.compId = selId;
-      lHandle.setAttribute('cursor', 'move');
-      layer.appendChild(lHandle);
-
-      const rHandle = document.createElementNS(NS, 'circle');
-      rHandle.setAttribute('cx', rPos.x); rHandle.setAttribute('cy', rPos.y);
-      rHandle.setAttribute('r', 8); rHandle.setAttribute('fill', '#00c9a7'); rHandle.setAttribute('stroke', '#fff'); rHandle.setAttribute('stroke-width', 1.5);
-      rHandle.dataset.handle = 'cordRight'; rHandle.dataset.compId = selId;
-      rHandle.setAttribute('cursor', 'move');
-      layer.appendChild(rHandle);
+      for (const [pos, name] of [[lPos, 'cordLeft'], [rPos, 'cordRight']]) {
+        const ball = document.createElementNS(NS, 'circle');
+        ball.setAttribute('cx', pos.x); ball.setAttribute('cy', pos.y);
+        ball.setAttribute('r', 8); ball.setAttribute('fill', '#00c9a7');
+        ball.setAttribute('stroke', '#fff'); ball.setAttribute('stroke-width', 1.5);
+        ball.dataset.attachPoint = name; ball.dataset.compId = selId;
+        ball.setAttribute('cursor', 'crosshair');
+        layer.appendChild(ball);
+      }
     }
 
     if (selComp.subtype === 'lever') {

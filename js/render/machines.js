@@ -1,4 +1,5 @@
 import { cmToPx } from '../canvas.js';
+import { getAttachPx } from './attachPoints.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const ORANGE = '#ff7b2e';
@@ -15,7 +16,7 @@ export function renderMachines(state, layer) {
   layer.innerHTML = '';
   for (const comp of state.components) {
     if (comp.type !== 'simple_machine') continue;
-    const g = drawMachine(comp);
+    const g = drawMachine(comp, state);
     if (g) layer.appendChild(g);
   }
 }
@@ -29,7 +30,7 @@ function applyTransform(g, comp) {
   g.setAttribute('transform', `translate(${cx},${cy}) scale(${fx},1) rotate(${deg}) translate(${-cx},${-cy})`);
 }
 
-function drawMachine(comp) {
+function drawMachine(comp, state) {
   const g = document.createElementNS(NS, 'g');
   g.dataset.id = comp.id;
   g.dataset.type = comp.subtype;
@@ -39,7 +40,7 @@ function drawMachine(comp) {
 
   switch (comp.subtype) {
     case 'lever':     drawLever(g, x, y, w, h, comp.subParts); break;
-    case 'pulley':    drawPulley(g, x, y, w, h, comp.subParts); break;
+    case 'pulley':    drawPulley(g, x, y, w, h, comp.subParts, comp.id, state); break;
     case 'inclinedPlane': drawInclinedPlane(g, x, y, w, h, comp.subParts); break;
     case 'wheelAxle': drawWheelAxle(g, x, y, w, h, comp.subParts); break;
     case 'wedge':     drawWedge(g, x, y, w, h); break;
@@ -88,7 +89,7 @@ function drawLever(g, x, y, w, h, { fulcrumOffset = 0.5, tiltSide = 'none' } = {
   el('polygon', { points: `${fx},${fulcrumTipY} ${fx-h*0.4},${y+h} ${fx+h*0.4},${y+h}`, fill: ORANGE }, g);
 }
 
-function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0, cordPixels, ballRadius = 5 } = {}) {
+function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, leftCordAngle = 0, rightCordAngle = 0, cordPixels, ballRadius = 5 } = {}, compId, state) {
   const cx = x + w/2, cy = y + h*0.3, r = Math.min(w,h)*0.35;
   // Wheel
   el('circle', { cx, cy, r, fill: '#888', stroke: ORANGE, 'stroke-width': 3 }, g);
@@ -104,8 +105,30 @@ function drawPulley(g, x, y, w, h, { leftCordLength = 20, rightCordLength = 20, 
   const rRad = rightCordAngle * Math.PI / 180;
   const lox = cx - r*0.7, loy = cy;
   const rox = cx + r*0.7, roy = cy;
-  const lex = lox + lcl * Math.sin(lRad), ley = loy + lcl * Math.cos(lRad);
-  const rex = rox + rcl * Math.sin(rRad), rey = roy + rcl * Math.cos(rRad);
+
+  // If a cord end is connected, draw to the connected item's attachment point
+  function connectedEnd(pointName) {
+    if (!state || !compId) return null;
+    const conn = state.connections.find(c =>
+      (c.fromId === compId && c.fromPoint === pointName) ||
+      (c.toId   === compId && c.toPoint   === pointName)
+    );
+    if (!conn) return null;
+    const otherId = conn.fromId === compId ? conn.toId   : conn.fromId;
+    const otherPt = conn.fromId === compId ? conn.toPoint : conn.fromPoint;
+    const other = state.components.find(c => c.id === otherId);
+    if (!other) return null;
+    const pt = getAttachPx(other)[otherPt];
+    return pt || null;
+  }
+
+  const lConn = connectedEnd('cordLeft');
+  const rConn = connectedEnd('cordRight');
+  const lex = lConn ? lConn.x : lox + lcl * Math.sin(lRad);
+  const ley = lConn ? lConn.y : loy + lcl * Math.cos(lRad);
+  const rex = rConn ? rConn.x : rox + rcl * Math.sin(rRad);
+  const rey = rConn ? rConn.y : roy + rcl * Math.cos(rRad);
+
   el('line', { x1: lox, y1: loy, x2: lex, y2: ley, stroke: '#ccc', 'stroke-width': 2 }, g);
   el('line', { x1: rox, y1: roy, x2: rex, y2: rey, stroke: '#ccc', 'stroke-width': 2 }, g);
   // Yellow balls at cord ends — visible when not selected; replaced by teal when selected
