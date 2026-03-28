@@ -19,6 +19,8 @@ const SPECIAL_LIMITS = {
   matchboxTrack: { min: 0.5, max: 3.5 },
 };
 
+const MIN = 11; // cm — keeps components large enough to click on
+
 // Default dimensions (cm) per subtype — max resize = 7× these values
 const DEFAULTS = {
   lever: { w: 60, h: 16 }, pulley: { w: 15, h: 20 }, inclinedPlane: { w: 80, h: 40 },
@@ -258,9 +260,9 @@ export function initDrag(svgEl) {
         const dyCm = pxToCm(-dx * fX * Math.sin(rad) + dy * Math.cos(rad));
         let newW = handleDrag.origW, newH = handleDrag.origH;
         let newX = handleDrag.origX, newY = handleDrag.origY;
-        const MIN = 11; // cm — keeps components large enough to click on
 
         const { maxW, maxH } = handleDrag;
+        // MIN is defined at module level (const MIN = 11)
 
         if (corner === 'se') {
           newW = Math.min(maxW, Math.max(MIN, handleDrag.origW + dxCm));
@@ -393,38 +395,7 @@ export function initDrag(svgEl) {
       return;
     }
     if (dragging) {
-      const dragId = dragging.id;
-      const wasEnv = dragging.isEnv;
       dragging = null; window.__dragActive = false; hasMoved = false;
-      // Component body drag: check mouse release position against all attachment points (40px radius).
-      // Find target connector near where the user dropped, then pair with closest point on dragged comp.
-      if (!wasEnv) {
-        const state = getState();
-        const nearest = findNearestAttachment(state, upX, upY, dragId, 16);
-        if (nearest) {
-          const comp = state.components.find(c => c.id === dragId);
-          const targetComp = state.components.find(c => c.id === nearest.compId);
-          if (comp && targetComp) {
-            const targetPos = getAttachPx(targetComp)[nearest.pointName];
-            const myPts = getAttachPx(comp);
-            let bestPt = null, bestDist = Infinity;
-            for (const [ptName, ptPos] of Object.entries(myPts)) {
-              const d = Math.hypot(ptPos.x - targetPos.x, ptPos.y - targetPos.y);
-              if (d < bestDist) { bestDist = d; bestPt = ptName; }
-            }
-            if (bestPt) {
-              // Shift the component so its attach point aligns exactly with the target connector
-              const fromPos = myPts[bestPt];
-              updateComponent(dragId, {
-                x: comp.x + pxToCm(targetPos.x - fromPos.x),
-                y: comp.y + pxToCm(targetPos.y - fromPos.y),
-              });
-              createConnection(dragId, bestPt, nearest.compId, nearest.pointName, true);
-              render();
-            }
-          }
-        }
-      }
     }
   });
 }
