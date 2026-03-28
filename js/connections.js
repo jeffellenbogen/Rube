@@ -88,38 +88,39 @@ export function countSteps(state) {
 
   if (startGroups.size === 0) return 0;
 
-  // When FINISH has no incoming connections, count longest path from START
-  // to any dead-end (backwards-compatible with designs that don't wire FINISH).
-  const requireFinish = finishGroups.size > 0;
-
-  // DEBUG (temporary) — open browser DevTools Console to see this
-  console.log('[countSteps] groups:', groups.map((g,i) => `g${i}={${[...g].map(id=>compById[id]?.subtype).join(',')}}`));
-  console.log('[countSteps] startGroups:', [...startGroups], 'finishGroups:', [...finishGroups], 'requireFinish:', requireFinish);
-  console.log('[countSteps] gAdj:', gAdj.map((s,i) => `g${i}->[${[...s].map(n=>'g'+n).join(',')}]`));
-
-  // ── Step 3: Longest path in group graph from startGroups to finishGroups ─
+  // ── Step 3: Longest path in group graph ──────────────────────────────────
   // DFS with visited-set for cycle safety.
-  // Returns: number of groups from `gi` (inclusive) to a valid terminal.
-  //          -1 if no valid terminal reachable.
-  function dfs(gi, visited) {
-    if (requireFinish && finishGroups.has(gi)) return 1;
+  // useFinish=true: stop and count at finishGroups; return -1 if not reached.
+  // useFinish=false: count dead-ends as valid terminals.
+  function dfs(gi, visited, useFinish) {
+    if (useFinish && finishGroups.has(gi)) return 1;
     let best = -1;
     for (const next of gAdj[gi]) {
       if (visited.has(next)) continue;
       visited.add(next);
-      const sub = dfs(next, visited);
+      const sub = dfs(next, visited, useFinish);
       visited.delete(next);
       if (sub !== -1) best = Math.max(best, 1 + sub);
     }
-    // No FINISH required: treat dead-ends as valid terminals
-    if (best === -1 && !requireFinish) return 1;
+    if (best === -1 && !useFinish) return 1;
     return best;
   }
 
+  // When FINISH is connected: try to count path to FINISH.
+  // If FINISH group isn't reachable from the start chain (incomplete design),
+  // fall back to dead-end counting so we always show something useful.
+  const useFinish = finishGroups.size > 0;
   let maxSteps = 0;
   for (const sg of startGroups) {
-    const result = dfs(sg, new Set([sg]));
+    const result = dfs(sg, new Set([sg]), useFinish);
     if (result !== -1) maxSteps = Math.max(maxSteps, result);
+  }
+  if (useFinish && maxSteps === 0) {
+    // FINISH is wired but unreachable — fall back to dead-end count
+    for (const sg of startGroups) {
+      const result = dfs(sg, new Set([sg]), false);
+      if (result !== -1) maxSteps = Math.max(maxSteps, result);
+    }
   }
   return maxSteps;
 }
