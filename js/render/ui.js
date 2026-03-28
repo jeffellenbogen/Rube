@@ -272,8 +272,8 @@ export function renderUI(state, layer) {
         ball.setAttribute('cx', pos.x); ball.setAttribute('cy', pos.y);
         ball.setAttribute('r', 8); ball.setAttribute('fill', '#00c9a7');
         ball.setAttribute('stroke', '#fff'); ball.setAttribute('stroke-width', 1.5);
-        ball.dataset.attachPoint = name; ball.dataset.compId = selId;
-        ball.setAttribute('cursor', 'crosshair');
+        ball.dataset.handle = name; ball.dataset.compId = selId;
+        ball.setAttribute('cursor', 'grab');
         layer.appendChild(ball);
       }
     }
