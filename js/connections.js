@@ -8,7 +8,7 @@ export function countSteps(state) {
   if (!startComp) return 0;
   const finishId = state.components.find(c => c.subtype === 'finish')?.id;
 
-  // Build undirected adjacency so reachability works regardless of connection direction
+  // Build undirected adjacency (all connections) for reachability
   const adj = {};
   for (const comp of state.components) adj[comp.id] = [];
   for (const conn of state.connections) {
@@ -16,7 +16,20 @@ export function countSteps(state) {
     adj[conn.toId]?.push(conn.fromId);
   }
 
-  // BFS from Start — collect every reachable node except Start and Finish themselves
+  // Snap-connected pairs merge into the same step regardless of subtype
+  // (e.g. a car sitting on an inclined plane = one action, not two)
+  const snapPairs = new Set();
+  for (const conn of state.connections) {
+    if (conn.snap) {
+      const key = [conn.fromId, conn.toId].sort().join('|');
+      snapPairs.add(key);
+    }
+  }
+  function isSnap(a, b) {
+    return snapPairs.has([a, b].sort().join('|'));
+  }
+
+  // BFS from Start — collect every reachable node except Start and Finish
   const reachable = new Set();
   const visited = new Set([startComp.id]);
   const queue = [startComp.id];
@@ -30,8 +43,12 @@ export function countSteps(state) {
     }
   }
 
-  // Group same-subtype components that are directly connected into one step.
-  // A row of dominoes all linked = 1 step; a lever = its own step; etc.
+  // Group into steps:
+  //   • Snap-connected components (any subtype) → same step
+  //     (a car on a ramp is one action, not two)
+  //   • Same-subtype directly-connected components → same step
+  //     (a row of dominoes is one action)
+  //   • Everything else → separate step
   const compById = Object.fromEntries(state.components.map(c => [c.id, c]));
   const stepSeen = new Set();
   let steps = 0;
@@ -39,13 +56,14 @@ export function countSteps(state) {
   for (const nodeId of reachable) {
     if (stepSeen.has(nodeId)) continue;
     const subtype = compById[nodeId]?.subtype;
-    // BFS within the same-subtype connected cluster
     const gq = [nodeId];
     stepSeen.add(nodeId);
     while (gq.length) {
       const cur = gq.shift();
+      const curSubtype = compById[cur]?.subtype;
       for (const nb of adj[cur] || []) {
-        if (!stepSeen.has(nb) && reachable.has(nb) && compById[nb]?.subtype === subtype) {
+        if (stepSeen.has(nb) || !reachable.has(nb)) continue;
+        if (compById[nb]?.subtype === curSubtype || isSnap(cur, nb)) {
           stepSeen.add(nb);
           gq.push(nb);
         }
