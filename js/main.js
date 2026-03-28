@@ -11,6 +11,7 @@ import { initDrag, getSelected, setSelected } from './drag.js';
 import { deleteConnection } from './connections.js';
 import { downloadPNG, uploadPNG } from './export.js';
 import { initHelp } from './help.js';
+import { initWelcome } from './welcome.js';
 
 const CATALOG = {
   machines: [
@@ -320,6 +321,7 @@ document.querySelectorAll('.collapse-btn').forEach(btn => {
 
 buildLibrary();
 initHelp();
+initWelcome();
 
 function initMarkers() {
   const state = getState();

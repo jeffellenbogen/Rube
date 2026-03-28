@@ -11,6 +11,10 @@
 <body>
   <header id="toolbar">
     <input id="team-name" type="text" value="Team Name" spellcheck="false">
+    <div id="site-title">
+      <span id="site-title-brand">RUBE GOLDBERG</span>
+      <span id="site-title-sub">Planning Site</span>
+    </div>
     <div class="toolbar-actions">
       <button id="btn-undo" disabled>Undo</button>
       <button id="btn-redo" disabled>Redo</button>
@@ -54,6 +58,49 @@
       <div id="version-label">v2.4.0</div>
     </aside>
   </main>
+  <!-- Welcome overlay -->
+  <div id="welcome-modal">
+    <div id="welcome-backdrop"></div>
+    <div id="welcome-panel">
+      <!-- Left: illustration -->
+      <div id="welcome-left">
+        <svg width="130" height="110" xmlns="http://www.w3.org/2000/svg">
+          <!-- Floor -->
+          <line x1="0" y1="90" x2="130" y2="90" stroke="#4a7a9a" stroke-width="2"/>
+          <!-- Lever bar -->
+          <rect x="8" y="66" width="38" height="6" fill="#8B4513" rx="1"/>
+          <!-- Lever fulcrum -->
+          <polygon points="27,72 31,84 23,84" fill="#8B4513"/>
+          <!-- Ball -->
+          <circle cx="60" cy="60" r="9" fill="#e8e8e8" stroke="#aaa" stroke-width="1"/>
+          <!-- Inclined plane -->
+          <polygon points="76,90 118,90 118,52" fill="#7a8a9a" stroke="#556" stroke-width="1"/>
+          <!-- Domino -->
+          <rect x="82" y="80" width="7" height="12" fill="#1a3a5c" stroke="#4a7a9a" stroke-width="1" rx="1"/>
+          <!-- Arrows: lever → ball -->
+          <line x1="46" y1="69" x2="57" y2="64" stroke="#00c9a7" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <polygon points="57,64 51,62 52,68" fill="#00c9a7"/>
+          <!-- Arrows: ball → plane -->
+          <line x1="69" y1="64" x2="76" y2="72" stroke="#00c9a7" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <polygon points="76,72 70,70 72,76" fill="#00c9a7"/>
+        </svg>
+        <div id="welcome-left-caption">Build a chain reaction<br>with simple machines</div>
+      </div>
+      <!-- Right: form -->
+      <div id="welcome-right">
+        <div id="welcome-brand">RUBE GOLDBERG</div>
+        <div id="welcome-title">Planning Site</div>
+        <div id="welcome-desc">Use 3+ simple machines and<br>5+ connected steps.</div>
+        <div class="welcome-field-label">TEAM NAME</div>
+        <input id="welcome-team-input" type="text" placeholder="e.g. Team Rocket" autocomplete="off" spellcheck="false">
+        <div id="welcome-buttons">
+          <button id="welcome-start">START →</button>
+          <button id="welcome-help">? Help</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="help-modal" class="help-hidden">
     <div id="help-backdrop"></div>
     <div id="help-panel">
