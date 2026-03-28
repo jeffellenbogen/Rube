@@ -15,6 +15,7 @@ export function initWelcome() {
   }
 
   document.getElementById('welcome-start').addEventListener('click', dismiss);
+  document.getElementById('welcome-close').addEventListener('click', dismiss);
 
   welcomeInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') dismiss();
