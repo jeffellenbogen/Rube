@@ -13,6 +13,12 @@ const LOCK_ASPECT = new Set([
   'protractor', 'book', 'matchboxTrack',
 ]);
 
+// Subtypes with custom min/max fractions of their default size (overrides global 7× max and MIN floor)
+const SPECIAL_LIMITS = {
+  yardstick:    { min: 0.5, max: 3.5 },
+  matchboxTrack: { min: 0.5, max: 3.5 },
+};
+
 // Default dimensions (cm) per subtype — max resize = 7× these values
 const DEFAULTS = {
   lever: { w: 60, h: 16 }, pulley: { w: 15, h: 20 }, inclinedPlane: { w: 80, h: 40 },
@@ -128,8 +134,9 @@ export function initDrag(svgEl) {
           origX: comp.x, origY: comp.y,
           lockAspect: LOCK_ASPECT.has(comp.subtype),
           aspectRatio: comp.height / comp.width,
-          maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * 7,
-          maxH: (DEFAULTS[comp.subtype]?.h ?? Infinity) * 7,
+          minW: SPECIAL_LIMITS[comp.subtype] ? (DEFAULTS[comp.subtype]?.w ?? 0) * SPECIAL_LIMITS[comp.subtype].min : MIN,
+          maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
+          maxH: (DEFAULTS[comp.subtype]?.h ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
         };
         hasMoved = false;
         e.stopPropagation();
@@ -260,7 +267,7 @@ export function initDrag(svgEl) {
         // items (car track, yardstick) the height is naturally smaller than 11cm
         // and forcing it up causes the width to jump to unreasonably large values.
         if (handleDrag.lockAspect) {
-          newW = Math.max(MIN, Math.min(maxW, newW));
+          newW = Math.max(handleDrag.minW, Math.min(maxW, newW));
           newH = newW * handleDrag.aspectRatio;
           if (newH > maxH) { newH = maxH; newW = newH / handleDrag.aspectRatio; }
           // Recalculate anchor-edge positions after aspect-ratio correction
