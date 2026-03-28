@@ -43,10 +43,24 @@ export function renderConnections(state, layer) {
       continue;
     }
 
-    // Pulley cord connections are drawn by machines.js (drawPulley) as the cord visual.
-    // Rendering a separate line here would create an orphan strand when the connected
-    // object is moved (the cord end position is static but the object end is dynamic).
-    if (CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)) continue;
+    // Pulley cord connections: no line (machines.js draws the cord), just a teal × at p2
+    if (CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)) {
+      const del = document.createElementNS(NS, 'g');
+      del.dataset.action = 'delete-conn'; del.dataset.connId = conn.id;
+      del.setAttribute('cursor', 'pointer');
+      const dc = document.createElementNS(NS, 'circle');
+      dc.setAttribute('cx', p2.x); dc.setAttribute('cy', p2.y - 12);
+      dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
+      dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
+      const dt = document.createElementNS(NS, 'text');
+      dt.setAttribute('x', p2.x); dt.setAttribute('y', p2.y - 12);
+      dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
+      dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
+      del.appendChild(dc); del.appendChild(dt);
+      g.appendChild(del);
+      layer.appendChild(g);
+      continue;
+    }
 
     const isCord = CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
     if (from.subtype === 'matchboxTrack' && to.subtype === 'matchboxTrack') continue;
@@ -61,18 +75,17 @@ export function renderConnections(state, layer) {
     }
     g.appendChild(l);
 
-    // Delete button — red × at midpoint
-    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    // Teal × at p2 (right/far endpoint of the connection)
     const del = document.createElementNS(NS, 'g');
     del.dataset.action = 'delete-conn';
     del.dataset.connId = conn.id;
     del.setAttribute('cursor', 'pointer');
     const dc = document.createElementNS(NS, 'circle');
-    dc.setAttribute('cx', mx); dc.setAttribute('cy', my);
+    dc.setAttribute('cx', p2.x); dc.setAttribute('cy', p2.y - 12);
     dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
     dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
     const dt = document.createElementNS(NS, 'text');
-    dt.setAttribute('x', mx); dt.setAttribute('y', my);
+    dt.setAttribute('x', p2.x); dt.setAttribute('y', p2.y - 12);
     dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
     dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
     del.appendChild(dc); del.appendChild(dt);

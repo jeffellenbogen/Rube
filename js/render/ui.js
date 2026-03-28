@@ -47,9 +47,9 @@ export function renderUI(state, layer) {
   const aMaxY = Math.max(...rotPts.map(p => p.y));
   const aMidX = (aMinX + aMaxX) / 2;
 
-  // Delete button — always screen-top-center of visual bounds
+  // Delete button — left side of component, vertically centered
   if (comp.subtype !== 'start' && comp.subtype !== 'finish') {
-    const pos = { x: aMidX, y: aMinY - pad };
+    const pos = { x: aMinX - pad - 8, y: (aMinY + aMaxY) / 2 };
     const btn = document.createElementNS(NS, 'g');
     btn.dataset.action = 'delete'; btn.dataset.targetId = selId;
     btn.setAttribute('cursor', 'pointer');
@@ -65,9 +65,9 @@ export function renderUI(state, layer) {
     layer.appendChild(btn);
   }
 
-  // Comment bubble button — always screen-top-left of visual bounds
+  // Comment bubble button — top-center of visual bounds
   {
-    const pos = { x: aMinX - pad - 8, y: aMinY - pad };
+    const pos = { x: aMidX, y: aMinY - pad };
     const commentBtn = document.createElementNS(NS, 'g');
     commentBtn.dataset.action = 'comment'; commentBtn.dataset.targetId = selId;
     commentBtn.setAttribute('cursor', 'pointer');
