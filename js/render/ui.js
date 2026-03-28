@@ -29,7 +29,7 @@ export function renderUI(state, layer) {
   }
 
   // String: render end-point handle balls instead of standard ring/handles
-  const isString = isComp && comp.subtype === 'string';
+  const isString = comp.subtype === 'string' && !!state.components.find(c => c.id === selId);
   if (isString) {
     const { x1, y1, x2, y2 } = getStringEndpoints(comp, state);
     // Selection highlight line
