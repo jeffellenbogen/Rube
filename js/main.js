@@ -23,7 +23,6 @@ const CATALOG = {
     { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 10, defaultH: 20 },
   ],
   materials: [
-    { subtype: 'flag', label: 'Step Flag', type: 'marker', defaultW: 8, defaultH: 24 },
     { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 12, defaultH: 24 },
     { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 18, defaultH: 18 },
     { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 30, defaultH: 18 },
@@ -348,11 +347,20 @@ buildLibrary();
 initHelp();
 initWelcome();
 
-document.getElementById('mode-switch').addEventListener('click', () => {
-  const current = getState().mode || 'auto';
-  setState({ mode: current === 'auto' ? 'flags' : 'auto' });
-  render();
+document.querySelectorAll('.mode-card[data-mode]').forEach(card => {
+  card.addEventListener('click', () => {
+    setState({ mode: card.dataset.mode });
+    render();
+  });
 });
+
+const flagWidget = document.getElementById('flag-drag-widget');
+if (flagWidget) {
+  flagWidget.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('catalog', JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 }));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+}
 
 function initMarkers() {
   const state = getState();
