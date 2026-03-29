@@ -36,7 +36,7 @@ export function updateTrackerUI() {
   if (widget) {
     widget.hidden = mode !== 'flags';
     const flagCount = state.components.filter(c => c.type === 'marker' && c.subtype === 'flag').length;
-    const numEl = widget.querySelector('#flag-widget-number');
+    const numEl = document.getElementById('flag-widget-number');
     if (numEl) numEl.textContent = String(flagCount + 1);
     widget.dataset.catalog = JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 });
   }
