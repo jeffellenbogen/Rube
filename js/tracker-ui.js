@@ -38,7 +38,6 @@ export function updateTrackerUI() {
     const flagCount = state.components.filter(c => c.type === 'marker' && c.subtype === 'flag').length;
     const numEl = document.getElementById('flag-widget-number');
     if (numEl) numEl.textContent = String(flagCount + 1);
-    widget.dataset.catalog = JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 });
   }
 
   const counter = document.getElementById('step-counter');
