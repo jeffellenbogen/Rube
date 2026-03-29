@@ -602,6 +602,7 @@ main {
   transition: color 0.2s;
 }
 .mode-label.active { color: var(--red); }
+#mode-auto-label.active { color: var(--teal); }
 #mode-switch {
   position: relative;
   width: 28px;

@@ -28,11 +28,13 @@ export function updateTrackerUI() {
   }
 
   const modeSwitch = document.getElementById('mode-switch');
+  const modeAutoLabel = document.getElementById('mode-auto-label');
   const modeFlagsLabel = document.getElementById('mode-flags-label');
   if (modeSwitch) {
     modeSwitch.classList.toggle('flags-active', mode === 'flags');
     modeSwitch.setAttribute('aria-checked', String(mode === 'flags'));
   }
+  if (modeAutoLabel) modeAutoLabel.classList.toggle('active', mode === 'auto');
   if (modeFlagsLabel) modeFlagsLabel.classList.toggle('active', mode === 'flags');
 
   const counter = document.getElementById('step-counter');
