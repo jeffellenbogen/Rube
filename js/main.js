@@ -1,8 +1,8 @@
 import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, getFloorPx } from './canvas.js';
-import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle } from './state.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle, setState } from './state.js';
 import { render } from './render/index.js';
 import { drawMachineIcon } from './render/machines.js';
-import { drawMaterialIcon } from './render/materials.js';
+import { drawMaterialIcon, drawFlagIcon } from './render/materials.js';
 import { drawEnvIcon } from './render/environment.js';
 import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
 import { toggleComment, repositionOverlays } from './comments.js';
@@ -23,6 +23,7 @@ const CATALOG = {
     { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 10, defaultH: 20 },
   ],
   materials: [
+    { subtype: 'flag', label: 'Step Flag', type: 'marker', defaultW: 8, defaultH: 24 },
     { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 12, defaultH: 24 },
     { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 18, defaultH: 18 },
     { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 30, defaultH: 18 },
@@ -80,6 +81,7 @@ function makeComponentIcon(item) {
   if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.subtype === 'flag')     drawFlagIcon(g, ox, oy, iw, ih);
   return svg;
 }
 
