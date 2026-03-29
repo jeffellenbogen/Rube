@@ -311,9 +311,11 @@ document.addEventListener('keydown', e => {
     }
     // Multi-select delete
     const ids = getSelectedIds();
-    if (ids.length > 1) {
+    if (ids.length > 1) { // > 1 so single-item selections fall through to the getSelected() single-select path below
       undoPush();
       const s = getState();
+      // Safe to call removeComponent unconditionally: selectedIds only ever contains simple_machine/material types
+      // because getComponentsInRect (rubber-band) and shift-click both exclude environment items by design.
       ids.forEach(id => {
         if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
         removeComponent(id);
