@@ -5,6 +5,7 @@ import { render } from './render/index.js';
 import { findNearestAttachment, createConnection, deleteConnection } from './connections.js';
 import { getSurfaces } from './render/environment.js';
 import { getAttachPx } from './render/attachPoints.js';
+import { getComponentsInRect } from './multi-select.js';
 
 // Subtypes that must keep their aspect ratio when resized
 const LOCK_ASPECT = new Set([
@@ -33,14 +34,24 @@ const DEFAULTS = {
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
 };
 
-let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
-let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }
+let dragging   = null;    // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
+let connDrag   = null;    // connection drag: { fromId, fromPoint, curPx, curPy }
 let handleDrag = null;    // { type, compId, startPx, startPy, origValue }
-let selected = null;
+let selectedIds = [];     // replaces selected — 0=none, 1=single-select, 2+=multi-select
+let rubberBand  = null;   // { startX, startY, currentX, currentY } in canvas cm, or null
+let groupDrag   = null;   // { startX, startY, startPositions: Map<id,{x,y,...}> } or null
 let hasMoved = false;     // tracks whether current drag has actually moved
 
-export function getSelected() { return selected; }
-export function setSelected(id) { selected = id; }
+// Backward-compatible single-select accessors (action buttons, handles still use these)
+export function getSelected()       { return selectedIds[0] ?? null; }
+export function setSelected(id)     { selectedIds = id ? [id] : []; }
+
+// Multi-select accessors
+export function getSelectedIds()    { return selectedIds; }
+export function setSelectedIds(ids) { selectedIds = [...ids]; }
+
+// Rubber-band rect for renderer (cm coordinates, or null)
+export function getRubberBand()     { return rubberBand; }
 
 function getLeverBarTopY(lever, compMidX) {
   const { tiltSide = 'none' } = lever.subParts || {};
@@ -166,11 +177,29 @@ export function initDrag(svgEl) {
     }
 
     const comp = e.target.closest('[data-id]');
-    if (!comp) { selected = null; render(); return; }
+
+    // No component hit — start rubber-band (or clear selection if no shift)
+    if (!comp) {
+      if (!e.shiftKey) selectedIds = [];
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      rubberBand = { startX: pos.x, startY: pos.y, currentX: pos.x, currentY: pos.y };
+      render();
+      return;
+    }
+
     const id = comp.dataset.id;
     const state = getState();
     const item = state.components.find(c => c.id === id) || state.environment.find(ev => ev.id === id);
     if (!item) return;
+
+    // Shift-click: toggle this component in/out of selectedIds
+    if (e.shiftKey) {
+      const idx = selectedIds.indexOf(id);
+      selectedIds = idx >= 0 ? selectedIds.filter(s => s !== id) : [...selectedIds, id];
+      render();
+      e.stopPropagation();
+      return;
+    }
 
     // Pulley: clicks near cord ends start a cord handle drag (not body drag)
     if (item.subtype === 'pulley') {
@@ -180,7 +209,7 @@ export function initDrag(svgEl) {
       for (const name of ['cordLeft', 'cordRight']) {
         const pt = pts[name];
         if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
-          selected = id;
+          selectedIds = [id];
           render();
           handleDrag = {
             type: name,
@@ -200,7 +229,33 @@ export function initDrag(svgEl) {
       }
     }
 
-    selected = id;
+    // Group drag: component is already part of a multi-selection
+    if (selectedIds.length > 1 && selectedIds.includes(id)) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      const startPositions = new Map();
+      for (const sid of selectedIds) {
+        const sc = state.components.find(c => c.id === sid);
+        if (!sc) continue;
+        const entry = { x: sc.x, y: sc.y };
+        if (sc.subtype === 'string' && sc.subParts) {
+          entry.isString = true;
+          entry.origSubParts = { ...sc.subParts };
+          entry.strX1 = sc.subParts.x1 ?? sc.x;
+          entry.strY1 = sc.subParts.y1 ?? (sc.y + sc.height / 2);
+          entry.strX2 = sc.subParts.x2 ?? (sc.x + sc.width);
+          entry.strY2 = sc.subParts.y2 ?? (sc.y + sc.height / 2);
+        }
+        startPositions.set(sid, entry);
+      }
+      groupDrag = { startX: pos.x, startY: pos.y, startPositions };
+      hasMoved = false;
+      window.__dragActive = true;
+      e.stopPropagation();
+      return;
+    }
+
+    // Normal single-select
+    selectedIds = [id];
     render();
     const pos = screenToCanvas(e.clientX, e.clientY);
     const isEnvItem = !!state.environment.find(ev => ev.id === id);
@@ -327,6 +382,38 @@ export function initDrag(svgEl) {
       render();
       return;
     }
+
+    if (rubberBand) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      rubberBand.currentX = pos.x;
+      rubberBand.currentY = pos.y;
+      render();
+      return;
+    }
+
+    if (groupDrag) {
+      if (!hasMoved) { undoPush(); hasMoved = true; }
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      const dx = pos.x - groupDrag.startX;
+      const dy = pos.y - groupDrag.startY;
+      for (const [sid, orig] of groupDrag.startPositions) {
+        if (orig.isString) {
+          updateComponent(sid, {
+            x: orig.x + dx, y: orig.y + dy,
+            subParts: {
+              ...orig.origSubParts,
+              x1: orig.strX1 + dx, y1: orig.strY1 + dy,
+              x2: orig.strX2 + dx, y2: orig.strY2 + dy,
+            },
+          });
+        } else {
+          updateComponent(sid, { x: orig.x + dx, y: orig.y + dy });
+        }
+      }
+      render();
+      return;
+    }
+
     if (!dragging) return;
     if (!hasMoved) { undoPush(); hasMoved = true; }
     const pos = screenToCanvas(e.clientX, e.clientY);
@@ -460,6 +547,37 @@ export function initDrag(svgEl) {
       render();
       return;
     }
+    if (rubberBand) {
+      const rb = rubberBand;
+      rubberBand = null;
+      const dx = Math.abs(rb.currentX - rb.startX);
+      const dy = Math.abs(rb.currentY - rb.startY);
+      if (dx > 2 || dy > 2) {
+        const rect = {
+          x: Math.min(rb.startX, rb.currentX),
+          y: Math.min(rb.startY, rb.currentY),
+          width: Math.abs(rb.currentX - rb.startX),
+          height: Math.abs(rb.currentY - rb.startY),
+        };
+        const found = getComponentsInRect(getState().components, rect);
+        if (e.shiftKey) {
+          const combined = new Set([...selectedIds, ...found]);
+          selectedIds = [...combined];
+        } else {
+          selectedIds = found;
+        }
+      } else if (!e.shiftKey) {
+        selectedIds = [];
+      }
+      render();
+      return;
+    }
+
+    if (groupDrag) {
+      groupDrag = null; hasMoved = false; window.__dragActive = false;
+      return;
+    }
+
     if (dragging) {
       dragging = null; window.__dragActive = false; hasMoved = false;
     }
