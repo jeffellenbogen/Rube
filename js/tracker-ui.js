@@ -27,15 +27,19 @@ export function updateTrackerUI() {
     }
   }
 
-  const modeSwitch = document.getElementById('mode-switch');
-  const modeAutoLabel = document.getElementById('mode-auto-label');
-  const modeFlagsLabel = document.getElementById('mode-flags-label');
-  if (modeSwitch) {
-    modeSwitch.classList.toggle('flags-active', mode === 'flags');
-    modeSwitch.setAttribute('aria-checked', String(mode === 'flags'));
+  const cardAuto = document.getElementById('mode-card-auto');
+  const cardFlags = document.getElementById('mode-card-flags');
+  if (cardAuto) cardAuto.classList.toggle('active', mode === 'auto');
+  if (cardFlags) cardFlags.classList.toggle('active', mode === 'flags');
+
+  const widget = document.getElementById('flag-drag-widget');
+  if (widget) {
+    widget.hidden = mode !== 'flags';
+    const flagCount = state.components.filter(c => c.type === 'marker' && c.subtype === 'flag').length;
+    const numEl = widget.querySelector('#flag-widget-number');
+    if (numEl) numEl.textContent = String(flagCount + 1);
+    widget.dataset.catalog = JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 });
   }
-  if (modeAutoLabel) modeAutoLabel.classList.toggle('active', mode === 'auto');
-  if (modeFlagsLabel) modeFlagsLabel.classList.toggle('active', mode === 'flags');
 
   const counter = document.getElementById('step-counter');
   if (counter) {
