@@ -11,7 +11,7 @@ export function getRequirements(state) {
   const machineTypes = [...new Set(placed.map(c => c.subtype))];
   const mode = state.mode || 'auto';
   const steps = mode === 'flags'
-    ? components.filter(c => c.subtype === 'flag').length
+    ? components.filter(c => c.type === 'marker' && c.subtype === 'flag').length
     : countSteps(state);
   return {
     machineTypes,
