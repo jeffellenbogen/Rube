@@ -51,16 +51,36 @@
     <aside id="tracker">
       <h3>Requirements</h3>
       <ul id="machine-checklist"></ul>
-      <div id="step-mode-header">
-        <span class="mode-label" id="mode-auto-label">AUTO</span>
-        <button id="mode-switch" role="switch" aria-checked="false" aria-label="Toggle step counting mode"></button>
-        <span class="mode-label" id="mode-flags-label">FLAGS</span>
+      <h3>Steps</h3>
+      <div id="step-mode-cards">
+        <button class="mode-card" id="mode-card-auto" data-mode="auto">
+          <span class="mode-card-title">AUTO</span>
+          <span class="mode-card-desc">Counts connections</span>
+        </button>
+        <button class="mode-card" id="mode-card-flags" data-mode="flags">
+          <span class="mode-card-title">FLAGS</span>
+          <span class="mode-card-desc">You mark steps</span>
+        </button>
       </div>
       <div id="step-counter"></div>
+      <div id="flag-drag-widget" class="lib-item" draggable="true"
+           data-subtype="flag" data-type="marker"
+           data-default-w="8" data-default-h="24" hidden>
+        <svg width="20" height="36" viewBox="0 0 8 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <rect x="1" y="0" width="6" height="9" rx="1" fill="#ef476f"/>
+          <text id="flag-widget-number" x="4" y="7" text-anchor="middle" font-size="5" fill="white" font-family="monospace" font-weight="bold">1</text>
+          <line x1="4" y1="9" x2="4" y2="22" stroke="#4a7a9a" stroke-width="1.5"/>
+          <circle cx="4" cy="22" r="2" fill="#4a7a9a"/>
+        </svg>
+        <div>
+          <span class="flag-widget-label">STEP FLAG</span>
+          <span class="flag-widget-sub">Drag to canvas</span>
+        </div>
+      </div>
       <h3>Bill of Materials</h3>
       <ul id="bom-list"></ul>
       <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSd_zhFTqrGNFIW_5pb085I43G6E3_0prDMbPdYu8rmgtfO3xg/viewform?usp=dialog" target="_blank" rel="noopener noreferrer">FEEDBACK</a>
-      <div id="version-label">v2.5.35</div>
+      <div id="version-label">v2.5.36</div>
     </aside>
   </main>
   <!-- Welcome overlay -->
