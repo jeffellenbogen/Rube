@@ -194,6 +194,7 @@ export function initDrag(svgEl) {
 
     // Shift-click: toggle this component in/out of selectedIds
     if (e.shiftKey) {
+      if (item.type === 'environment' || item.type === 'marker') return; // exclude from multi-selection
       const idx = selectedIds.indexOf(id);
       selectedIds = idx >= 0 ? selectedIds.filter(s => s !== id) : [...selectedIds, id];
       render();
