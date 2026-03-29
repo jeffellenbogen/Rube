@@ -10,13 +10,14 @@ import { getAttachPx } from './render/attachPoints.js';
 const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
-  'protractor', 'book', 'matchboxTrack',
+  'protractor', 'book', 'matchboxTrack', 'flag',
 ]);
 
 // Subtypes with custom min/max fractions of their default size (overrides global 7× max and MIN floor)
 const SPECIAL_LIMITS = {
   yardstick:    { min: 0.5, max: 3.5 },
   matchboxTrack: { min: 0.5, max: 3.5 },
+  flag:         { min: 0.75, max: 3 },
 };
 
 const MIN = 11; // cm — keeps components large enough to click on
@@ -29,7 +30,7 @@ const DEFAULTS = {
   string: { w: 40, h: 2 }, cup: { w: 22, h: 16 }, bucket: { w: 20, h: 24 },
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
-  book: { w: 10, h: 30 }, custom: { w: 24, h: 24 },
+  book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
 };
 
 let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }

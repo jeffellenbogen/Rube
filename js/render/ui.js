@@ -166,7 +166,7 @@ export function renderUI(state, layer) {
 
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
-  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'flag' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
     // Rotate ↻ — bottom-right in component local space
     const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
