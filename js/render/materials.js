@@ -13,9 +13,17 @@ function el(tag, attrs, parent) {
 
 export function renderMaterials(state, layer) {
   layer.innerHTML = '';
+  // Compute 1-based flag numbers by position in components array
+  const flagNums = {};
+  let flagCount = 0;
+  for (const comp of state.components) {
+    if (comp.subtype === 'flag') flagNums[comp.id] = ++flagCount;
+  }
   for (const comp of state.components) {
     if (comp.type !== 'material' && comp.type !== 'marker') continue;
-    const g = comp.subtype === 'string' ? drawStringComp(comp, state) : drawMaterial(comp);
+    const g = comp.subtype === 'string'
+      ? drawStringComp(comp, state)
+      : drawMaterial(comp, flagNums[comp.id] ?? 0);
     if (g) layer.appendChild(g);
   }
 }
@@ -41,12 +49,52 @@ function applyTransform(g, comp) {
   g.setAttribute('transform', `translate(${cx},${cy}) scale(${fx},1) rotate(${deg}) translate(${-cx},${-cy})`);
 }
 
-function drawMaterial(comp) {
+function drawFlag(g, x, y, w, h, flagNumber) {
+  const badgeH = h * 0.44;
+  const cx = x + w / 2;
+  const rx = Math.min(w, badgeH) * 0.18;
+  // Pole
+  el('line', { x1: cx, y1: y + badgeH * 0.85, x2: cx, y2: y + h - 3, stroke: '#4a7a9a', 'stroke-width': 2, 'stroke-linecap': 'round' }, g);
+  // Base dot
+  el('circle', { cx, cy: y + h - 3, r: 3, fill: '#4a7a9a' }, g);
+  // Badge background
+  el('rect', { x, y, width: w, height: badgeH, rx, fill: '#ef476f' }, g);
+  // "STEP" label
+  const stepEl = document.createElementNS(NS, 'text');
+  stepEl.setAttribute('x', cx);
+  stepEl.setAttribute('y', y + badgeH * 0.3);
+  stepEl.setAttribute('text-anchor', 'middle');
+  stepEl.setAttribute('dominant-baseline', 'middle');
+  stepEl.setAttribute('font-family', '"Courier New", Courier, monospace');
+  stepEl.setAttribute('font-size', Math.max(4, Math.round(badgeH * 0.26)));
+  stepEl.setAttribute('fill', 'rgba(255,255,255,0.8)');
+  stepEl.textContent = 'STEP';
+  g.appendChild(stepEl);
+  // Number
+  const numEl = document.createElementNS(NS, 'text');
+  numEl.setAttribute('x', cx);
+  numEl.setAttribute('y', y + badgeH * 0.72);
+  numEl.setAttribute('text-anchor', 'middle');
+  numEl.setAttribute('dominant-baseline', 'middle');
+  numEl.setAttribute('font-family', '"Courier New", Courier, monospace');
+  numEl.setAttribute('font-size', Math.max(7, Math.round(badgeH * 0.46)));
+  numEl.setAttribute('font-weight', 'bold');
+  numEl.setAttribute('fill', 'white');
+  numEl.textContent = String(flagNumber);
+  g.appendChild(numEl);
+}
+
+export function drawFlagIcon(g, x, y, w, h) {
+  drawFlag(g, x, y, w, h, '?');
+}
+
+function drawMaterial(comp, flagNumber = 0) {
   const g = document.createElementNS(NS, 'g');
   g.dataset.id = comp.id;
   g.dataset.type = comp.subtype;
   const x = cmToPx(comp.x), y = cmToPx(comp.y), w = cmToPx(comp.width), h = cmToPx(comp.height);
   switch (comp.subtype) {
+    case 'flag':     drawFlag(g, x, y, w, h, flagNumber); break;
     case 'ball':     drawBall(g, x, y, w, h); break;
     case 'domino':   drawDomino(g, x, y, w, h, comp.subParts?.topValue ?? 0, comp.subParts?.bottomValue ?? 0); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
