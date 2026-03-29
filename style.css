@@ -586,3 +586,48 @@ main {
   cursor: pointer;
 }
 #welcome-help:hover { border-color: var(--accent); color: var(--accent); }
+
+#step-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.mode-label {
+  font-size: 9px;
+  font-family: var(--font-main);
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+.mode-label.active { color: var(--red); }
+#mode-switch {
+  position: relative;
+  width: 28px;
+  height: 15px;
+  background: var(--border);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+#mode-switch::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 11px;
+  height: 11px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+#mode-switch.flags-active {
+  background: var(--red);
+}
+#mode-switch.flags-active::after {
+  transform: translateX(13px);
+}

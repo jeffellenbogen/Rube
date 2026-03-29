@@ -14,6 +14,7 @@ export function updateTrackerUI() {
   const state = getState();
   const req = getRequirements(state);
   const bom = getBOM(state);
+  const mode = state.mode || 'auto';
 
   const ul = document.getElementById('machine-checklist');
   if (ul) {
@@ -26,9 +27,18 @@ export function updateTrackerUI() {
     }
   }
 
+  const modeSwitch = document.getElementById('mode-switch');
+  const modeFlagsLabel = document.getElementById('mode-flags-label');
+  if (modeSwitch) {
+    modeSwitch.classList.toggle('flags-active', mode === 'flags');
+    modeSwitch.setAttribute('aria-checked', String(mode === 'flags'));
+  }
+  if (modeFlagsLabel) modeFlagsLabel.classList.toggle('active', mode === 'flags');
+
   const counter = document.getElementById('step-counter');
   if (counter) {
-    counter.innerHTML = `${req.steps}<small>of 5+ steps</small>`;
+    const label = mode === 'flags' ? 'of 5+ flags' : 'of 5+ steps';
+    counter.innerHTML = `${req.steps}<small>${label}</small>`;
     counter.className = req.stepsMet ? 'done' : '';
   }
 

@@ -348,6 +348,12 @@ buildLibrary();
 initHelp();
 initWelcome();
 
+document.getElementById('mode-switch').addEventListener('click', () => {
+  const current = getState().mode || 'auto';
+  setState({ mode: current === 'auto' ? 'flags' : 'auto' });
+  render();
+});
+
 function initMarkers() {
   const state = getState();
   const { roomW } = getRoomDimensions();
