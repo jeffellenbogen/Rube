@@ -128,6 +128,7 @@ export async function downloadPNG(svgEl) {
   const ITEM_SIZE = 17;
   const HEADER_SIZE = 16;
   const PANEL_TITLE_SIZE = 20;
+  const SUMMARY_SIZE = 13;
   const ROW_H = 20;
   const SECTION_GAP = 14;
   const HEADER_SPACING = 18;
@@ -287,7 +288,7 @@ export async function downloadPNG(svgEl) {
     pY += ROW_H;
   }
 
-  ctx.font = `13px "Courier New", Courier, monospace`;
+  ctx.font = `${SUMMARY_SIZE}px "Courier New", Courier, monospace`;
   ctx.fillStyle = req.machinesMet ? '#00c9a7' : '#ef476f';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -295,7 +296,7 @@ export async function downloadPNG(svgEl) {
     `${req.machineTypes.length} of 3 required${req.machinesMet ? ' \u2713' : ''}`,
     panelX + PAD + 4, pY
   );
-  pY += 20;
+  pY += ROW_H;
   pY += SECTION_GAP;
 
   panelSection('MATERIALS', bom);
