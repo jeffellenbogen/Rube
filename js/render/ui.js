@@ -35,9 +35,9 @@ export function renderUI(state, layer) {
       if (!c) continue;
       const cx = cmToPx(c.x + c.width / 2);
       const cy = cmToPx(c.y + c.height / 2);
-      const w = cmToPx(c.width), h = cmToPx(c.height);
-      const w2 = w / 2, h2 = h / 2;
-      const pad = 3;
+      const cw = cmToPx(c.width), ch = cmToPx(c.height);
+      const w2 = cw / 2, h2 = ch / 2;
+      const pad = 4;
       const rad = (c.rotation || 0) * Math.PI / 180;
       const fx = c.flipped ? -1 : 1;
       const Lm = (lx, ly) => {
