@@ -151,6 +151,106 @@ function drawSavingIllustration(svg) {
   el('polygon', { points:'60,65 52,74 64,74', fill:'#ff7b2e' }, svg);
 }
 
+function drawCountingStepsIllustration(svg) {
+  svg.setAttribute('viewBox', '0 0 140 110');
+  svg.setAttribute('width', '280');
+  svg.setAttribute('height', '220');
+
+  // Background
+  el('rect', { x:0, y:0, width:140, height:110, fill:'#060e1a' }, svg);
+
+  // Panel backgrounds: AUTO (left, teal theme) and FLAGS (right, red theme)
+  el('rect', { x:2,  y:2, width:62, height:82, fill:'#0d1f35', stroke:'#1a3a5c', 'stroke-width':0.5, rx:1 }, svg);
+  el('rect', { x:76, y:2, width:62, height:82, fill:'#110818', stroke:'#3a1a2a', 'stroke-width':0.5, rx:1 }, svg);
+
+  function txt(text, x, y, fill, size, anchor) {
+    const e = document.createElementNS(NS, 'text');
+    e.setAttribute('x', x); e.setAttribute('y', y);
+    e.setAttribute('fill', fill); e.setAttribute('font-size', size || 6);
+    e.setAttribute('font-family', 'monospace');
+    e.setAttribute('text-anchor', anchor || 'middle');
+    e.textContent = text; svg.appendChild(e);
+  }
+
+  // Panel mode labels (left-aligned)
+  txt('AUTO',  10, 11, '#00c9a7', 6, 'start');
+  txt('FLAGS', 84, 11, '#ef476f', 6, 'start');
+
+  // Floor lines inside panels
+  el('line', { x1:3,  y1:76, x2:63,  y2:76, stroke:'#4a7a9a', 'stroke-width':1 }, svg);
+  el('line', { x1:77, y1:76, x2:137, y2:76, stroke:'#4a7a9a', 'stroke-width':1 }, svg);
+
+  // ── AUTO panel components ──────────────────────────────────────────
+  // Lever: x=5-25, y=62-65; fulcrum triangle below center
+  el('rect',    { x:5,  y:62, width:20, height:3, fill:'#8B4513', stroke:'#5a3010', 'stroke-width':0.5, rx:0.5 }, svg);
+  el('polygon', { points:'15,65 17,73 13,73', fill:'#8B4513', stroke:'#5a3010', 'stroke-width':0.5 }, svg);
+  // Connector dot on lever output (right end)
+  el('circle',  { cx:25, cy:63, r:2.5, fill:'#00c9a7', stroke:'#009a80', 'stroke-width':0.5 }, svg);
+  // Connection line: lever output → ball
+  el('line', { x1:27, y1:62, x2:32, y2:58, stroke:'#00c9a7', 'stroke-width':1, 'stroke-dasharray':'2 1.5' }, svg);
+  // Ball: cx=38, cy=55, r=7 (spans x=31-45, y=48-62)
+  el('circle',  { cx:38, cy:55, r:7, fill:'#f5f5f5', stroke:'#ccc', 'stroke-width':0.8 }, svg);
+  // Connector dot on ball output (right edge)
+  el('circle',  { cx:45, cy:55, r:2.5, fill:'#00c9a7', stroke:'#009a80', 'stroke-width':0.5 }, svg);
+  // Connection line: ball output → dominoes
+  el('line', { x1:47, y1:55, x2:50, y2:60, stroke:'#00c9a7', 'stroke-width':1, 'stroke-dasharray':'2 1.5' }, svg);
+  // 3 dominoes: x=50,55,60 y=60 w=3 h=14 (floor at y=76, tops at y=60)
+  el('rect', { x:50, y:60, width:3, height:14, fill:'#e8e8e8', stroke:'#aaa', 'stroke-width':0.5, rx:0.3 }, svg);
+  el('rect', { x:55, y:60, width:3, height:14, fill:'#e8e8e8', stroke:'#aaa', 'stroke-width':0.5, rx:0.3 }, svg);
+  el('rect', { x:60, y:60, width:3, height:14, fill:'#e8e8e8', stroke:'#aaa', 'stroke-width':0.5, rx:0.3 }, svg);
+  // Brace over dominoes with "1 step" label
+  el('line', { x1:50, y1:57, x2:63, y2:57, stroke:'#4a7a9a', 'stroke-width':0.7 }, svg);
+  el('line', { x1:50, y1:55, x2:50, y2:57, stroke:'#4a7a9a', 'stroke-width':0.7 }, svg);
+  el('line', { x1:63, y1:55, x2:63, y2:57, stroke:'#4a7a9a', 'stroke-width':0.7 }, svg);
+  txt('1 step', 56.5, 54, '#4a7a9a', 4.5);
+
+  // Step number circles ① ② above lever and ball with dashed drop lines
+  el('circle', { cx:15, cy:20, r:5, fill:'#00c9a7' }, svg);
+  txt('1', 15, 22.5, '#060e1a', 6);
+  el('line', { x1:15, y1:25, x2:15, y2:60, stroke:'#00c9a7', 'stroke-width':0.7, 'stroke-dasharray':'2 2' }, svg);
+
+  el('circle', { cx:38, cy:20, r:5, fill:'#00c9a7' }, svg);
+  txt('2', 38, 22.5, '#060e1a', 6);
+  el('line', { x1:38, y1:25, x2:38, y2:48, stroke:'#00c9a7', 'stroke-width':0.7, 'stroke-dasharray':'2 2' }, svg);
+
+  // AUTO step counter (below panel, in dark background)
+  txt('2',           33, 93,  '#00c9a7', 14);
+  txt('of 5+ steps', 33, 101, '#4a7a9a', 4.5);
+
+  // ── FLAGS panel (same x+74, components dimmed, no connector dots) ──
+  // Lever (dim)
+  el('rect',    { x:79, y:62, width:20, height:3, fill:'#4a3020', rx:0.5 }, svg);
+  el('polygon', { points:'89,65 91,73 87,73', fill:'#4a3020' }, svg);
+  // Ball (dim)
+  el('circle',  { cx:112, cy:55, r:7, fill:'#444', stroke:'#555', 'stroke-width':0.8 }, svg);
+  // 3 dominoes (dim): x=124,129,134 y=60 w=3 h=14
+  el('rect', { x:124, y:60, width:3, height:14, fill:'#444', stroke:'#555', 'stroke-width':0.5, rx:0.3 }, svg);
+  el('rect', { x:129, y:60, width:3, height:14, fill:'#444', stroke:'#555', 'stroke-width':0.5, rx:0.3 }, svg);
+  el('rect', { x:134, y:60, width:3, height:14, fill:'#444', stroke:'#555', 'stroke-width':0.5, rx:0.3 }, svg);
+
+  // Flag 1 above lever (lever center x=89, +74 from AUTO lever center 15)
+  el('rect',   { x:85, y:13, width:8, height:6, rx:0.8, fill:'#ef476f' }, svg);
+  txt('1', 89, 18, 'white', 4.5);
+  el('line',   { x1:89, y1:19, x2:89, y2:60, stroke:'#4a7a9a', 'stroke-width':1.2 }, svg);
+  el('circle', { cx:89, cy:60, r:1.5, fill:'#4a7a9a' }, svg);
+
+  // Flag 2 above ball (ball center x=112)
+  el('rect',   { x:108, y:13, width:8, height:6, rx:0.8, fill:'#ef476f' }, svg);
+  txt('2', 112, 18, 'white', 4.5);
+  el('line',   { x1:112, y1:19, x2:112, y2:48, stroke:'#4a7a9a', 'stroke-width':1.2 }, svg);
+  el('circle', { cx:112, cy:48, r:1.5, fill:'#4a7a9a' }, svg);
+
+  // Flag 3 above middle domino (center x≈130)
+  el('rect',   { x:126, y:13, width:8, height:6, rx:0.8, fill:'#ef476f' }, svg);
+  txt('3', 130, 18, 'white', 4.5);
+  el('line',   { x1:130, y1:19, x2:130, y2:58, stroke:'#4a7a9a', 'stroke-width':1.2 }, svg);
+  el('circle', { cx:130, cy:58, r:1.5, fill:'#4a7a9a' }, svg);
+
+  // FLAGS step counter (below panel, in dark background)
+  txt('3',           107, 93,  '#ef476f', 14);
+  txt('of 5+ flags', 107, 101, '#4a7a9a', 4.5);
+}
+
 // ── Guide content ─────────────────────────────────────────────────────
 const GUIDE_CARDS = [
   {
@@ -167,6 +267,11 @@ const GUIDE_CARDS = [
     title: 'Connecting Steps',
     description: 'Click the <em>teal connector dot</em> on one component, then click a dot on another to link them. Each link is one step in your machine. You need at least <em>5 connected steps</em> to meet the goal.',
     draw(svg) { drawConnectingIllustration(svg); }
+  },
+  {
+    title: 'Counting Steps',
+    description: '<em>AUTO</em> mode counts steps by following your connections — each different type of component in the chain is one step. <em>FLAGS</em> mode lets you decide: drag a Step Flag onto the canvas wherever a new step begins.<br><br><small>Heads up: in AUTO, a row of the same type (like 3 dominoes) counts as one step, not three. Use FLAGS if you want to count each part separately.</small>',
+    draw(svg) { drawCountingStepsIllustration(svg); }
   },
   {
     title: 'The Checklist',
