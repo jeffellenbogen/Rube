@@ -102,15 +102,16 @@ export async function downloadPNG(svgEl) {
 
   // Build BOM (components only — env items excluded per spec)
   const bom = (() => {
-    const machines = {}, materials = {};
+    const materials = {};
     for (const c of state.components) {
       if (c.type === 'marker') continue;
+      if (MACHINE_SUBTYPES.has(c.subtype)) continue; // shown in checklist instead
       const label = ITEM_LABELS[c.subtype] || (c.name || c.subtype);
-      const bin = MACHINE_SUBTYPES.has(c.subtype) ? machines : materials;
-      bin[label] = (bin[label] || 0) + 1;
+      materials[label] = (materials[label] || 0) + 1;
     }
-    const toList = obj => Object.entries(obj).sort((a,b) => a[0].localeCompare(b[0])).map(([name,count]) => ({ name, count }));
-    return { machines: toList(machines), materials: toList(materials) };
+    return Object.entries(materials)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
   })();
 
   // === Page: landscape letter at 300 DPI (11" × 8.5") ===
@@ -124,6 +125,12 @@ export async function downloadPNG(svgEl) {
   canvas.width = PAGE_W * 2; canvas.height = PAGE_H * 2;
   const ctx = canvas.getContext('2d');
   ctx.scale(2, 2);
+  const ITEM_SIZE = 17;
+  const HEADER_SIZE = 16;
+  const PANEL_TITLE_SIZE = 20;
+  const ROW_H = 20;
+  const SECTION_GAP = 14;
+  const HEADER_SPACING = 18;
   const mono = size => `bold ${size}px "Courier New", Courier, monospace`;
 
   // White background + outer frame
@@ -191,39 +198,39 @@ export async function downloadPNG(svgEl) {
   let pY = mainY + PAD;
 
   // Panel title
-  ctx.font = mono(12);
+  ctx.font = mono(PANEL_TITLE_SIZE);
   ctx.fillStyle = '#0d1f35';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('MATERIALS USED', panelX + PAD, pY);
-  pY += 5;
+  pY += 6;
   ctx.strokeStyle = '#0d1f35';
   ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 9); ctx.lineTo(panelX + PANEL_W - PAD, pY + 9); ctx.stroke();
-  pY += 18;
+  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 12); ctx.lineTo(panelX + PANEL_W - PAD, pY + 12); ctx.stroke();
+  pY += 22;
 
   function panelSection(title, items) {
-    ctx.font = `bold 10px "Courier New", Courier, monospace`;
+    ctx.font = `bold ${HEADER_SIZE}px "Courier New", Courier, monospace`;
     ctx.fillStyle = '#4a7a9a';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(title, panelX + PAD, pY);
-    pY += 3;
+    pY += 4;
     ctx.strokeStyle = '#c0d4e8';
     ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 10); ctx.lineTo(panelX + PANEL_W - PAD, pY + 10); ctx.stroke();
-    pY += 14;
+    ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 12); ctx.lineTo(panelX + PANEL_W - PAD, pY + 12); ctx.stroke();
+    pY += HEADER_SPACING;
 
     if (items.length === 0) {
-      ctx.font = `11px "Courier New", Courier, monospace`;
+      ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
       ctx.fillStyle = '#aaaaaa';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText('none added', panelX + PAD + 4, pY);
-      pY += 15;
+      pY += ROW_H;
     } else {
       for (const { name, count } of items) {
-        ctx.font = `11px "Courier New", Courier, monospace`;
+        ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#4a7a9a';
         ctx.textAlign = 'right';
@@ -231,33 +238,89 @@ export async function downloadPNG(svgEl) {
         ctx.fillStyle = '#1a1a3a';
         ctx.textAlign = 'left';
         ctx.fillText(name, panelX + PAD + 4, pY);
-        pY += 15;
+        pY += ROW_H;
       }
     }
-    pY += 10;
+    pY += SECTION_GAP;
   }
 
   const req = getRequirements(state);
 
-  panelSection('SIMPLE MACHINES', bom.machines);
-  panelSection('MATERIALS', bom.materials);
+  // Simple machines checkbox checklist
+  const ALL_MACHINES = [
+    { sub: 'lever',         label: 'Lever' },
+    { sub: 'pulley',        label: 'Pulley' },
+    { sub: 'inclinedPlane', label: 'Inclined Plane' },
+    { sub: 'wheelAxle',     label: 'Wheel & Axle' },
+    { sub: 'wedge',         label: 'Wedge' },
+    { sub: 'screw',         label: 'Screw' },
+  ];
 
-  // Steps counter
-  ctx.font = `bold 10px "Courier New", Courier, monospace`;
+  ctx.font = `bold ${HEADER_SIZE}px "Courier New", Courier, monospace`;
   ctx.fillStyle = '#4a7a9a';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('STEPS', panelX + PAD, pY);
-  pY += 3;
+  ctx.fillText('SIMPLE MACHINES', panelX + PAD, pY);
+  pY += 4;
   ctx.strokeStyle = '#c0d4e8';
   ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 10); ctx.lineTo(panelX + PANEL_W - PAD, pY + 10); ctx.stroke();
-  pY += 14;
-  ctx.font = `11px "Courier New", Courier, monospace`;
+  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 12); ctx.lineTo(panelX + PANEL_W - PAD, pY + 12); ctx.stroke();
+  pY += HEADER_SPACING;
+
+  const BOX_SIZE = 11, BOX_RADIUS = 2;
+  for (const { sub, label } of ALL_MACHINES) {
+    const used = req.machineTypes.includes(sub);
+    ctx.beginPath();
+    ctx.roundRect(panelX + PAD + 2, pY + 3, BOX_SIZE, BOX_SIZE, BOX_RADIUS);
+    ctx.fillStyle = used ? '#00c9a7' : '#ffffff';
+    ctx.fill();
+    if (!used) {
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
+    ctx.fillStyle = used ? '#1a1a3a' : '#aaaaaa';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, panelX + PAD + 2 + BOX_SIZE + 7, pY);
+    pY += ROW_H;
+  }
+
+  ctx.font = `13px "Courier New", Courier, monospace`;
+  ctx.fillStyle = req.machinesMet ? '#00c9a7' : '#ef476f';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(
+    `${req.machineTypes.length} of 3 required${req.machinesMet ? ' \u2713' : ''}`,
+    panelX + PAD + 4, pY
+  );
+  pY += 20;
+  pY += SECTION_GAP;
+
+  panelSection('MATERIALS', bom);
+
+  // Steps counter
+  const mode = state.mode || 'auto';
+  const stepsHeading = mode === 'flags' ? 'STEPS (FLAGS)' : 'STEPS (AUTO)';
+  const stepsHeadingColor = mode === 'flags' ? '#ef476f' : '#00c9a7';
+
+  ctx.font = `bold ${HEADER_SIZE}px "Courier New", Courier, monospace`;
+  ctx.fillStyle = stepsHeadingColor;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(stepsHeading, panelX + PAD, pY);
+  pY += 4;
+  ctx.strokeStyle = '#c0d4e8';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(panelX + PAD, pY + 12); ctx.lineTo(panelX + PANEL_W - PAD, pY + 12); ctx.stroke();
+  pY += HEADER_SPACING;
+  ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
   ctx.fillStyle = req.stepsMet ? '#00c9a7' : '#1a1a3a';
   ctx.textAlign = 'left';
-  ctx.fillText(`${req.steps} of 5+`, panelX + PAD + 4, pY);
-  pY += 15;
+  ctx.textBaseline = 'top';
+  ctx.fillText(`${req.steps} of 5+${req.stepsMet ? ' \u2713' : ''}`, panelX + PAD + 4, pY);
+  pY += ROW_H;
 
   // ── SVG CANVAS ───────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
@@ -281,7 +344,7 @@ export async function downloadPNG(svgEl) {
 
   // ── VISIBLE COMMENTS ─────────────────────────────────────────────────────
   const allItems = [...state.components, ...(state.environment || [])];
-  const BOX_W = 130, BOX_PAD = 6, FONT_SIZE = 9, LINE_H = FONT_SIZE + 3;
+  const BOX_W = 130, BOX_PAD = 6, FONT_SIZE = 13, LINE_H = 17;
 
   for (const item of allItems) {
     if (!item.commentVisible || !item.comment) continue;
