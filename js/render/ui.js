@@ -22,6 +22,7 @@ export function renderUI(state, layer) {
     rbRect.setAttribute('stroke', '#00c9a7');
     rbRect.setAttribute('stroke-width', '1.5');
     rbRect.setAttribute('stroke-dasharray', '6 3');
+    rbRect.setAttribute('pointer-events', 'none');
     layer.appendChild(rbRect);
     return;
   }
@@ -56,6 +57,7 @@ export function renderUI(state, layer) {
       ring.setAttribute('stroke-width', '1.5');
       ring.setAttribute('stroke-dasharray', '5 3');
       ring.setAttribute('opacity', '0.8');
+      ring.setAttribute('pointer-events', 'none');
       layer.appendChild(ring);
       // Expand group bbox using rotated corners (screen px)
       for (const p of [Lm(-w2, -h2), Lm(w2, -h2), Lm(w2, h2), Lm(-w2, h2)]) {
@@ -75,6 +77,7 @@ export function renderUI(state, layer) {
       bbox.setAttribute('stroke-width', '2');
       bbox.setAttribute('stroke-dasharray', '8 5');
       bbox.setAttribute('rx', '4');
+      bbox.setAttribute('pointer-events', 'none');
       layer.appendChild(bbox);
     }
     return;
