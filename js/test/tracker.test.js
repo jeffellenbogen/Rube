@@ -54,10 +54,10 @@ test('5+ steps via connections = stepsMet true', () => {
   const comps = [
     { id: 's', type: 'marker', subtype: 'start' },
     { id: 'a', type: 'material', subtype: 'ball' },
-    { id: 'b', type: 'material', subtype: 'ball' },
-    { id: 'c', type: 'material', subtype: 'ball' },
-    { id: 'd', type: 'material', subtype: 'ball' },
-    { id: 'e', type: 'material', subtype: 'ball' },
+    { id: 'b', type: 'material', subtype: 'domino' },
+    { id: 'c', type: 'material', subtype: 'toyCar' },
+    { id: 'd', type: 'material', subtype: 'bucket' },
+    { id: 'e', type: 'material', subtype: 'cup' },
     { id: 'f', type: 'marker', subtype: 'finish' },
   ];
   const connections = [
@@ -66,7 +66,7 @@ test('5+ steps via connections = stepsMet true', () => {
     { fromId: 'd', toId: 'e' }, { fromId: 'e', toId: 'f' },
   ];
   const r = getRequirements({ components: comps, connections });
-  assertEqual(r.steps, 6);
+  assertEqual(r.steps, 5);
   assertEqual(r.stepsMet, true);
 });
 
