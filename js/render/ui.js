@@ -1,5 +1,5 @@
 import { cmToPx } from '../canvas.js';
-import { getSelected, getConnDrag } from '../drag.js';
+import { getSelected, getConnDrag, getSelectedIds, getRubberBand } from '../drag.js';
 import { getAttachPx, getStringEndpoints } from './attachPoints.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -7,6 +7,80 @@ const NS = 'http://www.w3.org/2000/svg';
 
 export function renderUI(state, layer) {
   layer.innerHTML = '';
+
+  // ── Rubber-band selection rect ──────────────────────────────────────────
+  const rb = getRubberBand();
+  if (rb) {
+    const x = cmToPx(Math.min(rb.startX, rb.currentX));
+    const y = cmToPx(Math.min(rb.startY, rb.currentY));
+    const w = cmToPx(Math.abs(rb.currentX - rb.startX));
+    const h = cmToPx(Math.abs(rb.currentY - rb.startY));
+    const rbRect = document.createElementNS(NS, 'rect');
+    rbRect.setAttribute('x', x); rbRect.setAttribute('y', y);
+    rbRect.setAttribute('width', w); rbRect.setAttribute('height', h);
+    rbRect.setAttribute('fill', 'rgba(0,201,167,0.08)');
+    rbRect.setAttribute('stroke', '#00c9a7');
+    rbRect.setAttribute('stroke-width', '1.5');
+    rbRect.setAttribute('stroke-dasharray', '6 3');
+    layer.appendChild(rbRect);
+    return;
+  }
+
+  // ── Multi-select (2+ items): per-component rings + group bounding box ───
+  const ids = getSelectedIds();
+  if (ids.length > 1) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const id of ids) {
+      const c = state.components.find(comp => comp.id === id);
+      if (!c) continue;
+      const cx = cmToPx(c.x + c.width / 2);
+      const cy = cmToPx(c.y + c.height / 2);
+      const w = cmToPx(c.width), h = cmToPx(c.height);
+      const w2 = w / 2, h2 = h / 2;
+      const pad = 3;
+      const rad = (c.rotation || 0) * Math.PI / 180;
+      const fx = c.flipped ? -1 : 1;
+      const Lm = (lx, ly) => {
+        const rdx = lx * Math.cos(rad) - ly * Math.sin(rad);
+        const rdy = lx * Math.sin(rad) + ly * Math.cos(rad);
+        return { x: cx + rdx * fx, y: cy + rdy };
+      };
+      // Per-component teal ring (follows rotation)
+      const ring = document.createElementNS(NS, 'polygon');
+      ring.setAttribute('points', [
+        Lm(-w2-pad, -h2-pad), Lm(w2+pad, -h2-pad),
+        Lm(w2+pad,  h2+pad),  Lm(-w2-pad,  h2+pad),
+      ].map(p => `${p.x},${p.y}`).join(' '));
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', '#00c9a7');
+      ring.setAttribute('stroke-width', '1.5');
+      ring.setAttribute('stroke-dasharray', '5 3');
+      ring.setAttribute('opacity', '0.8');
+      layer.appendChild(ring);
+      // Expand group bbox using rotated corners (screen px)
+      for (const p of [Lm(-w2, -h2), Lm(w2, -h2), Lm(w2, h2), Lm(-w2, h2)]) {
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+      }
+    }
+    // Group bounding box
+    if (minX < Infinity) {
+      const gpad = 8;
+      const bbox = document.createElementNS(NS, 'rect');
+      bbox.setAttribute('x', minX - gpad); bbox.setAttribute('y', minY - gpad);
+      bbox.setAttribute('width',  maxX - minX + gpad * 2);
+      bbox.setAttribute('height', maxY - minY + gpad * 2);
+      bbox.setAttribute('fill', 'rgba(0,201,167,0.05)');
+      bbox.setAttribute('stroke', '#00c9a7');
+      bbox.setAttribute('stroke-width', '2');
+      bbox.setAttribute('stroke-dasharray', '8 5');
+      bbox.setAttribute('rx', '4');
+      layer.appendChild(bbox);
+    }
+    return;
+  }
+
+  // ── Single-select: existing behavior ────────────────────────────────────
   const selId = getSelected();
   if (!selId) return;
   const comp = [...state.components, ...state.environment].find(c => c.id === selId);
