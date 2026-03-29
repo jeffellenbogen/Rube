@@ -209,6 +209,8 @@ export function initDrag(svgEl) {
       for (const name of ['cordLeft', 'cordRight']) {
         const pt = pts[name];
         if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
+          // If pulley is part of a multi-selection, let the group drag path handle it
+          if (selectedIds.length > 1 && selectedIds.includes(id)) break;
           selectedIds = [id];
           render();
           handleDrag = {
