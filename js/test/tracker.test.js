@@ -74,3 +74,64 @@ test('custom item without name falls back to "Custom"', () => {
   const bom = getBOM({ components: [{ type: 'material', subtype: 'custom' }] });
   assert(bom.find(b => b.name === 'Custom'));
 });
+
+test('getRequirements defaults to auto mode when mode absent', () => {
+  const comps = [
+    { id: 's', type: 'marker', subtype: 'start' },
+    { id: 'a', type: 'material', subtype: 'ball' },
+    { id: 'f', type: 'marker', subtype: 'finish' },
+  ];
+  const connections = [{ fromId: 's', toId: 'a' }, { fromId: 'a', toId: 'f' }];
+  const r = getRequirements({ components: comps, connections });
+  assertEqual(r.steps, 1);
+});
+
+test('getRequirements mode=flags counts flag subtypes only', () => {
+  const comps = [
+    { type: 'marker', subtype: 'flag' },
+    { type: 'marker', subtype: 'flag' },
+    { type: 'marker', subtype: 'flag' },
+  ];
+  const r = getRequirements({ components: comps, connections: [], mode: 'flags' });
+  assertEqual(r.steps, 3);
+  assertEqual(r.stepsMet, false);
+});
+
+test('getRequirements mode=flags 5 flags = stepsMet true', () => {
+  const comps = Array.from({ length: 5 }, () => ({ type: 'marker', subtype: 'flag' }));
+  const r = getRequirements({ components: comps, connections: [], mode: 'flags' });
+  assertEqual(r.steps, 5);
+  assertEqual(r.stepsMet, true);
+});
+
+test('getRequirements mode=flags ignores connection chain', () => {
+  const comps = [
+    { id: 's', type: 'marker', subtype: 'start' },
+    { id: 'a', type: 'material', subtype: 'ball' },
+    { id: 'b', type: 'material', subtype: 'ball' },
+    { id: 'c', type: 'material', subtype: 'ball' },
+    { id: 'd', type: 'material', subtype: 'ball' },
+    { id: 'e', type: 'material', subtype: 'ball' },
+    { id: 'f', type: 'marker', subtype: 'finish' },
+    { type: 'marker', subtype: 'flag' },
+    { type: 'marker', subtype: 'flag' },
+  ];
+  const connections = [
+    { fromId: 's', toId: 'a' }, { fromId: 'a', toId: 'b' },
+    { fromId: 'b', toId: 'c' }, { fromId: 'c', toId: 'd' },
+    { fromId: 'd', toId: 'e' }, { fromId: 'e', toId: 'f' },
+  ];
+  const r = getRequirements({ components: comps, connections, mode: 'flags' });
+  assertEqual(r.steps, 2);
+});
+
+test('getBOM excludes flag markers', () => {
+  const comps = [
+    { type: 'material', subtype: 'ball' },
+    { type: 'marker', subtype: 'flag' },
+    { type: 'marker', subtype: 'flag' },
+  ];
+  const bom = getBOM({ components: comps });
+  assert(!bom.find(b => b.name === 'flag'));
+  assert(bom.find(b => b.name === 'ball'));
+});

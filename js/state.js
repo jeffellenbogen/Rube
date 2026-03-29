@@ -3,6 +3,7 @@ let state = defaultState();
 function defaultState() {
   return {
     version: 2,
+    mode: 'auto',
     meta: { title: 'Team Name', scale: 4, canvasExpansion: { left: 0, right: 0 } },
     environment: [],
     components: [],

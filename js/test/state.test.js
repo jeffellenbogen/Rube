@@ -61,3 +61,8 @@ test('expandCanvas clamps to 0.5 max', () => {
   expandCanvas('left'); // should stay at 0.5
   assertEqual(getState().meta.canvasExpansion.left, 0.5);
 });
+
+test('default state includes mode: auto', () => {
+  resetState();
+  assertEqual(getState().mode, 'auto');
+});

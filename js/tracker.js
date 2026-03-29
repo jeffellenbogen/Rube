@@ -9,7 +9,10 @@ export function getRequirements(state) {
   const components = state.components || [];
   const placed = components.filter(c => c.type === 'simple_machine');
   const machineTypes = [...new Set(placed.map(c => c.subtype))];
-  const steps = countSteps(state);
+  const mode = state.mode || 'auto';
+  const steps = mode === 'flags'
+    ? components.filter(c => c.subtype === 'flag').length
+    : countSteps(state);
   return {
     machineTypes,
     machinesMet: machineTypes.length >= MACHINES_REQUIRED,
