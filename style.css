@@ -643,6 +643,7 @@ main {
   cursor: grab;
   margin-top: 4px;
 }
+#flag-drag-widget[hidden] { display: none; }
 .flag-widget-label {
   display: block;
   font-size: 9px;
