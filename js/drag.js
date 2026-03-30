@@ -194,7 +194,6 @@ export function initDrag(svgEl) {
 
     // Shift-click: toggle this component in/out of selectedIds
     if (e.shiftKey) {
-      if (item.type === 'environment' || item.type === 'marker') return; // exclude from multi-selection
       const idx = selectedIds.indexOf(id);
       selectedIds = idx >= 0 ? selectedIds.filter(s => s !== id) : [...selectedIds, id];
       render();
@@ -237,9 +236,9 @@ export function initDrag(svgEl) {
       const pos = screenToCanvas(e.clientX, e.clientY);
       const startPositions = new Map();
       for (const sid of selectedIds) {
-        const sc = state.components.find(c => c.id === sid);
+        const sc = state.components.find(c => c.id === sid) || state.environment.find(e => e.id === sid);
         if (!sc) continue;
-        const entry = { x: sc.x, y: sc.y };
+        const entry = { x: sc.x, y: sc.y, isEnv: sc.type === 'environment' };
         if (sc.subtype === 'string' && sc.subParts) {
           entry.isString = true;
           entry.origSubParts = { ...sc.subParts };
@@ -409,6 +408,8 @@ export function initDrag(svgEl) {
               x2: orig.strX2 + dx, y2: orig.strY2 + dy,
             },
           });
+        } else if (orig.isEnv) {
+          updateEnvItem(sid, { x: orig.x + dx, y: orig.y + dy });
         } else {
           updateComponent(sid, { x: orig.x + dx, y: orig.y + dy });
         }
@@ -562,7 +563,8 @@ export function initDrag(svgEl) {
           width: Math.abs(rb.currentX - rb.startX),
           height: Math.abs(rb.currentY - rb.startY),
         };
-        const found = getComponentsInRect(getState().components, rect);
+        const s = getState();
+        const found = getComponentsInRect(s.components, s.environment, rect);
         if (e.shiftKey) {
           const combined = new Set([...selectedIds, ...found]);
           selectedIds = [...combined];
