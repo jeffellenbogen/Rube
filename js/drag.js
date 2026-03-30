@@ -1,4 +1,4 @@
-import { updateComponent, updateEnvItem, getState } from './state.js';
+import { updateComponent, updateEnvItem, getState, addComponent, addEnvItem, addConnection } from './state.js';
 import { screenToCanvas, cmToPx, pxToCm, getFloorPx, getRoomDimensions } from './canvas.js';
 import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
@@ -41,6 +41,8 @@ let selectedIds = [];     // replaces selected — 0=none, 1=single-select, 2+=m
 let rubberBand  = null;   // { startX, startY, currentX, currentY } in canvas cm, or null
 let groupDrag   = null;   // { startX, startY, startPositions: Map<id,{x,y,...}> } or null
 let hasMoved = false;     // tracks whether current drag has actually moved
+let clipboard   = null;   // { items: Array<{data, isEnv, originalId}>, connections: Array } or null
+let pasteOffset = 0;      // increments each paste without a new copy; resets on copySelection()
 
 // Backward-compatible single-select accessors (action buttons, handles still use these)
 export function getSelected()       { return selectedIds[0] ?? null; }
@@ -590,3 +592,72 @@ export function initDrag(svgEl) {
 }
 
 export function getConnDrag() { return connDrag; }
+
+export function copySelection() {
+  const state = getState();
+  if (selectedIds.length === 0) return;
+
+  const items = [];
+  const copiedIdSet = new Set();
+
+  for (const id of selectedIds) {
+    const comp = state.components.find(c => c.id === id);
+    if (comp) {
+      if (comp.subtype === 'start' || comp.subtype === 'finish') continue;
+      const { id: _id, ...data } = comp;
+      items.push({ data, isEnv: false, originalId: id });
+      copiedIdSet.add(id);
+      continue;
+    }
+    const env = state.environment.find(e => e.id === id);
+    if (env) {
+      const { id: _id, ...data } = env;
+      items.push({ data, isEnv: true, originalId: id });
+      copiedIdSet.add(id);
+    }
+  }
+
+  // Only copy connections where both endpoints are in the selection
+  const connections = state.connections.filter(
+    c => copiedIdSet.has(c.fromId) && copiedIdSet.has(c.toId)
+  );
+
+  clipboard = { items, connections };
+  pasteOffset = 0;
+}
+
+export function pasteSelection() {
+  if (!clipboard) return;
+
+  undoPush();
+  pasteOffset += 1;
+  const offset = pasteOffset * 2; // cm — stacks with each successive paste
+
+  const idMap = new Map(); // originalId → newId
+
+  for (const { data, isEnv, originalId } of clipboard.items) {
+    const copy = { ...data, x: data.x + offset, y: data.y + offset };
+    // String endpoints stored in subParts must also be offset
+    if (copy.subtype === 'string' && copy.subParts) {
+      copy.subParts = { ...copy.subParts };
+      if (copy.subParts.x1 != null) copy.subParts.x1 += offset;
+      if (copy.subParts.y1 != null) copy.subParts.y1 += offset;
+      if (copy.subParts.x2 != null) copy.subParts.x2 += offset;
+      if (copy.subParts.y2 != null) copy.subParts.y2 += offset;
+    }
+    const newId = isEnv ? addEnvItem(copy) : addComponent(copy);
+    idMap.set(originalId, newId);
+  }
+
+  // Re-create connections between pasted items using new IDs
+  for (const conn of clipboard.connections) {
+    const newFromId = idMap.get(conn.fromId);
+    const newToId   = idMap.get(conn.toId);
+    if (newFromId && newToId) {
+      addConnection({ fromId: newFromId, fromPoint: conn.fromPoint, toId: newToId, toPoint: conn.toPoint });
+    }
+  }
+
+  selectedIds = [...idMap.values()];
+  render();
+}
