@@ -7,7 +7,7 @@ import { drawEnvIcon } from './render/environment.js';
 import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
 import { toggleComment, repositionOverlays } from './comments.js';
 import { updateTrackerUI } from './tracker-ui.js';
-import { initDrag, getSelected, setSelected, getSelectedIds, setSelectedIds } from './drag.js';
+import { initDrag, getSelected, setSelected, getSelectedIds, setSelectedIds, copySelection, pasteSelection } from './drag.js';
 import { deleteConnection } from './connections.js';
 import { downloadPNG, uploadPNG } from './export.js';
 import { initHelp } from './help.js';
@@ -301,6 +301,18 @@ document.addEventListener('keydown', e => {
     render();
   }
 
+  if (e.metaKey && e.key === 'c') {
+    e.preventDefault();
+    copySelection();
+  }
+
+  if (e.metaKey && e.key === 'v') {
+    e.preventDefault();
+    pasteSelection();
+    updateUndoButtons();
+    updateTrackerUI();
+  }
+
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedConnId) {
       undoPush();
@@ -314,11 +326,10 @@ document.addEventListener('keydown', e => {
     if (ids.length > 1) { // > 1 so single-item selections fall through to the getSelected() single-select path below
       undoPush();
       const s = getState();
-      // Safe to call removeComponent unconditionally: selectedIds only ever contains simple_machine/material types
-      // because getComponentsInRect (rubber-band) and shift-click both exclude environment items by design.
       ids.forEach(id => {
         if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
-        removeComponent(id);
+        if (s.environment.find(e => e.id === id)) removeEnvItem(id);
+        else removeComponent(id);
       });
       setSelectedIds([]);
       render(); updateUndoButtons(); updateTrackerUI();
