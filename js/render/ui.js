@@ -32,7 +32,7 @@ export function renderUI(state, layer) {
   if (ids.length > 1) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const id of ids) {
-      const c = state.components.find(comp => comp.id === id);
+      const c = state.components.find(comp => comp.id === id) || state.environment.find(comp => comp.id === id);
       if (!c) continue;
       const cx = cmToPx(c.x + c.width / 2);
       const cy = cmToPx(c.y + c.height / 2);
