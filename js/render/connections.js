@@ -67,7 +67,6 @@ export function renderConnections(state, layer) {
     }
 
     const isCord = CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
-    if (from.subtype === 'matchboxTrack' && to.subtype === 'matchboxTrack') continue;
 
     const l = document.createElementNS(NS, 'line');
     l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
