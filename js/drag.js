@@ -631,7 +631,7 @@ export function pasteSelection() {
 
   undoPush();
   pasteOffset += 1;
-  const offset = pasteOffset * 2; // cm — stacks with each successive paste
+  const offset = pasteOffset * 4; // cm — stacks with each successive paste
 
   const idMap = new Map(); // originalId → newId
 
