@@ -240,7 +240,7 @@ export function initDrag(svgEl) {
       for (const sid of selectedIds) {
         const sc = state.components.find(c => c.id === sid) || state.environment.find(e => e.id === sid);
         if (!sc) continue;
-        const entry = { x: sc.x, y: sc.y, isEnv: sc.type === 'environment' };
+        const entry = { x: sc.x, y: sc.y, isEnv: !!state.environment.find(e => e.id === sid) };
         if (sc.subtype === 'string' && sc.subParts) {
           entry.isString = true;
           entry.origSubParts = { ...sc.subParts };

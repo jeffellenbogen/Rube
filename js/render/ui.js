@@ -428,9 +428,9 @@ export function renderUI(state, layer) {
 
   // Attachment point dots (for selected component only)
   // Pulley cord ends are rendered as larger balls below — skip them here
-  const ENV_ATTACH_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
-  const isEnvWithAttach = !!state.environment.find(e => e.id === selId && ENV_ATTACH_SUBTYPES.has(e.subtype));
-  if (state.components.find(c => c.id === selId) || isEnvWithAttach) {
+  // Env items are NOT given initiator dots — they're passive snap targets (shown via hover
+  // highlights during connDrag from other components) so dots don't intercept body drags.
+  if (state.components.find(c => c.id === selId)) {
     const pts = getAttachPx(comp);
     for (const [name, pos] of Object.entries(pts)) {
       if (comp.subtype === 'pulley' && (name === 'cordLeft' || name === 'cordRight')) continue;
