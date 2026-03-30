@@ -1,10 +1,11 @@
-import { updateComponent, updateEnvItem, getState } from './state.js';
+import { updateComponent, updateEnvItem, getState, addComponent, addEnvItem, addConnection } from './state.js';
 import { screenToCanvas, cmToPx, pxToCm, getFloorPx, getRoomDimensions } from './canvas.js';
 import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection, deleteConnection } from './connections.js';
 import { getSurfaces } from './render/environment.js';
 import { getAttachPx } from './render/attachPoints.js';
+import { getComponentsInRect } from './multi-select.js';
 
 // Subtypes that must keep their aspect ratio when resized
 const LOCK_ASPECT = new Set([
@@ -33,14 +34,26 @@ const DEFAULTS = {
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
 };
 
-let dragging = null;      // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
-let connDrag = null;      // connection drag: { fromId, fromPoint, curPx, curPy }
+let dragging   = null;    // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
+let connDrag   = null;    // connection drag: { fromId, fromPoint, curPx, curPy }
 let handleDrag = null;    // { type, compId, startPx, startPy, origValue }
-let selected = null;
+let selectedIds = [];     // replaces selected — 0=none, 1=single-select, 2+=multi-select
+let rubberBand  = null;   // { startX, startY, currentX, currentY } in canvas cm, or null
+let groupDrag   = null;   // { startX, startY, startPositions: Map<id,{x,y,...}> } or null
 let hasMoved = false;     // tracks whether current drag has actually moved
+let clipboard   = null;   // { items: Array<{data, isEnv, originalId}>, connections: Array } or null
+let pasteOffset = 0;      // increments each paste without a new copy; resets on copySelection()
 
-export function getSelected() { return selected; }
-export function setSelected(id) { selected = id; }
+// Backward-compatible single-select accessors (action buttons, handles still use these)
+export function getSelected()       { return selectedIds[0] ?? null; }
+export function setSelected(id)     { selectedIds = id ? [id] : []; }
+
+// Multi-select accessors
+export function getSelectedIds()    { return selectedIds; }
+export function setSelectedIds(ids) { selectedIds = [...ids]; }
+
+// Rubber-band rect for renderer (cm coordinates, or null)
+export function getRubberBand()     { return rubberBand; }
 
 function getLeverBarTopY(lever, compMidX) {
   const { tiltSide = 'none' } = lever.subParts || {};
@@ -166,11 +179,29 @@ export function initDrag(svgEl) {
     }
 
     const comp = e.target.closest('[data-id]');
-    if (!comp) { selected = null; render(); return; }
+
+    // No component hit — start rubber-band (or clear selection if no shift)
+    if (!comp) {
+      if (!e.shiftKey) selectedIds = [];
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      rubberBand = { startX: pos.x, startY: pos.y, currentX: pos.x, currentY: pos.y };
+      render();
+      return;
+    }
+
     const id = comp.dataset.id;
     const state = getState();
     const item = state.components.find(c => c.id === id) || state.environment.find(ev => ev.id === id);
     if (!item) return;
+
+    // Shift-click: toggle this component in/out of selectedIds
+    if (e.shiftKey) {
+      const idx = selectedIds.indexOf(id);
+      selectedIds = idx >= 0 ? selectedIds.filter(s => s !== id) : [...selectedIds, id];
+      render();
+      e.stopPropagation();
+      return;
+    }
 
     // Pulley: clicks near cord ends start a cord handle drag (not body drag)
     if (item.subtype === 'pulley') {
@@ -180,7 +211,9 @@ export function initDrag(svgEl) {
       for (const name of ['cordLeft', 'cordRight']) {
         const pt = pts[name];
         if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
-          selected = id;
+          // If pulley is part of a multi-selection, let the group drag path handle it
+          if (selectedIds.length > 1 && selectedIds.includes(id)) break;
+          selectedIds = [id];
           render();
           handleDrag = {
             type: name,
@@ -200,7 +233,33 @@ export function initDrag(svgEl) {
       }
     }
 
-    selected = id;
+    // Group drag: component is already part of a multi-selection
+    if (selectedIds.length > 1 && selectedIds.includes(id)) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      const startPositions = new Map();
+      for (const sid of selectedIds) {
+        const sc = state.components.find(c => c.id === sid) || state.environment.find(e => e.id === sid);
+        if (!sc) continue;
+        const entry = { x: sc.x, y: sc.y, isEnv: sc.type === 'environment' };
+        if (sc.subtype === 'string' && sc.subParts) {
+          entry.isString = true;
+          entry.origSubParts = { ...sc.subParts };
+          entry.strX1 = sc.subParts.x1 ?? sc.x;
+          entry.strY1 = sc.subParts.y1 ?? (sc.y + sc.height / 2);
+          entry.strX2 = sc.subParts.x2 ?? (sc.x + sc.width);
+          entry.strY2 = sc.subParts.y2 ?? (sc.y + sc.height / 2);
+        }
+        startPositions.set(sid, entry);
+      }
+      groupDrag = { startX: pos.x, startY: pos.y, startPositions };
+      hasMoved = false;
+      window.__dragActive = true;
+      e.stopPropagation();
+      return;
+    }
+
+    // Normal single-select
+    selectedIds = [id];
     render();
     const pos = screenToCanvas(e.clientX, e.clientY);
     const isEnvItem = !!state.environment.find(ev => ev.id === id);
@@ -327,6 +386,40 @@ export function initDrag(svgEl) {
       render();
       return;
     }
+
+    if (rubberBand) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      rubberBand.currentX = pos.x;
+      rubberBand.currentY = pos.y;
+      render();
+      return;
+    }
+
+    if (groupDrag) {
+      if (!hasMoved) { undoPush(); hasMoved = true; }
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      const dx = pos.x - groupDrag.startX;
+      const dy = pos.y - groupDrag.startY;
+      for (const [sid, orig] of groupDrag.startPositions) {
+        if (orig.isString) {
+          updateComponent(sid, {
+            x: orig.x + dx, y: orig.y + dy,
+            subParts: {
+              ...orig.origSubParts,
+              x1: orig.strX1 + dx, y1: orig.strY1 + dy,
+              x2: orig.strX2 + dx, y2: orig.strY2 + dy,
+            },
+          });
+        } else if (orig.isEnv) {
+          updateEnvItem(sid, { x: orig.x + dx, y: orig.y + dy });
+        } else {
+          updateComponent(sid, { x: orig.x + dx, y: orig.y + dy });
+        }
+      }
+      render();
+      return;
+    }
+
     if (!dragging) return;
     if (!hasMoved) { undoPush(); hasMoved = true; }
     const pos = screenToCanvas(e.clientX, e.clientY);
@@ -460,6 +553,38 @@ export function initDrag(svgEl) {
       render();
       return;
     }
+    if (rubberBand) {
+      const rb = rubberBand;
+      rubberBand = null;
+      const dx = Math.abs(rb.currentX - rb.startX);
+      const dy = Math.abs(rb.currentY - rb.startY);
+      if (dx > 2 || dy > 2) {
+        const rect = {
+          x: Math.min(rb.startX, rb.currentX),
+          y: Math.min(rb.startY, rb.currentY),
+          width: Math.abs(rb.currentX - rb.startX),
+          height: Math.abs(rb.currentY - rb.startY),
+        };
+        const s = getState();
+        const found = getComponentsInRect(s.components, s.environment, rect);
+        if (e.shiftKey) {
+          const combined = new Set([...selectedIds, ...found]);
+          selectedIds = [...combined];
+        } else {
+          selectedIds = found;
+        }
+      } else if (!e.shiftKey) {
+        selectedIds = [];
+      }
+      render();
+      return;
+    }
+
+    if (groupDrag) {
+      groupDrag = null; hasMoved = false; window.__dragActive = false;
+      return;
+    }
+
     if (dragging) {
       dragging = null; window.__dragActive = false; hasMoved = false;
     }
@@ -467,3 +592,72 @@ export function initDrag(svgEl) {
 }
 
 export function getConnDrag() { return connDrag; }
+
+export function copySelection() {
+  const state = getState();
+  if (selectedIds.length === 0) return;
+
+  const items = [];
+  const copiedIdSet = new Set();
+
+  for (const id of selectedIds) {
+    const comp = state.components.find(c => c.id === id);
+    if (comp) {
+      if (comp.subtype === 'start' || comp.subtype === 'finish') continue;
+      const { id: _id, ...data } = comp;
+      items.push({ data, isEnv: false, originalId: id });
+      copiedIdSet.add(id);
+      continue;
+    }
+    const env = state.environment.find(e => e.id === id);
+    if (env) {
+      const { id: _id, ...data } = env;
+      items.push({ data, isEnv: true, originalId: id });
+      copiedIdSet.add(id);
+    }
+  }
+
+  // Only copy connections where both endpoints are in the selection
+  const connections = state.connections.filter(
+    c => copiedIdSet.has(c.fromId) && copiedIdSet.has(c.toId)
+  );
+
+  clipboard = { items, connections };
+  pasteOffset = 0;
+}
+
+export function pasteSelection() {
+  if (!clipboard) return;
+
+  undoPush();
+  pasteOffset += 1;
+  const offset = pasteOffset * 2; // cm — stacks with each successive paste
+
+  const idMap = new Map(); // originalId → newId
+
+  for (const { data, isEnv, originalId } of clipboard.items) {
+    const copy = { ...data, x: data.x + offset, y: data.y + offset };
+    // String endpoints stored in subParts must also be offset
+    if (copy.subtype === 'string' && copy.subParts) {
+      copy.subParts = { ...copy.subParts };
+      if (copy.subParts.x1 != null) copy.subParts.x1 += offset;
+      if (copy.subParts.y1 != null) copy.subParts.y1 += offset;
+      if (copy.subParts.x2 != null) copy.subParts.x2 += offset;
+      if (copy.subParts.y2 != null) copy.subParts.y2 += offset;
+    }
+    const newId = isEnv ? addEnvItem(copy) : addComponent(copy);
+    idMap.set(originalId, newId);
+  }
+
+  // Re-create connections between pasted items using new IDs
+  for (const conn of clipboard.connections) {
+    const newFromId = idMap.get(conn.fromId);
+    const newToId   = idMap.get(conn.toId);
+    if (newFromId && newToId) {
+      addConnection({ fromId: newFromId, fromPoint: conn.fromPoint, toId: newToId, toPoint: conn.toPoint });
+    }
+  }
+
+  selectedIds = [...idMap.values()];
+  render();
+}

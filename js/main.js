@@ -7,7 +7,7 @@ import { drawEnvIcon } from './render/environment.js';
 import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
 import { toggleComment, repositionOverlays } from './comments.js';
 import { updateTrackerUI } from './tracker-ui.js';
-import { initDrag, getSelected, setSelected } from './drag.js';
+import { initDrag, getSelected, setSelected, getSelectedIds, setSelectedIds, copySelection, pasteSelection } from './drag.js';
 import { deleteConnection } from './connections.js';
 import { downloadPNG, uploadPNG } from './export.js';
 import { initHelp } from './help.js';
@@ -295,6 +295,24 @@ document.addEventListener('keydown', e => {
     if (e.shiftKey) { redo(); } else { undo(); }
     render(); updateUndoButtons();
   }
+
+  if (e.key === 'Escape') {
+    setSelectedIds([]);
+    render();
+  }
+
+  if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+    e.preventDefault();
+    copySelection();
+  }
+
+  if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+    e.preventDefault();
+    pasteSelection();
+    updateUndoButtons();
+    updateTrackerUI();
+  }
+
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedConnId) {
       undoPush();
@@ -303,6 +321,21 @@ document.addEventListener('keydown', e => {
       render(); updateUndoButtons(); updateTrackerUI();
       return;
     }
+    // Multi-select delete
+    const ids = getSelectedIds();
+    if (ids.length > 1) { // > 1 so single-item selections fall through to the getSelected() single-select path below
+      undoPush();
+      const s = getState();
+      ids.forEach(id => {
+        if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
+        if (s.environment.find(e => e.id === id)) removeEnvItem(id);
+        else removeComponent(id);
+      });
+      setSelectedIds([]);
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    // Single-select delete (existing)
     const id = getSelected();
     if (!id) return;
     const s = getState();
