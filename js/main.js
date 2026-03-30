@@ -301,12 +301,12 @@ document.addEventListener('keydown', e => {
     render();
   }
 
-  if (e.metaKey && e.key === 'c') {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
     e.preventDefault();
     copySelection();
   }
 
-  if (e.metaKey && e.key === 'v') {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
     e.preventDefault();
     pasteSelection();
     updateUndoButtons();
