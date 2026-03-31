@@ -71,6 +71,35 @@ Connections live in `state.connections[]`. Each has `fromId`, `fromPoint`, `toId
 ### Coordinate System
 Canvas uses **centimeters** as the internal unit. `cmToPx` / `pxToCm` / `screenToCanvas` in `js/canvas.js` handle all conversions. Component `x`, `y`, `width`, `height` are all in cm.
 
+## PNG Export and Import
+
+The app saves and loads projects via PNG files that carry the full project state invisibly embedded as metadata. This is the only persistence mechanism — there is no server, no JSON download, no separate file.
+
+### Export (`js/export.js → downloadPNG`)
+
+Clicking "Download" renders a **print-ready blueprint PNG** and injects the project state into it:
+
+**Page format:** Landscape letter at 300 DPI — 11" × 8.5". The HTML Canvas is created at 3300×2550 px (1650×1275 logical, then `ctx.scale(2,2)` for crispness on high-DPI screens). This size is chosen to print cleanly on a standard letter-size sheet in landscape orientation.
+
+**Layout:**
+- **Header** — "RUBE GOLDBERG PLAN" title, team name, and today's date across the top
+- **Canvas area** (left, ~80% of width) — the SVG canvas serialized and drawn via `XMLSerializer` → `Image` → `ctx.drawImage`; any open comment bubbles are rendered as callout boxes overlaid on the canvas
+- **Materials panel** (right, fixed 260px wide) — three sections:
+  - *Simple Machines* — checkbox list of all 6 machine types, ticked/teal if the student has placed that type
+  - *Materials* — bill of materials (quantity × name), alphabetically sorted, environment items excluded
+  - *Steps* — step count vs. 5+ target, labeled AUTO or FLAGS depending on current mode
+
+**Metadata:** After `canvas.toBlob()`, the PNG binary is parsed manually. The full `state` object is JSON-serialized and injected as a **PNG `iTXt` chunk** with keyword `RubeGoldbergState`, inserted immediately before the first `IDAT` chunk. CRC-32 is computed in JS. This produces a valid standard PNG that any image viewer opens normally, while silently carrying the project data.
+
+**Filename:** `{team-name}-plan.png` (team name sanitized, spaces → hyphens).
+
+### Import (`js/export.js → uploadPNG`)
+
+Clicking "Upload" reads the PNG binary, scans its chunks for an `iTXt` chunk with keyword `RubeGoldbergState`, decodes the JSON, and validates `state.version === 2`. On success the full project state is restored exactly as saved. Files without the metadata (or with a version mismatch) show a descriptive error.
+
+### Key constraint
+The PNG is the **only** save format. Don't add a separate JSON export without a clear reason — the embedded-metadata approach keeps everything in one file that students can email, print, or re-upload without managing separate files.
+
 ## Deployment Workflow
 
 - **`main` branch** → GitHub Pages (live, public URL). Never commit directly to main for features.
