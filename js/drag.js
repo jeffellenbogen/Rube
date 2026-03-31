@@ -380,6 +380,7 @@ export function initDrag(svgEl) {
     }
 
     if (connDrag) {
+      if (e.buttons === 0) { connDrag = null; rubberBand = null; render(); return; }
       const movePos = screenToCanvas(e.clientX, e.clientY);
       connDrag.curPx = cmToPx(movePos.x);
       connDrag.curPy = cmToPx(movePos.y);
@@ -388,6 +389,7 @@ export function initDrag(svgEl) {
     }
 
     if (rubberBand) {
+      if (e.buttons === 0) { rubberBand = null; render(); return; }
       const pos = screenToCanvas(e.clientX, e.clientY);
       rubberBand.currentX = pos.x;
       rubberBand.currentY = pos.y;
@@ -547,9 +549,9 @@ export function initDrag(svgEl) {
       if (nearest) {
         undoPush();
         createConnection(connDrag.fromId, connDrag.fromPoint, nearest.compId, nearest.pointName);
-        render();
       }
       connDrag = null;
+      rubberBand = null;
       render();
       return;
     }

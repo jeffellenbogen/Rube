@@ -290,6 +290,9 @@ btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons();
 btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
 
 document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
     if (e.shiftKey) { redo(); } else { undo(); }
