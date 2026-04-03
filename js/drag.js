@@ -224,7 +224,8 @@ export function initDrag(svgEl) {
       return;
     }
 
-    // Pulley: clicks near cord ends start a cord handle drag (not body drag)
+    // Pulley: clicks near cord ends start a cord handle drag (not body drag),
+    // even when the pulley is part of a multi-selection.
     if (item.subtype === 'pulley') {
       const rect = svgEl.getBoundingClientRect();
       const clickCanvas = screenToCanvas(e.clientX, e.clientY);
@@ -234,8 +235,6 @@ export function initDrag(svgEl) {
       for (const name of ['cordLeft', 'cordRight']) {
         const pt = pts[name];
         if (pt && Math.hypot(clickSvgX - pt.x, clickSvgY - pt.y) < 20) {
-          // If pulley is part of a multi-selection, let the group drag path handle it
-          if (selectedIds.length > 1 && selectedIds.includes(id)) break;
           selectedIds = [id];
           render();
           handleDrag = {
@@ -249,6 +248,40 @@ export function initDrag(svgEl) {
             origW: item.width, origH: item.height,
             origX: item.x, origY: item.y,
             disconnected: false,
+          };
+          hasMoved = false;
+          e.stopPropagation();
+          return;
+        }
+      }
+    }
+
+    // String: clicks near end handles start an end handle drag (not body drag),
+    // even when the string is part of a multi-selection.
+    if (item.subtype === 'string') {
+      const svgRect = svgEl.getBoundingClientRect();
+      const clickCanvas = screenToCanvas(e.clientX, e.clientY);
+      const clickSvgX = cmToPx(clickCanvas.x);
+      const clickSvgY = cmToPx(clickCanvas.y);
+      const sp = item.subParts || {};
+      const ex1 = cmToPx(sp.x1 ?? item.x);
+      const ey1 = cmToPx(sp.y1 ?? (item.y + item.height / 2));
+      const ex2 = cmToPx(sp.x2 ?? (item.x + item.width));
+      const ey2 = cmToPx(sp.y2 ?? (item.y + item.height / 2));
+      for (const [name, ex, ey] of [['end1', ex1, ey1], ['end2', ex2, ey2]]) {
+        if (Math.hypot(clickSvgX - ex, clickSvgY - ey) < 20) {
+          selectedIds = [id];
+          render();
+          handleDrag = {
+            type: name,
+            compId: id,
+            startPx: e.clientX - svgRect.left,
+            startPy: e.clientY - svgRect.top,
+            origSubParts: { ...sp },
+            compX: cmToPx(item.x), compY: cmToPx(item.y),
+            compW: cmToPx(item.width), compH: cmToPx(item.height),
+            origW: item.width, origH: item.height,
+            origX: item.x, origY: item.y,
           };
           hasMoved = false;
           e.stopPropagation();
