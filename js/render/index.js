@@ -3,7 +3,7 @@ import { renderMachines } from './machines.js';
 import { renderMaterials } from './materials.js';
 import { renderUI } from './ui.js';
 import { renderConnections } from './connections.js';
-import { getLayers } from '../canvas.js';
+import { getLayers, applyViewportTransform } from '../canvas.js';
 import { getState } from '../state.js';
 import { syncOverlays } from '../comments.js';
 import { updateTrackerUI } from '../tracker-ui.js';
@@ -17,6 +17,7 @@ export function render() {
   renderMachines(state, layers.machines);
   renderConnections(state, layers.connections);
   renderUI(state, layers.ui);
+  applyViewportTransform();
   syncOverlays();
   updateTrackerUI();
 }
