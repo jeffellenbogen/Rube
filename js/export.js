@@ -1,5 +1,5 @@
 import { getState, loadState } from './state.js';
-import { cmToPx, getViewport, setViewport, resetViewport } from './canvas.js';
+import { cmToPx, getViewport, setViewport, resetViewport, FLOOR_Y } from './canvas.js';
 import { getRequirements } from './tracker.js';
 import { render } from './render/index.js';
 
@@ -406,7 +406,8 @@ export async function downloadPNG(svgEl) {
   // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
-  const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(state));
+  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y } };
+  const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(exportState));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
 
   // Restore the student's viewport

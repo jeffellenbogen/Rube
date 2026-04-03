@@ -443,13 +443,12 @@ function clampMarkers() {
 }
 
 function migrateFloorY(parsedState) {
-  // Old PNGs had a dynamic floor position based on window height.
-  // Infer the old floor Y from marker position and shift everything to align with FLOOR_Y.
-  const marker = (parsedState.components || []).find(c => c.subtype === 'start' || c.subtype === 'finish');
-  if (!marker) return;
-  const oldFloorY = marker.y + marker.height;
-  const shift = FLOOR_Y - oldFloorY;
-  if (Math.abs(shift) < 1) return; // already aligned, no migration needed
+  // Only migrate if the state carries an explicit floorY (set on export from v2.6.1+).
+  // Old PNGs without meta.floorY load as-is — marker positions are unreliable
+  // because students can drag markers anywhere.
+  const savedFloor = parsedState.meta?.floorY;
+  if (!savedFloor || Math.abs(savedFloor - FLOOR_Y) < 1) return;
+  const shift = FLOOR_Y - savedFloor;
   for (const comp of parsedState.components || []) comp.y += shift;
   for (const item of parsedState.environment || []) item.y += shift;
 }
