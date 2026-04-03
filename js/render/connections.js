@@ -1,5 +1,5 @@
 import { getAttachPx } from './attachPoints.js';
-import { getConnDrag } from '../drag.js';
+import { getConnDrag, getSelectedIds } from '../drag.js';
 import { getSurfaces } from './environment.js';
 import { cmToPx, pxToCm, getFloorPx } from '../canvas.js';
 
@@ -11,8 +11,27 @@ function findItem(state, id) {
   return state.components.find(c => c.id === id) || (state.environment || []).find(e => e.id === id);
 }
 
+// Teal × delete button at (cx, cy) with the connection ID embedded
+function makeTealX(cx, cy, connId) {
+  const g = document.createElementNS(NS, 'g');
+  g.dataset.action = 'delete-conn';
+  g.dataset.connId = connId;
+  g.setAttribute('cursor', 'pointer');
+  const dc = document.createElementNS(NS, 'circle');
+  dc.setAttribute('cx', cx); dc.setAttribute('cy', cy);
+  dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
+  dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
+  const dt = document.createElementNS(NS, 'text');
+  dt.setAttribute('x', cx); dt.setAttribute('y', cy);
+  dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
+  dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
+  g.appendChild(dc); g.appendChild(dt);
+  return g;
+}
+
 export function renderConnections(state, layer) {
   layer.innerHTML = '';
+  const selectedSet = new Set(getSelectedIds());
 
   for (const conn of state.connections) {
     const from = findItem(state, conn.fromId);
@@ -27,77 +46,62 @@ export function renderConnections(state, layer) {
     const g = document.createElementNS(NS, 'g');
     g.dataset.connId = conn.id;
 
+    const eitherEndpointSelected = selectedSet.has(conn.fromId) || selectedSet.has(conn.toId);
+
     if (conn.snap) {
-      // Snap connection: no line — just a red × above the attachment point to detach
-      const del = document.createElementNS(NS, 'g');
-      del.dataset.action = 'delete-conn';
-      del.dataset.connId = conn.id;
-      del.setAttribute('cursor', 'pointer');
-      const dc = document.createElementNS(NS, 'circle');
-      dc.setAttribute('cx', p1.x); dc.setAttribute('cy', p1.y - 12);
-      dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
-      dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
-      const dt = document.createElementNS(NS, 'text');
-      dt.setAttribute('x', p1.x); dt.setAttribute('y', p1.y - 12);
-      dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
-      dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
-      del.appendChild(dc); del.appendChild(dt);
-      g.appendChild(del);
+      // Physical snap connection: × AT the attachment point, visible only when an endpoint is selected
+      if (eitherEndpointSelected) {
+        g.appendChild(makeTealX(p1.x, p1.y, conn.id));
+      }
       layer.appendChild(g);
       continue;
     }
 
-    // Pulley cord connections: no line (machines.js draws the cord), just a teal × at p2
     if (CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)) {
-      const del = document.createElementNS(NS, 'g');
-      del.dataset.action = 'delete-conn'; del.dataset.connId = conn.id;
-      del.setAttribute('cursor', 'pointer');
-      const dc = document.createElementNS(NS, 'circle');
-      dc.setAttribute('cx', p2.x); dc.setAttribute('cy', p2.y - 12);
-      dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
-      dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
-      const dt = document.createElementNS(NS, 'text');
-      dt.setAttribute('x', p2.x); dt.setAttribute('y', p2.y - 12);
-      dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
-      dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
-      del.appendChild(dc); del.appendChild(dt);
-      g.appendChild(del);
+      // Physical cord connection: × AT the cord endpoint, visible only when an endpoint is selected
+      if (eitherEndpointSelected) {
+        g.appendChild(makeTealX(p2.x, p2.y, conn.id));
+      }
       layer.appendChild(g);
       continue;
     }
 
+    // Symbolic connection (orange line)
     const isCord = CORD_SUBTYPES.has(from.subtype) || CORD_SUBTYPES.has(to.subtype);
+    const isSelected = selectedSet.has(conn.id);
 
+    // Transparent wide hit area so the thin line is easy to click
+    const hitLine = document.createElementNS(NS, 'line');
+    hitLine.setAttribute('x1', p1.x); hitLine.setAttribute('y1', p1.y);
+    hitLine.setAttribute('x2', p2.x); hitLine.setAttribute('y2', p2.y);
+    hitLine.setAttribute('stroke', 'transparent');
+    hitLine.setAttribute('stroke-width', 16);
+    g.appendChild(hitLine);
+
+    // Visible line — brighter and thicker when selected
     const l = document.createElementNS(NS, 'line');
     l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
     l.setAttribute('x2', p2.x); l.setAttribute('y2', p2.y);
     if (isCord) {
-      l.setAttribute('stroke', '#ccc'); l.setAttribute('stroke-width', 2);
+      l.setAttribute('stroke', isSelected ? '#e0e0e0' : '#ccc');
+      l.setAttribute('stroke-width', isSelected ? 3 : 2);
     } else {
-      l.setAttribute('stroke', '#ff7b2e'); l.setAttribute('stroke-width', 2);
+      l.setAttribute('stroke', isSelected ? '#ff9f5e' : '#ff7b2e');
+      l.setAttribute('stroke-width', isSelected ? 3 : 2);
     }
     g.appendChild(l);
 
-    // Teal × at p2 (right/far endpoint of the connection)
-    const del = document.createElementNS(NS, 'g');
-    del.dataset.action = 'delete-conn';
-    del.dataset.connId = conn.id;
-    del.setAttribute('cursor', 'pointer');
-    const dc = document.createElementNS(NS, 'circle');
-    dc.setAttribute('cx', p2.x); dc.setAttribute('cy', p2.y - 12);
-    dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
-    dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
-    const dt = document.createElementNS(NS, 'text');
-    dt.setAttribute('x', p2.x); dt.setAttribute('y', p2.y - 12);
-    dt.setAttribute('text-anchor', 'middle'); dt.setAttribute('dominant-baseline', 'middle');
-    dt.setAttribute('fill', '#fff'); dt.setAttribute('font-size', 11); dt.textContent = '×';
-    del.appendChild(dc); del.appendChild(dt);
-    g.appendChild(del);
+    // Teal × at midpoint — only when this connection is selected
+    if (isSelected) {
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      g.appendChild(makeTealX(mx, my, conn.id));
+    }
 
     layer.appendChild(g);
   }
 
-  // Draw in-progress connection drag
+  // Draw in-progress connection drag (ghost line while dragging from attach point)
   const cd = getConnDrag();
   if (cd) {
     const fromComp = findItem(state, cd.fromId);
