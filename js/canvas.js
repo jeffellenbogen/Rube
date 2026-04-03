@@ -113,7 +113,7 @@ export function applyViewportTransform() {
   if (!viewportEl) return;
   const panXpx = viewPanX * basePx;
   const panYpx = viewPanY * basePx;
-  viewportEl.setAttribute('transform', `translate(${panXpx},${panYpx}) scale(${viewZoom})`);
+  viewportEl.setAttribute('transform', `scale(${viewZoom}) translate(${panXpx},${panYpx})`);
 }
 
 // ── Legacy accessors ─────────────────────────────────────────────────────────
@@ -123,3 +123,4 @@ export function getSvg()           { return svgEl; }
 export function getRoomDimensions(){ return { roomW: WORLD_W, roomH: WORLD_H }; }
 export function cmToPx(cm)         { return cm * basePx; }
 export function pxToCm(px)         { return px / basePx; }
+export function getFloorPx()       { return cmToPx(FLOOR_Y); }
