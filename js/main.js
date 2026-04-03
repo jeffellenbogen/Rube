@@ -206,7 +206,6 @@ drawFloor();
 initMarkers();
 render();
 
-let selectedConnId = null;
 
 svgEl.addEventListener('click', e => {
   // Action buttons take priority (including delete-conn on connections)
@@ -216,6 +215,7 @@ svgEl.addEventListener('click', e => {
     if (action === 'delete-conn') {
       undoPush();
       deleteConnection(connId);
+      setSelectedIds(getSelectedIds().filter(id => id !== connId));
       render(); updateUndoButtons(); updateTrackerUI();
       return;
     }
@@ -285,11 +285,6 @@ svgEl.addEventListener('click', e => {
     }
     return;
   }
-  const connEl = e.target.closest('[data-conn-id]');
-  if (connEl) {
-    selectedConnId = connEl.dataset.connId;
-    return;
-  }
 });
 
 svgEl.addEventListener('dblclick', e => {
@@ -345,36 +340,23 @@ document.addEventListener('keydown', e => {
   }
 
   if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (selectedConnId) {
-      undoPush();
-      deleteConnection(selectedConnId);
-      selectedConnId = null;
-      render(); updateUndoButtons(); updateTrackerUI();
-      return;
-    }
-    // Multi-select delete
     const ids = getSelectedIds();
-    if (ids.length > 1) { // > 1 so single-item selections fall through to the getSelected() single-select path below
-      undoPush();
-      const s = getState();
-      ids.forEach(id => {
-        if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
-        if (s.environment.find(e => e.id === id)) removeEnvItem(id);
-        else removeComponent(id);
-      });
-      setSelectedIds([]);
-      render(); updateUndoButtons(); updateTrackerUI();
-      return;
-    }
-    // Single-select delete (existing)
-    const id = getSelected();
-    if (!id) return;
-    const s = getState();
-    if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) return;
+    if (ids.length === 0) return;
     undoPush();
-    if (s.environment.find(en => en.id === id)) removeEnvItem(id);
-    else removeComponent(id);
-    setSelected(null);
+    const s = getState();
+    const connIds = new Set(s.connections.map(c => c.id));
+    ids.forEach(id => {
+      if (connIds.has(id)) {
+        deleteConnection(id);
+      } else if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) {
+        // skip — start/finish markers cannot be deleted
+      } else if (s.environment.find(e => e.id === id)) {
+        removeEnvItem(id);
+      } else {
+        removeComponent(id);
+      }
+    });
+    setSelectedIds([]);
     render(); updateUndoButtons(); updateTrackerUI();
   }
 });
