@@ -302,6 +302,10 @@ function updateUndoButtons() {
 updateUndoButtons(); // set initial disabled state
 btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons(); });
 btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
+document.getElementById('btn-reset-view').addEventListener('click', () => {
+  resetViewport();
+  render();
+});
 
 document.addEventListener('keydown', e => {
   const tag = document.activeElement?.tagName;
