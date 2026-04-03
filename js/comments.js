@@ -51,20 +51,20 @@ export function syncOverlays() {
       overlays.set(item.id, div);
     }
     const wrapperRect = container.getBoundingClientRect();
-    const screen = canvasToScreen(item.x + item.width / 2, item.y);
     const { zoom } = getViewport();
-    div.style.left = `${screen.x - wrapperRect.left - 70}px`;
-    div.style.top = `${screen.y - wrapperRect.top - 130}px`;
+    // Position bubble a fixed canvas-world distance above the component so the gap
+    // stays proportional at any zoom level (not a fixed CSS pixel offset).
+    const OFFSET_CM = 30;
+    const screenComp = canvasToScreen(item.x + item.width / 2, item.y);
+    const screenAbove = canvasToScreen(item.x + item.width / 2, item.y - OFFSET_CM);
+    div.style.left = `${screenComp.x - wrapperRect.left - 70}px`;
+    // CSS bottom = screenAbove.y → visual bubble bottom stays at OFFSET_CM above component
+    div.style.top = `${screenAbove.y - wrapperRect.top - 80}px`;
     div.style.transform = `scale(${zoom})`;
     div.style.transformOrigin = 'bottom center';
-    // Connector line: offset 130px, bubble ~80px → 50px gap. Leave 10px visual on each side.
-    // Divide by zoom since ::after lives inside the scaled element.
-    const bubbleH = div.offsetHeight;
-    const gap = 130 - bubbleH;
-    const lineH = Math.max(0, (gap - 20) / zoom);
-    const lineOffset = 10 / zoom;
-    div.style.setProperty('--line-h', `${lineH}px`);
-    div.style.setProperty('--line-offset', `-${lineOffset}px`);
+    // Line spans from bubble bottom to component top; divide by zoom since ::after is scaled
+    const gapPx = screenComp.y - screenAbove.y;
+    div.style.setProperty('--line-h', `${gapPx / zoom}px`);
   }
 }
 
