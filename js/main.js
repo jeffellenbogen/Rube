@@ -214,6 +214,33 @@ svgEl.addEventListener('click', e => {
     const { action, targetId, connId } = actionEl.dataset;
     if (action === 'delete-conn') {
       undoPush();
+      // If it's a cord connection, retract the cord end slightly so it jumps away visually
+      const CORD_PTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
+      const s0 = getState();
+      const conn0 = s0.connections.find(c => c.id === connId);
+      if (conn0) {
+        const cordPoint = CORD_PTS.has(conn0.fromPoint) ? conn0.fromPoint : CORD_PTS.has(conn0.toPoint) ? conn0.toPoint : null;
+        const cordCompId = cordPoint === conn0.fromPoint ? conn0.fromId : conn0.toId;
+        const cordComp = cordPoint && s0.components.find(c => c.id === cordCompId);
+        if (cordComp) {
+          const sp = cordComp.subParts || {};
+          if (cordPoint === 'cordLeft') {
+            updateComponent(cordCompId, { subParts: { ...sp, leftCordLength: Math.max(5, (sp.leftCordLength || 20) - 15) } });
+          } else if (cordPoint === 'cordRight') {
+            updateComponent(cordCompId, { subParts: { ...sp, rightCordLength: Math.max(5, (sp.rightCordLength || 20) - 15) } });
+          } else if (cordPoint === 'end1' || cordPoint === 'end2') {
+            const x1 = sp.x1 ?? cordComp.x, y1 = sp.y1 ?? (cordComp.y + cordComp.height / 2);
+            const x2 = sp.x2 ?? (cordComp.x + cordComp.width), y2 = sp.y2 ?? (cordComp.y + cordComp.height / 2);
+            const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+            const r = Math.min(10, len * 0.2);
+            if (cordPoint === 'end1') {
+              updateComponent(cordCompId, { subParts: { ...sp, x1: x1 + (x2 - x1) / len * r, y1: y1 + (y2 - y1) / len * r } });
+            } else {
+              updateComponent(cordCompId, { subParts: { ...sp, x2: x2 + (x1 - x2) / len * r, y2: y2 + (y1 - y2) / len * r } });
+            }
+          }
+        }
+      }
       deleteConnection(connId);
       setSelectedIds(getSelectedIds().filter(id => id !== connId));
       render(); updateUndoButtons(); updateTrackerUI();

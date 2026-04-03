@@ -58,10 +58,8 @@ export function renderConnections(state, layer) {
     }
 
     if (CORD_POINTS.has(conn.fromPoint) || CORD_POINTS.has(conn.toPoint)) {
-      // Physical cord connection: × AT the cord endpoint, visible only when an endpoint is selected
-      if (eitherEndpointSelected) {
-        g.appendChild(makeTealX(p2.x, p2.y, conn.id));
-      }
+      // Physical cord connection: × always visible at the cord endpoint
+      g.appendChild(makeTealX(p2.x, p2.y, conn.id));
       layer.appendChild(g);
       continue;
     }
