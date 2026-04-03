@@ -159,6 +159,20 @@ initCanvas(svgEl);
 setOnViewChange(repositionOverlays());
 initDrag(svgEl);
 
+svgEl.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey) {
+    // Pinch-to-zoom: Mac trackpad fires ctrlKey=true for pinch gesture
+    zoomAtPoint(e.clientX, e.clientY, -e.deltaY * 0.01);
+  } else {
+    // Two-finger scroll → pan canvas; divide by (basePx * zoom) for consistent speed
+    const { zoom } = getViewport();
+    const bPx = svgEl.clientWidth / 800;
+    panBy(-e.deltaX / (bPx * zoom), -e.deltaY / (bPx * zoom));
+  }
+  render();
+}, { passive: false });
+
 // Draw floor (always present, not in state)
 function drawFloor() {
   const { roomW } = getRoomDimensions();
