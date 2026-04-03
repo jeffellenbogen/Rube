@@ -501,7 +501,22 @@ export function renderUI(state, layer) {
       const lPos = L(-pr * 0.7 + lcl * Math.sin(lRad), -h * 0.2 + lcl * Math.cos(lRad));
       const rPos = L( pr * 0.7 + rcl * Math.sin(rRad), -h * 0.2 + rcl * Math.cos(rRad));
 
-      for (const [pos, name] of [[lPos, 'cordLeft'], [rPos, 'cordRight']]) {
+      // If a cord end is connected, show the handle at the connected component's
+      // attachment point — matching where machines.js actually draws the cord to.
+      function resolvedCordPos(pointName, defaultPos) {
+        const conn = state.connections.find(c =>
+          (c.fromId === selId && c.fromPoint === pointName) ||
+          (c.toId   === selId && c.toPoint   === pointName)
+        );
+        if (!conn) return defaultPos;
+        const otherId = conn.fromId === selId ? conn.toId   : conn.fromId;
+        const otherPt = conn.fromId === selId ? conn.toPoint : conn.fromPoint;
+        const other = [...state.components, ...(state.environment || [])].find(c => c.id === otherId);
+        return (other && getAttachPx(other)[otherPt]) || defaultPos;
+      }
+
+      for (const [defaultPos, name] of [[lPos, 'cordLeft'], [rPos, 'cordRight']]) {
+        const pos = resolvedCordPos(name, defaultPos);
         const ball = document.createElementNS(NS, 'circle');
         ball.setAttribute('cx', pos.x); ball.setAttribute('cy', pos.y);
         ball.setAttribute('r', 8); ball.setAttribute('fill', '#00c9a7');

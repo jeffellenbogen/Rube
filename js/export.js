@@ -1,6 +1,7 @@
 import { getState, loadState } from './state.js';
-import { cmToPx } from './canvas.js';
+import { cmToPx, getViewport, setViewport, resetViewport, FLOOR_Y } from './canvas.js';
 import { getRequirements } from './tracker.js';
+import { render } from './render/index.js';
 
 const KEYWORD = 'RubeGoldbergState';
 const PNG_SIG = [137,80,78,71,13,10,26,10];
@@ -97,6 +98,11 @@ const ITEM_LABELS = {
 export async function downloadPNG(svgEl) {
   const state = getState();
   if (svgEl.clientWidth === 0 || svgEl.clientHeight === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
+
+  // Temporarily reset viewport so the exported PNG shows the full canvas at zoom=1
+  const savedViewport = getViewport();
+  resetViewport();
+  render();
 
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
 
@@ -371,7 +377,7 @@ export async function downloadPNG(svgEl) {
     // Position above component, clamped inside drawn canvas area
     let boxX = Math.max(drawX, Math.min(cx - BOX_W / 2, drawX + drawW - BOX_W));
     let boxY = cy - boxH - ARROW - 2;
-    if (boxY < drawY) boxY = cy + ARROW + 2; // flip below if too high
+    if (boxY < drawY) boxY = cy + cmToPx(item.height) * scale + ARROW + 2; // flip below component bottom
 
     // Background box
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
@@ -400,8 +406,13 @@ export async function downloadPNG(svgEl) {
   // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
-  const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(state));
+  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y } };
+  const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(exportState));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
+
+  // Restore the student's viewport
+  setViewport(savedViewport.zoom, savedViewport.panX, savedViewport.panY);
+  render();
 
   const safeName = teamName.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '-') || 'rube-goldberg';
   const a = document.createElement('a');

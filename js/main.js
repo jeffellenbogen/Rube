@@ -1,4 +1,4 @@
-import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, getFloorPx } from './canvas.js';
+import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, FLOOR_Y, getViewport, setViewport, resetViewport, zoomAtPoint, panBy } from './canvas.js';
 import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle, setState } from './state.js';
 import { render } from './render/index.js';
 import { drawMachineIcon } from './render/machines.js';
@@ -155,15 +155,39 @@ function defaultSubParts(subtype) {
 }
 
 const svgEl = document.getElementById('canvas');
+const canvasWrapper = document.getElementById('canvas-wrapper');
 initCanvas(svgEl);
 setOnViewChange(repositionOverlays());
 initDrag(svgEl);
+
+// Wheel on canvas area (SVG + comment overlays): handle zoom and pan.
+// Allow textarea scroll (two-finger scroll on comment bubbles) but intercept pinch.
+canvasWrapper.addEventListener('wheel', e => {
+  if (e.ctrlKey) {
+    // Pinch-to-zoom: Mac trackpad fires ctrlKey=true for pinch gesture
+    e.preventDefault();
+    zoomAtPoint(e.clientX, e.clientY, -e.deltaY * 0.01);
+    render();
+  } else if (!e.target.closest('textarea')) {
+    // Two-finger scroll → pan canvas; let textareas scroll normally
+    e.preventDefault();
+    const { zoom } = getViewport();
+    const bPx = svgEl.clientWidth / 800;
+    panBy(-e.deltaX / (bPx * zoom), -e.deltaY / (bPx * zoom));
+    render();
+  }
+}, { passive: false });
+
+// Block browser pinch-zoom anywhere outside the canvas (panels, header, etc.)
+document.addEventListener('wheel', e => {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
 
 // Draw floor (always present, not in state)
 function drawFloor() {
   const { roomW } = getRoomDimensions();
   const layers = getLayers();
-  const floorY = getFloorPx();
+  const floorYpx = cmToPx(FLOOR_Y);
   let floor = layers.environment.querySelector('.floor-line');
   if (!floor) {
     floor = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -173,9 +197,9 @@ function drawFloor() {
     layers.environment.prepend(floor);
   }
   floor.setAttribute('x1', 0);
-  floor.setAttribute('y1', floorY);
+  floor.setAttribute('y1', floorYpx);
   floor.setAttribute('x2', cmToPx(roomW));
-  floor.setAttribute('y2', floorY);
+  floor.setAttribute('y2', floorYpx);
 }
 
 drawFloor();
@@ -288,6 +312,10 @@ function updateUndoButtons() {
 updateUndoButtons(); // set initial disabled state
 btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons(); });
 btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
+document.getElementById('btn-reset-view').addEventListener('click', () => {
+  resetViewport();
+  render();
+});
 
 document.addEventListener('keydown', e => {
   const tag = document.activeElement?.tagName;
@@ -351,7 +379,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-const canvasWrapper = document.getElementById('canvas-wrapper');
 canvasWrapper.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
 canvasWrapper.addEventListener('drop', e => {
   e.preventDefault();
@@ -402,13 +429,37 @@ function initMarkers() {
   const state = getState();
   const { roomW } = getRoomDimensions();
   const markerH = 21, markerW = 27;
-  const floorY = pxToCm(getFloorPx()) - markerH;
+  const markerY = FLOOR_Y - markerH;
   if (!state.components.find(c => c.subtype === 'start')) {
-    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: floorY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
   }
   if (!state.components.find(c => c.subtype === 'finish')) {
-    addComponent({ type: 'marker', subtype: 'finish', name: '', x: roomW - markerW - 5, y: floorY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+    addComponent({ type: 'marker', subtype: 'finish', name: '', x: roomW - markerW - 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
   }
+}
+
+function clampMarkers() {
+  const state = getState();
+  const { roomW, roomH } = getRoomDimensions();
+  for (const comp of state.components) {
+    if (comp.subtype !== 'start' && comp.subtype !== 'finish') continue;
+    const clampedX = Math.max(0, Math.min(roomW - comp.width, comp.x));
+    const clampedY = Math.max(0, Math.min(roomH - comp.height, comp.y));
+    if (clampedX !== comp.x || clampedY !== comp.y) {
+      updateComponent(comp.id, { x: clampedX, y: clampedY });
+    }
+  }
+}
+
+function migrateFloorY(parsedState) {
+  // Only migrate if the state carries an explicit floorY (set on export from v2.6.1+).
+  // Old PNGs without meta.floorY load as-is — marker positions are unreliable
+  // because students can drag markers anywhere.
+  const savedFloor = parsedState.meta?.floorY;
+  if (!savedFloor || Math.abs(savedFloor - FLOOR_Y) < 1) return;
+  const shift = FLOOR_Y - savedFloor;
+  for (const comp of parsedState.components || []) comp.y += shift;
+  for (const item of parsedState.environment || []) item.y += shift;
 }
 
 
@@ -423,7 +474,10 @@ document.querySelector('#btn-upload input').addEventListener('change', async e =
   const result = await uploadPNG(file);
   if (result.error) { alert(result.error); return; }
   undoReset();
+  migrateFloorY(result.state);
   loadState(result.state);
+  clampMarkers();
+  resetViewport();
   const loaded = getState();
   document.getElementById('team-name').value = loaded.meta.title || '';
   drawFloor();

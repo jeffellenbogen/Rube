@@ -206,11 +206,13 @@ export function initDrag(svgEl) {
     // Pulley: clicks near cord ends start a cord handle drag (not body drag)
     if (item.subtype === 'pulley') {
       const rect = svgEl.getBoundingClientRect();
-      const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
+      const clickCanvas = screenToCanvas(e.clientX, e.clientY);
+      const clickSvgX = cmToPx(clickCanvas.x);
+      const clickSvgY = cmToPx(clickCanvas.y);
       const pts = getAttachPx(item);
       for (const name of ['cordLeft', 'cordRight']) {
         const pt = pts[name];
-        if (pt && Math.hypot(clickX - pt.x, clickY - pt.y) < 20) {
+        if (pt && Math.hypot(clickSvgX - pt.x, clickSvgY - pt.y) < 20) {
           // If pulley is part of a multi-selection, let the group drag path handle it
           if (selectedIds.length > 1 && selectedIds.includes(id)) break;
           selectedIds = [id];
@@ -218,13 +220,14 @@ export function initDrag(svgEl) {
           handleDrag = {
             type: name,
             compId: id,
-            startPx: clickX,
-            startPy: clickY,
+            startPx: e.clientX - rect.left,
+            startPy: e.clientY - rect.top,
             origSubParts: { ...item.subParts },
             compX: cmToPx(item.x), compY: cmToPx(item.y),
             compW: cmToPx(item.width), compH: cmToPx(item.height),
             origW: item.width, origH: item.height,
             origX: item.x, origY: item.y,
+            disconnected: false,
           };
           hasMoved = false;
           e.stopPropagation();
@@ -312,22 +315,29 @@ export function initDrag(svgEl) {
         const wCm = comp.width;
         const newAngle = Math.max(5, Math.min(80, Math.atan2(-dyCm, wCm) * 180 / Math.PI));
         updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, angle: newAngle } });
-      } else if (handleDrag.type === 'cordLeft') {
-        const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
-        const originX = handleDrag.compX + handleDrag.compW / 2 - r * 0.7;
-        const originY = handleDrag.compY + handleDrag.compH * 0.3;
-        const dx2 = curPx - originX, dy2 = curPy - originY;
-        const newAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
-        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, leftCordAngle: newAngle, leftCordLength: newLen } });
-      } else if (handleDrag.type === 'cordRight') {
-        const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
-        const originX = handleDrag.compX + handleDrag.compW / 2 + r * 0.7;
-        const originY = handleDrag.compY + handleDrag.compH * 0.3;
-        const dx2 = curPx - originX, dy2 = curPy - originY;
-        const newAngle = Math.atan2(dx2, dy2) * 180 / Math.PI;
-        const newLen = Math.max(5, pxToCm(Math.hypot(dx2, dy2)));
-        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, rightCordAngle: newAngle, rightCordLength: newLen } });
+      } else if (handleDrag.type === 'cordLeft' || handleDrag.type === 'cordRight') {
+        // Disconnect existing connection on first move so the cord follows the mouse
+        if (!handleDrag.disconnected) {
+          handleDrag.disconnected = true;
+          const existing = getState().connections.find(c =>
+            (c.fromId === handleDrag.compId && c.fromPoint === handleDrag.type) ||
+            (c.toId   === handleDrag.compId && c.toPoint   === handleDrag.type)
+          );
+          if (existing) deleteConnection(existing.id);
+        }
+        const isLeft = handleDrag.type === 'cordLeft';
+        const mousePos = screenToCanvas(e.clientX, e.clientY);
+        const rCm = Math.min(comp.width, comp.height) * 0.35;
+        const originXcm = comp.x + comp.width / 2 + (isLeft ? -rCm * 0.7 : rCm * 0.7);
+        const originYcm = comp.y + comp.height * 0.3;
+        const dxCm = mousePos.x - originXcm;
+        const dyCm = mousePos.y - originYcm;
+        const newAngle = Math.atan2(dxCm, dyCm) * 180 / Math.PI;
+        const newLen = Math.max(5, Math.hypot(dxCm, dyCm));
+        const key = isLeft
+          ? { leftCordAngle: newAngle, leftCordLength: newLen }
+          : { rightCordAngle: newAngle, rightCordLength: newLen };
+        updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, ...key } });
       } else if (handleDrag.type.startsWith('resize-')) {
         const corner = handleDrag.type.slice(7); // 'nw', 'ne', 'sw', 'se'
         // Project screen drag delta onto component's local axes so resize works
@@ -501,7 +511,8 @@ export function initDrag(svgEl) {
       if (handleDrag.type === 'cordLeft' || handleDrag.type === 'cordRight') {
         const state = getState();
         const comp = state.components.find(c => c.id === handleDrag.compId);
-        const nearest = findNearestAttachment(state, upX, upY, handleDrag.compId, 20);
+        const upCanvas = screenToCanvas(e.clientX, e.clientY);
+        const nearest = findNearestAttachment(state, cmToPx(upCanvas.x), cmToPx(upCanvas.y), handleDrag.compId, 20);
         // If released without connecting, clear any existing cord connection
       if (!nearest) {
         const existing = state.connections.find(c =>
