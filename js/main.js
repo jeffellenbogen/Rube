@@ -1,4 +1,4 @@
-import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, getFloorPx } from './canvas.js';
+import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, FLOOR_Y, getViewport, setViewport, resetViewport, zoomAtPoint, panBy } from './canvas.js';
 import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle, setState } from './state.js';
 import { render } from './render/index.js';
 import { drawMachineIcon } from './render/machines.js';
@@ -163,7 +163,7 @@ initDrag(svgEl);
 function drawFloor() {
   const { roomW } = getRoomDimensions();
   const layers = getLayers();
-  const floorY = getFloorPx();
+  const floorYpx = cmToPx(FLOOR_Y);
   let floor = layers.environment.querySelector('.floor-line');
   if (!floor) {
     floor = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -173,9 +173,9 @@ function drawFloor() {
     layers.environment.prepend(floor);
   }
   floor.setAttribute('x1', 0);
-  floor.setAttribute('y1', floorY);
+  floor.setAttribute('y1', floorYpx);
   floor.setAttribute('x2', cmToPx(roomW));
-  floor.setAttribute('y2', floorY);
+  floor.setAttribute('y2', floorYpx);
 }
 
 drawFloor();
@@ -402,12 +402,12 @@ function initMarkers() {
   const state = getState();
   const { roomW } = getRoomDimensions();
   const markerH = 21, markerW = 27;
-  const floorY = pxToCm(getFloorPx()) - markerH;
+  const markerY = FLOOR_Y - markerH;
   if (!state.components.find(c => c.subtype === 'start')) {
-    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: floorY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
   }
   if (!state.components.find(c => c.subtype === 'finish')) {
-    addComponent({ type: 'marker', subtype: 'finish', name: '', x: roomW - markerW - 5, y: floorY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+    addComponent({ type: 'marker', subtype: 'finish', name: '', x: roomW - markerW - 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
   }
 }
 
