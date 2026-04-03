@@ -1,6 +1,7 @@
 import { getState, loadState } from './state.js';
-import { cmToPx } from './canvas.js';
+import { cmToPx, getViewport, setViewport, resetViewport } from './canvas.js';
 import { getRequirements } from './tracker.js';
+import { render } from './render/index.js';
 
 const KEYWORD = 'RubeGoldbergState';
 const PNG_SIG = [137,80,78,71,13,10,26,10];
@@ -97,6 +98,11 @@ const ITEM_LABELS = {
 export async function downloadPNG(svgEl) {
   const state = getState();
   if (svgEl.clientWidth === 0 || svgEl.clientHeight === 0) throw new Error('Canvas has zero dimensions — SVG may not be visible');
+
+  // Temporarily reset viewport so the exported PNG shows the full canvas at zoom=1
+  const savedViewport = getViewport();
+  resetViewport();
+  render();
 
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
 
@@ -402,6 +408,10 @@ export async function downloadPNG(svgEl) {
   const pngBuffer = await pngBlob.arrayBuffer();
   const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(state));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
+
+  // Restore the student's viewport
+  setViewport(savedViewport.zoom, savedViewport.panX, savedViewport.panY);
+  render();
 
   const safeName = teamName.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '-') || 'rube-goldberg';
   const a = document.createElement('a');
