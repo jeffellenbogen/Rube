@@ -581,8 +581,13 @@ export function initDrag(svgEl) {
       const state = getState();
       const nearest = findNearestAttachment(state, cmToPx(upPos.x), cmToPx(upPos.y), connDrag.fromId);
       if (nearest) {
-        undoPush();
-        createConnection(connDrag.fromId, connDrag.fromPoint, nearest.compId, nearest.pointName);
+        const fromComp = state.components.find(c => c.id === connDrag.fromId) || (state.environment || []).find(e => e.id === connDrag.fromId);
+        const toComp   = state.components.find(c => c.id === nearest.compId)  || (state.environment || []).find(e => e.id === nearest.compId);
+        const involvesString = fromComp?.subtype === 'string' || toComp?.subtype === 'string';
+        if (!involvesString) {
+          undoPush();
+          createConnection(connDrag.fromId, connDrag.fromPoint, nearest.compId, nearest.pointName);
+        }
       }
       connDrag = null;
       rubberBand = null;
