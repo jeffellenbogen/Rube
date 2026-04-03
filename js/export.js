@@ -377,7 +377,7 @@ export async function downloadPNG(svgEl) {
     // Position above component, clamped inside drawn canvas area
     let boxX = Math.max(drawX, Math.min(cx - BOX_W / 2, drawX + drawW - BOX_W));
     let boxY = cy - boxH - ARROW - 2;
-    if (boxY < drawY) boxY = cy + ARROW + 2; // flip below if too high
+    if (boxY < drawY) boxY = cy + cmToPx(item.height) * scale + ARROW + 2; // flip below component bottom
 
     // Background box
     ctx.fillStyle = 'rgba(255,255,255,0.95)';

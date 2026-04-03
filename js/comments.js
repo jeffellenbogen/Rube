@@ -54,14 +54,13 @@ export function syncOverlays() {
     const screen = canvasToScreen(item.x + item.width / 2, item.y);
     const { zoom } = getViewport();
     div.style.left = `${screen.x - wrapperRect.left - 70}px`;
-    div.style.top = `${screen.y - wrapperRect.top - 100}px`;
+    div.style.top = `${screen.y - wrapperRect.top - 130}px`;
     div.style.transform = `scale(${zoom})`;
     div.style.transformOrigin = 'bottom center';
-    // Connector line: spans gap between bubble bottom and component top with 10px breathing room
-    // on each side. offsetHeight is the unscaled CSS height; gap = 100 - bubbleH CSS px.
-    // Since ::after lives inside the scaled element, divide by zoom to get correct visual size.
+    // Connector line: offset 130px, bubble ~80px → 50px gap. Leave 10px visual on each side.
+    // Divide by zoom since ::after lives inside the scaled element.
     const bubbleH = div.offsetHeight;
-    const gap = 100 - bubbleH;
+    const gap = 130 - bubbleH;
     const lineH = Math.max(0, (gap - 20) / zoom);
     const lineOffset = 10 / zoom;
     div.style.setProperty('--line-h', `${lineH}px`);
