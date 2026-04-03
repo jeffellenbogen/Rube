@@ -128,6 +128,17 @@ The version label is the only visible confirmation that a GitHub Pages deploy ha
 - **`e.buttons === 0` guard** — mousemove handlers for drag states check `e.buttons === 0` to cancel stale state when the mouse re-enters after being released outside the browser.
 - **Chromebook target** — all interactions must work via trackpad/mouse. No hover-only affordances. No touch-specific code needed, but trackpad quirks (accidental multi-touch, cursor leaving window mid-drag) should be handled gracefully.
 
+## Backwards Compatibility
+
+**Existing saved designs must always load.** Students save their work as PNG files and return to them days or weeks later. Any feature that changes state shape, adds required fields, or alters the PNG metadata format must maintain full read compatibility with all prior versions.
+
+Specifically:
+- PNG files saved at any prior version must upload and restore correctly after a code change
+- New state fields must have safe defaults so old PNGs (which lack those fields) still work
+- Never change the `iTXt` chunk keyword (`RubeGoldbergState`) or the `state.version` validation logic without a migration path
+- If a new feature requires a state schema change, add optional fields with defaults — never remove or rename existing fields that may appear in saved files
+- Test uploads of old PNGs after any state or export change before shipping
+
 ## Constraints
 
 - Must run on Chromebooks in Chrome
