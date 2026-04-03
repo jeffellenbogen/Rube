@@ -11,15 +11,15 @@ function findItem(state, id) {
   return state.components.find(c => c.id === id) || (state.environment || []).find(e => e.id === id);
 }
 
-// Teal × delete button at (cx, cy) with the connection ID embedded
-function makeTealX(cx, cy, connId) {
+// × delete button at (cx, cy) with the connection ID embedded
+function makeTealX(cx, cy, connId, fill = '#00c9a7') {
   const g = document.createElementNS(NS, 'g');
   g.dataset.action = 'delete-conn';
   g.dataset.connId = connId;
   g.setAttribute('cursor', 'pointer');
   const dc = document.createElementNS(NS, 'circle');
   dc.setAttribute('cx', cx); dc.setAttribute('cy', cy);
-  dc.setAttribute('r', 7); dc.setAttribute('fill', '#00c9a7');
+  dc.setAttribute('r', 7); dc.setAttribute('fill', fill);
   dc.setAttribute('stroke', '#fff'); dc.setAttribute('stroke-width', 1);
   const dt = document.createElementNS(NS, 'text');
   dt.setAttribute('x', cx); dt.setAttribute('y', cy);
@@ -95,7 +95,7 @@ export function renderConnections(state, layer) {
     if (isSelected) {
       const mx = (p1.x + p2.x) / 2;
       const my = (p1.y + p2.y) / 2;
-      g.appendChild(makeTealX(mx, my, conn.id));
+      g.appendChild(makeTealX(mx, my, conn.id, '#ff7b2e'));
     }
 
     layer.appendChild(g);
