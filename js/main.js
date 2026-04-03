@@ -442,6 +442,18 @@ function clampMarkers() {
   }
 }
 
+function migrateFloorY(parsedState) {
+  // Old PNGs had a dynamic floor position based on window height.
+  // Infer the old floor Y from marker position and shift everything to align with FLOOR_Y.
+  const marker = (parsedState.components || []).find(c => c.subtype === 'start' || c.subtype === 'finish');
+  if (!marker) return;
+  const oldFloorY = marker.y + marker.height;
+  const shift = FLOOR_Y - oldFloorY;
+  if (Math.abs(shift) < 1) return; // already aligned, no migration needed
+  for (const comp of parsedState.components || []) comp.y += shift;
+  for (const item of parsedState.environment || []) item.y += shift;
+}
+
 
 // Task 22: Download, Upload, Team Name
 document.getElementById('btn-download').addEventListener('click', () => {
@@ -454,6 +466,7 @@ document.querySelector('#btn-upload input').addEventListener('change', async e =
   const result = await uploadPNG(file);
   if (result.error) { alert(result.error); return; }
   undoReset();
+  migrateFloorY(result.state);
   loadState(result.state);
   clampMarkers();
   resetViewport();
