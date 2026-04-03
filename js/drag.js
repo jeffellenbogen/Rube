@@ -5,9 +5,11 @@ import { render } from './render/index.js';
 import { findNearestAttachment, createConnection, deleteConnection } from './connections.js';
 import { getSurfaces } from './render/environment.js';
 import { getAttachPx } from './render/attachPoints.js';
-import { getComponentsInRect } from './multi-select.js';
+import { getItemsInRect } from './multi-select.js';
 
 // Subtypes that must keep their aspect ratio when resized
+const CORD_POINTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
+
 const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
@@ -130,6 +132,25 @@ export function initDrag(svgEl) {
     // Let action buttons (delete, comment) be handled by the click event
     if (e.target.closest('[data-action]')) return;
 
+    // Symbolic connection line click — add/remove conn ID from selectedIds
+    const connEl = e.target.closest('[data-conn-id]');
+    if (connEl) {
+      const connId = connEl.dataset.connId;
+      const state = getState();
+      const conn = state.connections.find(c => c.id === connId);
+      if (conn && !conn.snap && !CORD_POINTS.has(conn.fromPoint) && !CORD_POINTS.has(conn.toPoint)) {
+        if (e.shiftKey) {
+          const idx = selectedIds.indexOf(connId);
+          selectedIds = idx >= 0 ? selectedIds.filter(s => s !== connId) : [...selectedIds, connId];
+        } else {
+          selectedIds = [connId];
+        }
+        render();
+        e.stopPropagation();
+        return;
+      }
+    }
+
     // Check for sub-part/resize handle (use closest so grouped handles like free-rotate work)
     const handleEl = e.target.closest('[data-handle]');
     if (handleEl) {
@@ -241,6 +262,8 @@ export function initDrag(svgEl) {
       const pos = screenToCanvas(e.clientX, e.clientY);
       const startPositions = new Map();
       for (const sid of selectedIds) {
+        // Connections follow their endpoint components — skip conn IDs, no position to track
+        if (state.connections.find(c => c.id === sid)) continue;
         const sc = state.components.find(c => c.id === sid) || state.environment.find(e => e.id === sid);
         if (!sc) continue;
         const entry = { x: sc.x, y: sc.y, isEnv: !!state.environment.find(e => e.id === sid) };
@@ -579,7 +602,7 @@ export function initDrag(svgEl) {
           height: Math.abs(rb.currentY - rb.startY),
         };
         const s = getState();
-        const found = getComponentsInRect(s.components, s.environment, rect);
+        const found = getItemsInRect(s.components, s.environment, s.connections, rect);
         if (e.shiftKey) {
           const combined = new Set([...selectedIds, ...found]);
           selectedIds = [...combined];
