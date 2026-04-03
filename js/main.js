@@ -155,22 +155,32 @@ function defaultSubParts(subtype) {
 }
 
 const svgEl = document.getElementById('canvas');
+const canvasWrapper = document.getElementById('canvas-wrapper');
 initCanvas(svgEl);
 setOnViewChange(repositionOverlays());
 initDrag(svgEl);
 
-svgEl.addEventListener('wheel', e => {
-  e.preventDefault();
+// Wheel on canvas area (SVG + comment overlays): handle zoom and pan.
+// Allow textarea scroll (two-finger scroll on comment bubbles) but intercept pinch.
+canvasWrapper.addEventListener('wheel', e => {
   if (e.ctrlKey) {
     // Pinch-to-zoom: Mac trackpad fires ctrlKey=true for pinch gesture
+    e.preventDefault();
     zoomAtPoint(e.clientX, e.clientY, -e.deltaY * 0.01);
-  } else {
-    // Two-finger scroll → pan canvas; divide by (basePx * zoom) for consistent speed
+    render();
+  } else if (!e.target.closest('textarea')) {
+    // Two-finger scroll → pan canvas; let textareas scroll normally
+    e.preventDefault();
     const { zoom } = getViewport();
     const bPx = svgEl.clientWidth / 800;
     panBy(-e.deltaX / (bPx * zoom), -e.deltaY / (bPx * zoom));
+    render();
   }
-  render();
+}, { passive: false });
+
+// Block browser pinch-zoom anywhere outside the canvas (panels, header, etc.)
+document.addEventListener('wheel', e => {
+  if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
 // Draw floor (always present, not in state)
@@ -369,7 +379,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-const canvasWrapper = document.getElementById('canvas-wrapper');
 canvasWrapper.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
 canvasWrapper.addEventListener('drop', e => {
   e.preventDefault();

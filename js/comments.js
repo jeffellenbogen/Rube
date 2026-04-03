@@ -1,4 +1,4 @@
-import { canvasToScreen } from './canvas.js';
+import { canvasToScreen, getViewport } from './canvas.js';
 import { updateComponent, updateEnvItem, getState } from './state.js';
 import { push as undoPush } from './undo.js';
 
@@ -52,8 +52,11 @@ export function syncOverlays() {
     }
     const wrapperRect = container.getBoundingClientRect();
     const screen = canvasToScreen(item.x + item.width / 2, item.y);
+    const { zoom } = getViewport();
     div.style.left = `${screen.x - wrapperRect.left - 70}px`;
     div.style.top = `${screen.y - wrapperRect.top - 100}px`;
+    div.style.transform = `scale(${zoom})`;
+    div.style.transformOrigin = 'bottom center';
   }
 }
 
