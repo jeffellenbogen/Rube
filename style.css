@@ -169,10 +169,10 @@ main {
 .comment-overlay::after {
   content: '';
   position: absolute;
-  bottom: -10px;
+  bottom: var(--line-offset, -10px);
   left: calc(50% - 1px);
   width: 2px;
-  height: 10px;
+  height: var(--line-h, 0px);
   background: #ff7b2e;
   border-radius: 1px;
   pointer-events: none;

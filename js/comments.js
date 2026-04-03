@@ -57,6 +57,15 @@ export function syncOverlays() {
     div.style.top = `${screen.y - wrapperRect.top - 100}px`;
     div.style.transform = `scale(${zoom})`;
     div.style.transformOrigin = 'bottom center';
+    // Connector line: spans gap between bubble bottom and component top with 10px breathing room
+    // on each side. offsetHeight is the unscaled CSS height; gap = 100 - bubbleH CSS px.
+    // Since ::after lives inside the scaled element, divide by zoom to get correct visual size.
+    const bubbleH = div.offsetHeight;
+    const gap = 100 - bubbleH;
+    const lineH = Math.max(0, (gap - 20) / zoom);
+    const lineOffset = 10 / zoom;
+    div.style.setProperty('--line-h', `${lineH}px`);
+    div.style.setProperty('--line-offset', `-${lineOffset}px`);
   }
 }
 
