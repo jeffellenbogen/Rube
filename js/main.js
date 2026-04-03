@@ -429,6 +429,19 @@ function initMarkers() {
   }
 }
 
+function clampMarkers() {
+  const state = getState();
+  const { roomW, roomH } = getRoomDimensions();
+  for (const comp of state.components) {
+    if (comp.subtype !== 'start' && comp.subtype !== 'finish') continue;
+    const clampedX = Math.max(0, Math.min(roomW - comp.width, comp.x));
+    const clampedY = Math.max(0, Math.min(roomH - comp.height, comp.y));
+    if (clampedX !== comp.x || clampedY !== comp.y) {
+      updateComponent(comp.id, { x: clampedX, y: clampedY });
+    }
+  }
+}
+
 
 // Task 22: Download, Upload, Team Name
 document.getElementById('btn-download').addEventListener('click', () => {
@@ -442,6 +455,8 @@ document.querySelector('#btn-upload input').addEventListener('change', async e =
   if (result.error) { alert(result.error); return; }
   undoReset();
   loadState(result.state);
+  clampMarkers();
+  resetViewport();
   const loaded = getState();
   document.getElementById('team-name').value = loaded.meta.title || '';
   drawFloor();
