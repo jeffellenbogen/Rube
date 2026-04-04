@@ -4,7 +4,7 @@ import { push as undoPush } from './undo.js';
 import { render } from './render/index.js';
 import { findNearestAttachment, createConnection, deleteConnection } from './connections.js';
 import { getSurfaces } from './render/environment.js';
-import { getAttachPx } from './render/attachPoints.js';
+import { getAttachPx, getSnapPx } from './render/attachPoints.js';
 import { getItemsInRect } from './multi-select.js';
 
 // Subtypes that must keep their aspect ratio when resized
@@ -543,20 +543,45 @@ export function initDrag(svgEl) {
           (c.toId   === handleDrag.compId && c.toPoint   === handleDrag.type)
         );
         if (existing) deleteConnection(existing.id);
-        // Snap to nearest connector
-        const nearest = findNearestAttachment(state, upX, upY, handleDrag.compId, 20);
+        // Fix: use world-pixel coordinates (matches getSnapPx space at any zoom level)
+        const upCanvas = screenToCanvas(e.clientX, e.clientY);
+        const nearest = findNearestAttachment(state, cmToPx(upCanvas.x), cmToPx(upCanvas.y), handleDrag.compId, 20);
         if (nearest && comp) {
           const targetComp = [...state.components, ...(state.environment || [])].find(c => c.id === nearest.compId);
           if (targetComp) {
-            const targetPos = getAttachPx(targetComp)[nearest.pointName];
-            if (targetPos) {
-              const sp = comp.subParts || {};
-              if (handleDrag.type === 'end1') {
-                updateComponent(handleDrag.compId, { subParts: { ...sp, x1: pxToCm(targetPos.x), y1: pxToCm(targetPos.y) } });
-              } else {
-                updateComponent(handleDrag.compId, { subParts: { ...sp, x2: pxToCm(targetPos.x), y2: pxToCm(targetPos.y) } });
-              }
+            const sp = comp.subParts || {};
+            const isEnd1 = handleDrag.type === 'end1';
+            // When connecting to a pulley cord end: keep string end where user dropped it,
+            // then aim the pulley cord toward that position.
+            if (targetComp.subtype === 'pulley' && (nearest.pointName === 'cordLeft' || nearest.pointName === 'cordRight')) {
+              // String end stays at its current drag position (upCanvas)
+              // Aim target pulley cord from its wheel origin toward the string end
+              const isLeft = nearest.pointName === 'cordLeft';
+              const rCm = Math.min(targetComp.width, targetComp.height) * 0.35;
+              const originXcm = targetComp.x + targetComp.width  / 2 + (isLeft ? -rCm * 0.7 : rCm * 0.7);
+              const originYcm = targetComp.y + targetComp.height * 0.3;
+              const endXcm = isEnd1 ? (sp.x1 ?? comp.x) : (sp.x2 ?? comp.x + comp.width);
+              const endYcm = isEnd1 ? (sp.y1 ?? comp.y) : (sp.y2 ?? comp.y);
+              const dxCm = endXcm - originXcm;
+              const dyCm = endYcm - originYcm;
+              const newAngle = Math.atan2(dxCm, dyCm) * 180 / Math.PI;
+              const newLen   = Math.max(5, Math.hypot(dxCm, dyCm));
+              const cordKey  = isLeft
+                ? { leftCordAngle: newAngle,  leftCordLength:  newLen }
+                : { rightCordAngle: newAngle, rightCordLength: newLen };
+              updateComponent(targetComp.id, { subParts: { ...targetComp.subParts, ...cordKey } });
               createConnection(handleDrag.compId, handleDrag.type, nearest.compId, nearest.pointName);
+            } else {
+              // Normal case: snap string end to the target's snap position
+              const targetPos = getSnapPx(targetComp)[nearest.pointName];
+              if (targetPos) {
+                if (isEnd1) {
+                  updateComponent(handleDrag.compId, { subParts: { ...sp, x1: pxToCm(targetPos.x), y1: pxToCm(targetPos.y) } });
+                } else {
+                  updateComponent(handleDrag.compId, { subParts: { ...sp, x2: pxToCm(targetPos.x), y2: pxToCm(targetPos.y) } });
+                }
+                createConnection(handleDrag.compId, handleDrag.type, nearest.compId, nearest.pointName);
+              }
             }
           }
         }
@@ -585,21 +610,43 @@ export function initDrag(svgEl) {
           );
           if (existing) deleteConnection(existing.id);
           createConnection(handleDrag.compId, handleDrag.type, nearest.compId, nearest.pointName);
-          // Sync cord angle/length to the connected position so the ball renders correctly
+
+          // Aim SOURCE cord toward the target's snap position (wheel rim for pulleys)
           const targetComp = state.components.find(c => c.id === nearest.compId);
           if (targetComp) {
-            const targetPos = getAttachPx(targetComp)[nearest.pointName];
-            if (targetPos) {
+            const targetSnapPos = getSnapPx(targetComp)[nearest.pointName];
+            if (targetSnapPos) {
               const r = Math.min(handleDrag.compW, handleDrag.compH) * 0.35;
               const isLeft = handleDrag.type === 'cordLeft';
               const ox = handleDrag.compX + handleDrag.compW / 2 + (isLeft ? -r * 0.7 : r * 0.7);
               const oy = handleDrag.compY + handleDrag.compH * 0.3;
-              const angle = Math.atan2(targetPos.x - ox, targetPos.y - oy) * 180 / Math.PI;
-              const len = Math.max(5, pxToCm(Math.hypot(targetPos.x - ox, targetPos.y - oy)));
-              const key = isLeft
-                ? { leftCordAngle: angle, leftCordLength: len }
+              const angle = Math.atan2(targetSnapPos.x - ox, targetSnapPos.y - oy) * 180 / Math.PI;
+              const len   = Math.max(5, pxToCm(Math.hypot(targetSnapPos.x - ox, targetSnapPos.y - oy)));
+              const key   = isLeft
+                ? { leftCordAngle: angle,  leftCordLength:  len }
                 : { rightCordAngle: angle, rightCordLength: len };
               updateComponent(handleDrag.compId, { subParts: { ...comp.subParts, ...key } });
+
+              // If target is also a pulley cord end, aim its cord back toward the source wheel
+              if (targetComp.subtype === 'pulley' &&
+                  (nearest.pointName === 'cordLeft' || nearest.pointName === 'cordRight')) {
+                const isTargetLeft  = nearest.pointName === 'cordLeft';
+                const rTarget = Math.min(targetComp.width, targetComp.height) * 0.35;
+                const toxCm = targetComp.x + targetComp.width  / 2 + (isTargetLeft ? -rTarget * 0.7 : rTarget * 0.7);
+                const toyCm = targetComp.y + targetComp.height * 0.3;
+                // Source wheel origin in cm
+                const rSrcCm = Math.min(handleDrag.origW, handleDrag.origH) * 0.35;
+                const soxCm  = handleDrag.origX + handleDrag.origW / 2 + (isLeft ? -rSrcCm * 0.7 : rSrcCm * 0.7);
+                const soyCm  = handleDrag.origY + handleDrag.origH * 0.3;
+                const dxT = soxCm - toxCm;
+                const dyT = soyCm - toyCm;
+                const angleT = Math.atan2(dxT, dyT) * 180 / Math.PI;
+                const lenT   = Math.max(5, Math.hypot(dxT, dyT));
+                const keyT   = isTargetLeft
+                  ? { leftCordAngle: angleT,  leftCordLength:  lenT }
+                  : { rightCordAngle: angleT, rightCordLength: lenT };
+                updateComponent(targetComp.id, { subParts: { ...targetComp.subParts, ...keyT } });
+              }
             }
           }
           render();
@@ -666,6 +713,7 @@ export function initDrag(svgEl) {
 }
 
 export function getConnDrag() { return connDrag; }
+export function getHandleDrag() { return handleDrag; }
 
 export function copySelection() {
   const state = getState();
