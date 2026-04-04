@@ -608,6 +608,44 @@ export function renderUI(state, layer) {
       layer.appendChild(tiltBtn);
     }
 
+    if (selComp && selComp.subtype === 'person') {
+      const currentPose = selComp.subParts?.pose ?? 'push';
+      const poses = [
+        { id: 'push', icon: '→' },
+        { id: 'drop', icon: '↓' },
+        { id: 'pull', icon: '←' },
+      ];
+      const spacing = 22;
+      const basePos = h2 + pad + 8;
+      const totalOffsetX = (poses.length - 1) * spacing / 2;
+      for (let i = 0; i < poses.length; i++) {
+        const { id, icon } = poses[i];
+        const isActive = id === currentPose;
+        const offsetX = i * spacing - totalOffsetX;
+        const pos = L(offsetX, basePos);
+        const btn = document.createElementNS(NS, 'g');
+        btn.dataset.action = 'person-pose';
+        btn.dataset.pose = id;
+        btn.dataset.targetId = selId;
+        btn.setAttribute('cursor', 'pointer');
+        const bg = document.createElementNS(NS, 'circle');
+        bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+        bg.setAttribute('r', 9);
+        bg.setAttribute('fill', isActive ? '#ff7b2e' : '#1a3a5c');
+        bg.setAttribute('stroke', '#ff7b2e');
+        bg.setAttribute('stroke-width', isActive ? 2 : 1);
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('dominant-baseline', 'middle');
+        t.setAttribute('fill', '#fff');
+        t.setAttribute('font-size', 11);
+        t.textContent = icon;
+        btn.appendChild(bg); btn.appendChild(t);
+        layer.appendChild(btn);
+      }
+    }
+
     if (selComp && selComp.subtype === 'rubiksCube') {
       const colorNames = ['🎨', '🌸', '⚡']; // classic, pastel, neon
       const ci = (selComp.subParts?.colorIndex ?? 0);

@@ -377,6 +377,20 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
   const bedPath = `M${hingeX},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${hingeY} L${hingeX},${hingeY} Z`;
   el('path', { d: bedPath, fill: '#f0a030' }, bedG);
   el('path', { d: bedPath, fill: 'none', stroke: '#a06010', 'stroke-width': 1 }, bedG);
+  // Support strut — more visible when bed is up
+  const strutOpacity = bedUp ? 0.9 : 0.3;
+  el('line', {
+    x1: hingeX, y1: hingeY,
+    x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
+    stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
+    opacity: strutOpacity, 'stroke-linecap': 'round',
+  }, bedG);
+  // Small strut cap
+  el('circle', {
+    cx: hingeX + w * 0.3, cy: hingeY - h * 0.35,
+    r: Math.max(1.5, w * 0.025),
+    fill: '#666', opacity: strutOpacity,
+  }, bedG);
   g.appendChild(bedG);
   // Wheels
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR, fill: '#333' }, g);
@@ -459,15 +473,17 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
     d: `M${fx},${fy} L${fx+fw},${fy} L${fx+fw+rw},${fy-topH} L${fx+rw},${fy-topH} Z`,
     fill: '#f5f5f5', stroke: '#333', 'stroke-width': 1,
   }, g);
-  // Top face 3x3 grid cells
+  // Top face 3x3 grid cells — correct isometric parameterization
   const topCellW = fw / 3;
+  const topCellSlantX = rw / 3;
+  const topCellSlantY = topH / 3;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
       const ci = (row * 3 + col) % colors.length;
-      const bx = fx + col * topCellW + (2 - row) * (rw / 3);
-      const by = fy - (2 - row) * (topH / 3);
+      const bx = fx + col * topCellW + row * topCellSlantX;
+      const by = fy - row * topCellSlantY;
       el('path', {
-        d: `M${bx},${by} L${bx+topCellW},${by} L${bx+topCellW+(rw/3)},${by+topH/3} L${bx+(rw/3)},${by+topH/3} Z`,
+        d: `M${bx},${by} L${bx+topCellW},${by} L${bx+topCellW+topCellSlantX},${by-topCellSlantY} L${bx+topCellSlantX},${by-topCellSlantY} Z`,
         fill: colors[(ci + 2) % colors.length], stroke: '#333', 'stroke-width': 0.5,
       }, g);
     }
@@ -545,7 +561,7 @@ function drawSpring(g, x, y, w, h, subParts) {
 
   el('path', { d: pts.join(' '), fill: 'none', stroke: '#999', 'stroke-width': Math.max(1.5, w * 0.08), 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
   el('rect', { x, y, width: w, height: plateH, fill: '#ccc', stroke: '#888', 'stroke-width': 1, rx: 1 }, g);
-  el('rect', { x, y: y + h - plateH, width: w, height: plateH, fill: '#ccc', stroke: '#888', 'stroke-width': 1, rx: 1 }, g);
+  el('rect', { x, y: coilBot, width: w, height: plateH, fill: '#ccc', stroke: '#888', 'stroke-width': 1, rx: 1 }, g);
 }
 
 function drawCustom(g, x, y, w, h, name) {

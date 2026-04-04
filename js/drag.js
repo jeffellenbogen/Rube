@@ -14,6 +14,7 @@ const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
   'protractor', 'book', 'matchboxTrack', 'flag',
+  'fan', 'rubiksCube',
 ]);
 
 // Subtypes with custom min/max fractions of their default size (overrides global 7× max and MIN floor)

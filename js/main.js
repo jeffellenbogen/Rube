@@ -354,6 +354,16 @@ svgEl.addEventListener('click', e => {
       }
       return;
     }
+    if (action === 'person-pose') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const pose = actionEl.dataset.pose;
+        updateComponent(targetId, { subParts: { ...comp.subParts, pose } });
+        render();
+      }
+      return;
+    }
     return;
   }
 });
