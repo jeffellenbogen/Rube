@@ -468,6 +468,27 @@ export function renderUI(state, layer) {
     }
   }
 
+  // Wall resize handles (env item)
+  const wallItem = state.environment.find(e => e.id === selId && e.subtype === 'wall');
+  if (wallItem) {
+    const corners = [
+      { name: 'nw', lx: -w2-pad, ly: -h2-pad },
+      { name: 'ne', lx:  w2+pad, ly: -h2-pad },
+      { name: 'sw', lx: -w2-pad, ly:  h2+pad },
+      { name: 'se', lx:  w2+pad, ly:  h2+pad },
+    ];
+    for (const { name, lx, ly } of corners) {
+      const pos = L(lx, ly);
+      const sq = document.createElementNS(NS, 'rect');
+      sq.setAttribute('x', pos.x - 4); sq.setAttribute('y', pos.y - 4);
+      sq.setAttribute('width', 8); sq.setAttribute('height', 8);
+      sq.setAttribute('fill', '#fff'); sq.setAttribute('stroke', '#ff7b2e'); sq.setAttribute('stroke-width', 1.5);
+      sq.dataset.handle = `resize-${name}`; sq.dataset.envId = selId;
+      sq.setAttribute('cursor', `${name}-resize`);
+      layer.appendChild(sq);
+    }
+  }
+
   // Attachment point dots (for selected component only)
   // Pulley cord ends are rendered as larger balls below — skip them here
   // Env items are NOT given initiator dots — they're passive snap targets (shown via hover
@@ -587,6 +608,60 @@ export function renderUI(state, layer) {
       layer.appendChild(tiltBtn);
     }
 
+    if (selComp && selComp.subtype === 'rubiksCube') {
+      const colorNames = ['🎨', '🌸', '⚡']; // classic, pastel, neon
+      const ci = (selComp.subParts?.colorIndex ?? 0);
+      const icon = colorNames[ci % 3];
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'rubiks-color'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 10); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
+
+    if (selComp && selComp.subtype === 'spring') {
+      const springState = selComp.subParts?.state ?? 'compressed';
+      const icon = springState === 'compressed' ? '↕' : '⇅';
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'spring-state'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
+
+    if (selComp && selComp.subtype === 'dumpTruck') {
+      const bedState = selComp.subParts?.bedState ?? 'down';
+      const icon = bedState === 'down' ? '⬆' : '⬇';
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'dump-bed'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
 
   }
 

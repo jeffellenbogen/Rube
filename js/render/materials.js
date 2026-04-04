@@ -98,7 +98,7 @@ function drawMaterial(comp, flagNumber = 0) {
     case 'ball':     drawBall(g, x, y, w, h); break;
     case 'domino':   drawDomino(g, x, y, w, h, comp.subParts?.topValue ?? 0, comp.subParts?.bottomValue ?? 0); break;
     case 'toyCar':   drawCar(g, x, y, w, h); break;
-    case 'dumpTruck': drawDumpTruck(g, x, y, w, h); break;
+    case 'dumpTruck': drawDumpTruck(g, x, y, w, h, comp.subParts); break;
     case 'fan':      drawFan(g, x, y, w, h, comp.subParts); break;
     case 'rubiksCube': drawRubiksCube(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
     case 'string':   break; // handled by drawStringComp above
@@ -358,7 +358,8 @@ function drawBook(g, x, y, w, h, colorIndex = 0) {
   }
 }
 
-function drawDumpTruck(g, x, y, w, h) {
+function drawDumpTruck(g, x, y, w, h, subParts) {
+  const bedUp = subParts?.bedState === 'up';
   const wheelCy = y + h * 0.78;
   const wheelR  = h * 0.22;
   // Cab body (left ~35% of width), darker yellow
@@ -367,16 +368,16 @@ function drawDumpTruck(g, x, y, w, h) {
   el('rect', { x: x + w * 0.04, y: y + h * 0.08, width: w * 0.28, height: h * 0.22, fill: '#c87820', rx: 2 }, g);
   // Windshield
   el('rect', { x: x + w * 0.06, y: y + h * 0.10, width: w * 0.20, height: h * 0.17, fill: '#a8d4f0', rx: 1 }, g);
-  // Dump bed (right ~65% of width) — trapezoid taller at rear
-  el('path', {
-    d: `M${x+w*0.35},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${y+h*0.78} L${x+w*0.35},${y+h*0.78} Z`,
-    fill: '#f0a030',
-  }, g);
-  // Bed outline
-  el('path', {
-    d: `M${x+w*0.35},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${y+h*0.78} L${x+w*0.35},${y+h*0.78} Z`,
-    fill: 'none', stroke: '#a06010', 'stroke-width': 1,
-  }, g);
+  // Dump bed — rotated if bedUp
+  const hingeX = x + w * 0.35;
+  const hingeY = y + h * 0.78;
+  const bedG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  if (bedUp) bedG.setAttribute('transform', `rotate(-40,${hingeX},${hingeY})`);
+  // Bed fill
+  const bedPath = `M${hingeX},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${hingeY} L${hingeX},${hingeY} Z`;
+  el('path', { d: bedPath, fill: '#f0a030' }, bedG);
+  el('path', { d: bedPath, fill: 'none', stroke: '#a06010', 'stroke-width': 1 }, bedG);
+  g.appendChild(bedG);
   // Wheels
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR, fill: '#333' }, g);
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR * 0.5, fill: '#666' }, g);
@@ -612,7 +613,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'ball':          drawBall(g, x, y, w, h); break;
     case 'domino':        drawDomino(g, x, y, w, h, 2, 3); break;
     case 'toyCar':        drawCar(g, x, y, w, h); break;
-    case 'dumpTruck':     drawDumpTruck(g, x, y, w, h); break;
+    case 'dumpTruck':     drawDumpTruck(g, x, y, w, h, null); break;
     case 'fan':           drawFan(g, x, y, w, h, null); break;
     case 'rubiksCube':    drawRubiksCube(g, x, y, w, h, 0); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g); break;

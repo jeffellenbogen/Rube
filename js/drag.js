@@ -187,6 +187,34 @@ export function initDrag(svgEl) {
         e.stopPropagation();
         return;
       }
+      if (!comp) {
+        const envId = handleEl.dataset.envId;
+        const envItem = envId && state.environment.find(e => e.id === envId);
+        if (envItem && handle.startsWith('resize-')) {
+          const rect = svgEl.getBoundingClientRect();
+          handleDrag = {
+            type: handle,
+            compId: envId,
+            isEnv: true,
+            startPx: e.clientX - rect.left,
+            startPy: e.clientY - rect.top,
+            origSubParts: {},
+            compX: cmToPx(envItem.x), compY: cmToPx(envItem.y),
+            compW: cmToPx(envItem.width), compH: cmToPx(envItem.height),
+            origW: envItem.width, origH: envItem.height,
+            origX: envItem.x, origY: envItem.y,
+            lockAspect: false,
+            maxW: envItem.width * 7, maxH: envItem.height * 7,
+            centerX: envItem.x + envItem.width / 2,
+            centerY: envItem.y + envItem.height / 2,
+            origRotation: 0,
+            startAngle: 0,
+          };
+          hasMoved = false;
+          e.stopPropagation();
+          return;
+        }
+      }
     }
 
     // Check for attachment point drag first
@@ -439,7 +467,11 @@ export function initDrag(svgEl) {
           if (corner === 'ne' || corner === 'nw') newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
-        updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        if (handleDrag.isEnv) {
+          updateEnvItem(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        } else {
+          updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        }
       }
       render();
       return;

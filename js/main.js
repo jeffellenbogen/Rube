@@ -160,6 +160,7 @@ function defaultSubParts(subtype) {
     book:   { colorIndex: Math.floor(Math.random() * 5) },
     fan:    { direction: 'right' },
     rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
+    dumpTruck: { bedState: 'down' },
     funnel: { openingWidth: 1.0 },
     spring: { state: 'compressed' },
     person: { pose: 'push' },
@@ -321,6 +322,36 @@ svgEl.addEventListener('click', e => {
       undoPush();
       updateEnvItem(targetId, { couchColor: actionEl.dataset.color });
       render(); updateUndoButtons();
+      return;
+    }
+    if (action === 'rubiks-color') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const ci = (comp.subParts?.colorIndex ?? 0);
+        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 3 } });
+        render();
+      }
+      return;
+    }
+    if (action === 'spring-state') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.state ?? 'compressed';
+        updateComponent(targetId, { subParts: { ...comp.subParts, state: cur === 'compressed' ? 'extended' : 'compressed' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'dump-bed') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.bedState ?? 'down';
+        updateComponent(targetId, { subParts: { ...comp.subParts, bedState: cur === 'down' ? 'up' : 'down' } });
+        render();
+      }
       return;
     }
     return;
