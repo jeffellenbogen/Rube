@@ -40,6 +40,7 @@ const CATALOG = {
     { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
     { subtype: 'fan', label: 'Fan', type: 'material', defaultW: 18, defaultH: 20 },
     { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 12, defaultH: 12 },
+    { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
   ],
   environment: [
@@ -48,6 +49,7 @@ const CATALOG = {
     { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
     { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
     { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 140, defaultH: 55 },
+    { subtype: 'wall', label: 'Wall', type: 'environment', defaultW: 5, defaultH: 40 },
   ]
 };
 
@@ -157,6 +159,7 @@ function defaultSubParts(subtype) {
     fan:    { direction: 'right' },
     rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
     funnel: { openingWidth: 1.0 },
+    spring: { state: 'compressed' },
   };
   return defaults[subtype] || {};
 }

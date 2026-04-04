@@ -21,6 +21,11 @@ const ENV_ATTACH = {
     seatCenter:  [0.50,  0.50],
     seatRight:   [0.715, 0.50],
   },
+  wall: {
+    top:    [0.5, 0],
+    center: [0.5, 0.5],
+    bottom: [0.5, 1],
+  },
 };
 
 function computeStairsAttach(item) {
@@ -87,6 +92,7 @@ export const ATTACH_POINTS = {
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
   screw:         { tip: [0.5, 1] },
   book:          { top: [0.5, 0], bottom: [0.5, 1] },
+  spring:        { top: [0.5, 0], bottom: [0.5, 1] },
   yardstick:     { left: [0, 0.5], center: [0.5, 0.5], right: [1, 0.5] },
   protractor:    { base: [0.5, 1], top: [0.5, 0] },
   matchboxTrack: { left: [0, 0.5], right: [1, 0.5] },

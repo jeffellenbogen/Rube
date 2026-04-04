@@ -114,6 +114,7 @@ function drawMaterial(comp, flagNumber = 0) {
     case 'protractor':drawProtractor(g, x, y, w, h); break;
     case 'matchboxTrack': drawMatchboxTrack(g, x, y, w, h, comp.subParts); break;
     case 'book':     drawBook(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
+    case 'spring':   drawSpring(g, x, y, w, h, comp.subParts); break;
     case 'custom':   drawCustom(g, x, y, w, h, comp.name); break;
     case 'start':    drawMarker(g, x, y, w, h, 'START', '#06d6a0'); break;
     case 'finish':   drawMarker(g, x, y, w, h, 'FINISH', '#ef476f'); break;
@@ -522,6 +523,29 @@ function drawFunnel(g, x, y, w, h, subParts) {
   el('rect', { x: topX1 - 2, y: y - 2, width: topOW + 4, height: 4, fill: '#909098', rx: 1 }, g);
 }
 
+function drawSpring(g, x, y, w, h, subParts) {
+  const state = subParts?.state ?? 'compressed';
+  const plateH = h * 0.1;
+  const coilTop = y + plateH;
+  const coilBot = state === 'compressed' ? y + plateH + h * 0.6 : y + h - plateH;
+  const coilH = coilBot - coilTop;
+  const numCoils = 8;
+  const segH = coilH / numCoils;
+  const margin = w * 0.08;
+
+  const pts = [`M${x + w/2},${coilTop}`];
+  for (let i = 0; i < numCoils; i++) {
+    const py = coilTop + (i + 1) * segH;
+    const px = i % 2 === 0 ? x + margin : x + w - margin;
+    pts.push(`L${px},${py}`);
+  }
+  pts.push(`L${x + w/2},${coilBot}`);
+
+  el('path', { d: pts.join(' '), fill: 'none', stroke: '#999', 'stroke-width': Math.max(1.5, w * 0.08), 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+  el('rect', { x, y, width: w, height: plateH, fill: '#ccc', stroke: '#888', 'stroke-width': 1, rx: 1 }, g);
+  el('rect', { x, y: y + h - plateH, width: w, height: plateH, fill: '#ccc', stroke: '#888', 'stroke-width': 1, rx: 1 }, g);
+}
+
 function drawCustom(g, x, y, w, h, name) {
   el('rect', { x, y, width: w, height: h, fill: '#1a3a5c', stroke: '#ff7b2e', 'stroke-width': 2, rx: 4, 'stroke-dasharray': '6 3' }, g);
   const t = document.createElementNS(NS, 'text');
@@ -564,6 +588,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'protractor':    drawProtractor(g, x, y, w, h); break;
     case 'matchboxTrack': drawMatchboxTrack(g, x, y, w, h); break;
     case 'book':          drawBook(g, x, y, w, h, 0); break;
+    case 'spring':        drawSpring(g, x, y, w, h, null); break;
     case 'custom':        drawCustom(g, x, y, w, h, '?'); break;
   }
 }

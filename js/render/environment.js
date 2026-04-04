@@ -28,6 +28,7 @@ function makeEnvItem(item) {
     case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
     case 'couch': drawCouch(g, x, y, w, h, item.couchColor); break;
+    case 'wall': drawWall(g, x, y, w, h); break;
   }
   const cx = x + w / 2, cy = y + h / 2;
   const rotation = item.rotation || 0;
@@ -58,6 +59,23 @@ function svgLine(g, x1, y1, x2, y2, stroke, width) {
   l.setAttribute('x2',x2); l.setAttribute('y2',y2);
   l.setAttribute('stroke', stroke || '#4a7a9a');
   l.setAttribute('stroke-width', width || 2);
+  g.appendChild(l);
+}
+
+function drawWall(g, x, y, w, h) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const r = document.createElementNS(NS, 'rect');
+  r.setAttribute('x', x); r.setAttribute('y', y);
+  r.setAttribute('width', w); r.setAttribute('height', h);
+  r.setAttribute('fill', '#c8b8a0'); r.setAttribute('stroke', '#8a7a60');
+  r.setAttribute('stroke-width', 1.5);
+  g.appendChild(r);
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const l = document.createElementNS(NS, 'line');
+  l.setAttribute('x1', x); l.setAttribute('y1', ledgeY);
+  l.setAttribute('x2', x + w); l.setAttribute('y2', ledgeY);
+  l.setAttribute('stroke', '#8a7a60'); l.setAttribute('stroke-width', 1);
+  l.setAttribute('opacity', 0.5);
   g.appendChild(l);
 }
 
@@ -193,6 +211,7 @@ export function getSurfaces(item) {
   const x = item.x, y = item.y, w = item.width, h = item.height;
   switch (item.subtype) {
     case 'desk': surfaces.push({ x1: x, x2: x+w, y: y }); break;
+    case 'wall': surfaces.push({ x1: x, x2: x+w, y: y }); break;
     case 'chair':
       surfaces.push({ x1: x, x2: x+w, y: y+h*0.4 }); // seat
       break;
@@ -245,5 +264,6 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
     case 'stairs':    drawStairs(g, x, y, w, h, 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
     case 'couch':     drawCouch(g, x, y, w, h, 'blue'); break;
+    case 'wall':      drawWall(g, x, y, w, h); break;
   }
 }
