@@ -457,12 +457,11 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
   }, g);
   // Top face 3x3 grid cells
   const topCellW = fw / 3;
-  const topCellR = rw / 3; // horizontal offset per column
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
       const ci = (row * 3 + col) % colors.length;
-      const bx = fx + col * topCellW + row * (rw / 3);
-      const by = fy - topH + row * (topH / 3);
+      const bx = fx + col * topCellW + (2 - row) * (rw / 3);
+      const by = fy - (2 - row) * (topH / 3);
       el('path', {
         d: `M${bx},${by} L${bx+topCellW},${by} L${bx+topCellW+(rw/3)},${by+topH/3} L${bx+(rw/3)},${by+topH/3} Z`,
         fill: colors[(ci + 2) % colors.length], stroke: '#333', 'stroke-width': 0.5,
@@ -492,7 +491,7 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
     for (let col = 0; col < 3; col++) {
       const ci = (row * 3 + col) % colors.length;
       const bx = fx + fw + col * (rw / 3);
-      const by = fy - topH + topH * (col / 3) + row * rightCellH;
+      const by = fy - col * (topH / 3) + row * rightCellH;
       el('path', {
         d: `M${bx},${by} L${bx+rw/3},${by-rightSlantY} L${bx+rw/3},${by-rightSlantY+rightCellH} L${bx},${by+rightCellH} Z`,
         fill: colors[(ci + 4) % colors.length], stroke: '#333', 'stroke-width': 0.5,
