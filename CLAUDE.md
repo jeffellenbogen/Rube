@@ -39,11 +39,13 @@ js/
     materials.js    — draws material SVG icons
     environment.js  — draws environment items (desk, chair, etc.)
     connections.js  — draws energy connection lines and connDrag ghost
-    attachPoints.js — computes attachment point pixel positions
+    attachPoints.js — getAttachPx: live pixel positions used for rendering (cord tips); getSnapPx: snap-target positions (pulley cord ends moved to wheel rim so snapping works from any approach direction). Always use getSnapPx in findNearestAttachment; use getAttachPx for rendering only.
     ui.js           — selection rings, handles, action buttons, rubber-band rect
 
   test/
     run.js          — test runner
+    multi-select.test.js — tests for getComponentsInRect
+    snap.test.js    — tests for getSnapPx and findNearestAttachment snap behavior
     *.test.js       — unit tests (Node-compatible, no browser deps)
 ```
 
