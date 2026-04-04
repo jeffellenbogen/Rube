@@ -90,6 +90,35 @@ export const ATTACH_POINTS = {
   finish:        { input: [0, 0.5] },
 };
 
+/**
+ * Returns snap-target pixel positions for a component.
+ * Identical to getAttachPx for most subtypes; for pulleys, cordLeft/cordRight
+ * snap to the wheel-rim origin rather than the hanging cord tip, so users can
+ * approach from any direction and the snap still fires.
+ */
+export function getSnapPx(comp) {
+  if (comp.subtype === 'pulley') {
+    const cx = cmToPx(comp.x + comp.width / 2);
+    const cy = cmToPx(comp.y + comp.height / 2);
+    const w  = cmToPx(comp.width);
+    const h  = cmToPx(comp.height);
+    const r  = Math.min(w, h) * 0.35;
+    const deg   = (comp.rotation || 0) * Math.PI / 180;
+    const flipX = comp.flipped ? -1 : 1;
+    function applyT(dx, dy) {
+      const rdx = dx * Math.cos(deg) - dy * Math.sin(deg);
+      const rdy = dx * Math.sin(deg) + dy * Math.cos(deg);
+      return { x: cx + rdx * flipX, y: cy + rdy };
+    }
+    return {
+      ...getAttachPx(comp),
+      cordLeft:  applyT(-r * 0.7, -h * 0.2),
+      cordRight: applyT( r * 0.7, -h * 0.2),
+    };
+  }
+  return getAttachPx(comp);
+}
+
 export function getAttachPx(comp) {
   const cx = cmToPx(comp.x + comp.width / 2);
   const cy = cmToPx(comp.y + comp.height / 2);
