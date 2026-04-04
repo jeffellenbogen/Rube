@@ -281,11 +281,11 @@ export function renderUI(state, layer) {
   }
 
   // Subtypes that use a free-rotate yellow dot instead of the 90° ↻ button
-  const FREE_ROTATE_SUBTYPES = new Set(['tube', 'yardstick', 'matchboxTrack']);
+  const FREE_ROTATE_SUBTYPES = new Set(['tube', 'yardstick', 'matchboxTrack', 'funnel']);
 
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
-  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'flag' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'flag' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && comp.subtype !== 'dumpTruck' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
     // Rotate ↻ — bottom-right in component local space
     const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
@@ -421,6 +421,25 @@ export function renderUI(state, layer) {
     }
   }
 
+  // Flip-only button for dumpTruck (component)
+  const dumpTruckComp = isComp && comp.subtype === 'dumpTruck' ? comp : null;
+  if (dumpTruckComp) {
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
+    const flipBtn = document.createElementNS(NS, 'g');
+    flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
+    flipBtn.setAttribute('cursor', 'pointer');
+    const fbg = document.createElementNS(NS, 'circle');
+    fbg.setAttribute('cx', flipPos.x); fbg.setAttribute('cy', flipPos.y);
+    fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
+    fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
+    const ft = document.createElementNS(NS, 'text');
+    ft.setAttribute('x', flipPos.x); ft.setAttribute('y', flipPos.y);
+    ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
+    ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
+    flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
+    layer.appendChild(flipBtn);
+  }
+
   // Flip-only button for stairs (env item)
   const stairsItem = state.environment.find(e => e.id === selId && e.subtype === 'stairs');
   const isStairs = !!stairsItem;
@@ -465,6 +484,27 @@ export function renderUI(state, layer) {
       t.setAttribute('font-size', 13); t.textContent = icon;
       btn.appendChild(bg); btn.appendChild(t);
       layer.appendChild(btn);
+    }
+  }
+
+  // Wall resize handles (env item)
+  const wallItem = state.environment.find(e => e.id === selId && e.subtype === 'wall');
+  if (wallItem) {
+    const corners = [
+      { name: 'nw', lx: -w2-pad, ly: -h2-pad },
+      { name: 'ne', lx:  w2+pad, ly: -h2-pad },
+      { name: 'sw', lx: -w2-pad, ly:  h2+pad },
+      { name: 'se', lx:  w2+pad, ly:  h2+pad },
+    ];
+    for (const { name, lx, ly } of corners) {
+      const pos = L(lx, ly);
+      const sq = document.createElementNS(NS, 'rect');
+      sq.setAttribute('x', pos.x - 4); sq.setAttribute('y', pos.y - 4);
+      sq.setAttribute('width', 8); sq.setAttribute('height', 8);
+      sq.setAttribute('fill', '#fff'); sq.setAttribute('stroke', '#ff7b2e'); sq.setAttribute('stroke-width', 1.5);
+      sq.dataset.handle = `resize-${name}`; sq.dataset.envId = selId;
+      sq.setAttribute('cursor', `${name}-resize`);
+      layer.appendChild(sq);
     }
   }
 
@@ -587,6 +627,98 @@ export function renderUI(state, layer) {
       layer.appendChild(tiltBtn);
     }
 
+    if (selComp && selComp.subtype === 'person') {
+      const currentPose = selComp.subParts?.pose ?? 'push';
+      const poses = [
+        { id: 'push', icon: '→' },
+        { id: 'drop', icon: '↓' },
+        { id: 'pull', icon: '←' },
+      ];
+      const spacing = 22;
+      const basePos = h2 + pad + 8;
+      const totalOffsetX = (poses.length - 1) * spacing / 2;
+      for (let i = 0; i < poses.length; i++) {
+        const { id, icon } = poses[i];
+        const isActive = id === currentPose;
+        const offsetX = i * spacing - totalOffsetX;
+        const pos = L(offsetX, basePos);
+        const btn = document.createElementNS(NS, 'g');
+        btn.dataset.action = 'person-pose';
+        btn.dataset.pose = id;
+        btn.dataset.targetId = selId;
+        btn.setAttribute('cursor', 'pointer');
+        const bg = document.createElementNS(NS, 'circle');
+        bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+        bg.setAttribute('r', 9);
+        bg.setAttribute('fill', isActive ? '#ff7b2e' : '#1a3a5c');
+        bg.setAttribute('stroke', '#ff7b2e');
+        bg.setAttribute('stroke-width', isActive ? 2 : 1);
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('dominant-baseline', 'middle');
+        t.setAttribute('fill', '#fff');
+        t.setAttribute('font-size', 11);
+        t.textContent = icon;
+        btn.appendChild(bg); btn.appendChild(t);
+        layer.appendChild(btn);
+      }
+    }
+
+    if (selComp && selComp.subtype === 'rubiksCube') {
+      const colorNames = ['🎨', '🌸', '⚡']; // classic, pastel, neon
+      const ci = (selComp.subParts?.colorIndex ?? 0);
+      const icon = colorNames[ci % 3];
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'rubiks-color'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 10); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
+
+    if (selComp && selComp.subtype === 'spring') {
+      const springState = selComp.subParts?.state ?? 'compressed';
+      const icon = springState === 'compressed' ? '↕' : '⇅';
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'spring-state'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
+
+    if (selComp && selComp.subtype === 'dumpTruck') {
+      const bedState = selComp.subParts?.bedState ?? 'down';
+      const icon = bedState === 'down' ? '⬆' : '⬇';
+      const pos = L(0, h2 + pad + 8);
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'dump-bed'; btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+      const bg = document.createElementNS(NS, 'circle');
+      bg.setAttribute('cx', pos.x); bg.setAttribute('cy', pos.y);
+      bg.setAttribute('r', 9); bg.setAttribute('fill', '#1a3a5c'); bg.setAttribute('stroke', '#ff7b2e'); bg.setAttribute('stroke-width', 1);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', pos.x); t.setAttribute('y', pos.y);
+      t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('fill', '#fff'); t.setAttribute('font-size', 11); t.textContent = icon;
+      btn.appendChild(bg); btn.appendChild(t);
+      layer.appendChild(btn);
+    }
 
   }
 

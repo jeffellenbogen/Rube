@@ -26,9 +26,11 @@ const CATALOG = {
     { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 12, defaultH: 24 },
     { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 18, defaultH: 18 },
     { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 30, defaultH: 18 },
+    { subtype: 'dumpTruck', label: 'Dump Truck', type: 'material', defaultW: 50, defaultH: 24 },
     { subtype: 'string', label: 'String', type: 'material', defaultW: 40, defaultH: 2 },
     { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 22, defaultH: 16 },
     { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 20, defaultH: 24 },
+    { subtype: 'funnel', label: 'Funnel', type: 'material', defaultW: 15, defaultH: 20 },
     { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 40, defaultH: 10 },
     { subtype: 'box', label: 'Crate', type: 'material', defaultW: 24, defaultH: 24 },
     { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 120, defaultH: 60 },
@@ -36,7 +38,11 @@ const CATALOG = {
     { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 20, defaultH: 10 },
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 40, defaultH: 8 },
     { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
+    { subtype: 'fan', label: 'Fan', type: 'material', defaultW: 36, defaultH: 40 },
+    { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'person', label: 'Person', type: 'marker', defaultW: 40, defaultH: 60 },
   ],
   environment: [
     { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
@@ -44,6 +50,7 @@ const CATALOG = {
     { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
     { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
     { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 140, defaultH: 55 },
+    { subtype: 'wall', label: 'Wall', type: 'environment', defaultW: 10, defaultH: 80 },
   ]
 };
 
@@ -80,6 +87,7 @@ function makeComponentIcon(item) {
   if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.subtype === 'person')  drawMaterialIcon('person', g, ox, oy, iw, ih);
   else if (item.subtype === 'flag')     drawFlagIcon(g, ox, oy, iw, ih);
   return svg;
 }
@@ -150,6 +158,12 @@ function defaultSubParts(subtype) {
     domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
     box:    { colorIndex: Math.floor(Math.random() * 4) },
     book:   { colorIndex: Math.floor(Math.random() * 5) },
+    fan:    { direction: 'right' },
+    rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
+    dumpTruck: { bedState: 'down' },
+    funnel: { openingWidth: 1.0 },
+    spring: { state: 'compressed' },
+    person: { pose: 'push' },
   };
   return defaults[subtype] || {};
 }
@@ -308,6 +322,46 @@ svgEl.addEventListener('click', e => {
       undoPush();
       updateEnvItem(targetId, { couchColor: actionEl.dataset.color });
       render(); updateUndoButtons();
+      return;
+    }
+    if (action === 'rubiks-color') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const ci = (comp.subParts?.colorIndex ?? 0);
+        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 3 } });
+        render();
+      }
+      return;
+    }
+    if (action === 'spring-state') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.state ?? 'compressed';
+        updateComponent(targetId, { subParts: { ...comp.subParts, state: cur === 'compressed' ? 'extended' : 'compressed' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'dump-bed') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.bedState ?? 'down';
+        updateComponent(targetId, { subParts: { ...comp.subParts, bedState: cur === 'down' ? 'up' : 'down' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'person-pose') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const pose = actionEl.dataset.pose;
+        updateComponent(targetId, { subParts: { ...comp.subParts, pose } });
+        render();
+      }
       return;
     }
     return;

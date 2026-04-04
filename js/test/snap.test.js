@@ -99,3 +99,111 @@ test('findNearestAttachment finds pulley regardless of which direction mouse app
   assert(near !== null, 'should find regardless of cord direction');
   assertEqual(near.pointName, 'cordLeft');
 });
+
+// ---------------------------------------------------------------------------
+// Attachment point tests for new components
+// ---------------------------------------------------------------------------
+
+function makeComp(subtype, x, y, w, h) {
+  return { id: 'c1', type: 'material', subtype, x, y, width: w, height: h };
+}
+
+test('dumpTruck center attach point is at component center', () => {
+  const c = makeComp('dumpTruck', 10, 20, 25, 12);
+  const pts = getAttachPx(c);
+  assertEqual(pts.center.x, 10 + 0.5 * 25);  // 22.5
+  assertEqual(pts.center.y, 20 + 0.5 * 12);  // 26
+});
+
+test('fan center attach point is at 35% height (center of blade housing)', () => {
+  const c = makeComp('fan', 0, 0, 18, 20);
+  const pts = getAttachPx(c);
+  assertEqual(pts.center.x, 0 + 0.5 * 18);  // 9
+  assertEqual(pts.center.y, 0 + 0.35 * 20); // 7
+});
+
+test('rubiksCube center attach point is at component center', () => {
+  const c = makeComp('rubiksCube', 5, 5, 12, 12);
+  const pts = getAttachPx(c);
+  assertEqual(pts.center.x, 5 + 0.5 * 12); // 11
+  assertEqual(pts.center.y, 5 + 0.5 * 12); // 11
+});
+
+test('funnel has topInput at top-center and bottomOutput at bottom-center', () => {
+  const c = makeComp('funnel', 10, 10, 15, 20);
+  const pts = getAttachPx(c);
+  assertEqual(pts.topInput.x, 10 + 0.5 * 15);  // 17.5
+  assertEqual(pts.topInput.y, 10 + 0 * 20);     // 10
+  assertEqual(pts.bottomOutput.x, 10 + 0.5 * 15); // 17.5
+  assertEqual(pts.bottomOutput.y, 10 + 1 * 20);   // 30
+});
+
+test('spring has top and bottom attach points at vertical extremes', () => {
+  const c = makeComp('spring', 0, 0, 10, 20);
+  const pts = getAttachPx(c);
+  assertEqual(pts.top.x, 0 + 0.5 * 10);   // 5
+  assertEqual(pts.top.y, 0 + 0 * 20);      // 0
+  assertEqual(pts.bottom.x, 0 + 0.5 * 10); // 5
+  assertEqual(pts.bottom.y, 0 + 1 * 20);   // 20
+});
+
+// ---------------------------------------------------------------------------
+// Wall ENV_ATTACH points
+// ---------------------------------------------------------------------------
+
+function makeEnvItem(subtype, x, y, w, h) {
+  return { id: 'e1', type: 'environment', subtype, x, y, width: w, height: h };
+}
+
+test('wall has top, center, bottom attach points', () => {
+  const wall = makeEnvItem('wall', 0, 0, 5, 40);
+  const pts = getAttachPx(wall);
+  // ENV_ATTACH fractions: top=[0.5,0], center=[0.5,0.5], bottom=[0.5,1]
+  assertEqual(pts.top.x, 0 + 0.5 * 5);    // 2.5
+  assertEqual(pts.top.y, 0 + 0 * 40);      // 0
+  assertEqual(pts.center.x, 0 + 0.5 * 5); // 2.5
+  assertEqual(pts.center.y, 0 + 0.5 * 40); // 20
+  assertEqual(pts.bottom.x, 0 + 0.5 * 5); // 2.5
+  assertEqual(pts.bottom.y, 0 + 1 * 40);  // 40
+});
+
+// ---------------------------------------------------------------------------
+// Person dynamic attach points
+// ---------------------------------------------------------------------------
+
+function makePerson(x, y, w, h, pose) {
+  return { id: 'p1', type: 'marker', subtype: 'person', x, y, width: w, height: h,
+           subParts: { pose } };
+}
+
+test('person push pose: hand is at right side (0.9, 0.4)', () => {
+  const p = makePerson(0, 0, 20, 30, 'push');
+  const pts = getAttachPx(p);
+  // cx=10, cy=15; handFx=0.9, handFy=0.4 → dx=(0.9-0.5)*20=8, dy=(0.4-0.5)*30=-3
+  // hand = { x: 10+8=18, y: 15-3=12 }
+  assert(Math.abs(pts.hand.x - 18) < 0.01, `push hand.x expected 18, got ${pts.hand.x}`);
+  assert(Math.abs(pts.hand.y - 12) < 0.01, `push hand.y expected 12, got ${pts.hand.y}`);
+});
+
+test('person drop pose: hand is lower-right (0.6, 0.7)', () => {
+  const p = makePerson(0, 0, 20, 30, 'drop');
+  const pts = getAttachPx(p);
+  // dx=(0.6-0.5)*20=2, dy=(0.7-0.5)*30=6 → { x: 12, y: 21 }
+  assert(Math.abs(pts.hand.x - 12) < 0.01, `drop hand.x expected 12, got ${pts.hand.x}`);
+  assert(Math.abs(pts.hand.y - 21) < 0.01, `drop hand.y expected 21, got ${pts.hand.y}`);
+});
+
+test('person pull pose: hand is at left side (0.1, 0.4)', () => {
+  const p = makePerson(0, 0, 20, 30, 'pull');
+  const pts = getAttachPx(p);
+  // dx=(0.1-0.5)*20=-8, dy=(0.4-0.5)*30=-3 → { x: 2, y: 12 }
+  assert(Math.abs(pts.hand.x - 2) < 0.01, `pull hand.x expected 2, got ${pts.hand.x}`);
+  assert(Math.abs(pts.hand.y - 12) < 0.01, `pull hand.y expected 12, got ${pts.hand.y}`);
+});
+
+test('person defaults to push pose when subParts missing', () => {
+  const p = { id: 'p2', type: 'marker', subtype: 'person', x: 0, y: 0, width: 20, height: 30 };
+  const pts = getAttachPx(p);
+  // Should default to push: hand.x = 18
+  assert(Math.abs(pts.hand.x - 18) < 0.01, `default pose hand.x expected 18, got ${pts.hand.x}`);
+});

@@ -13,14 +13,24 @@ const CORD_POINTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
 const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
-  'protractor', 'book', 'matchboxTrack', 'flag',
+  'protractor', 'book', 'flag',
+  'fan', 'rubiksCube', 'dumpTruck', 'funnel', 'spring', 'person',
 ]);
+
+// Subtypes that only allow horizontal resizing (height is locked)
+const LOCK_HEIGHT = new Set(['matchboxTrack']);
 
 // Subtypes with custom min/max fractions of their default size (overrides global 7× max and MIN floor)
 const SPECIAL_LIMITS = {
   yardstick:    { min: 0.5, max: 3.5 },
-  matchboxTrack: { min: 0.5, max: 3.5 },
+  matchboxTrack: { min: 0.5, max: 5 },
   flag:         { min: 0.75, max: 3 },
+  dumpTruck:    { min: 0.8, max: 8 },
+  fan:          { min: 0.5, max: 4 },
+  spring:       { min: 0.8, max: 5 },
+  funnel:       { min: 0.5, max: 4 },
+  rubiksCube:   { min: 1, max: 5 },
+  person:       { min: 1, max: 5 },
 };
 
 const MIN = 11; // cm — keeps components large enough to click on
@@ -34,6 +44,8 @@ const DEFAULTS = {
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
+  dumpTruck: { w: 50, h: 24 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 24, h: 24 },
+  fan: { w: 36, h: 40 }, spring: { w: 10, h: 20 }, person: { w: 40, h: 60 },
 };
 
 let dragging   = null;    // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
@@ -174,6 +186,7 @@ export function initDrag(svgEl) {
           origW: comp.width, origH: comp.height,
           origX: comp.x, origY: comp.y,
           lockAspect: LOCK_ASPECT.has(comp.subtype),
+          lockHeight: LOCK_HEIGHT.has(comp.subtype),
           aspectRatio: comp.height / comp.width,
           minW: SPECIAL_LIMITS[comp.subtype] ? (DEFAULTS[comp.subtype]?.w ?? 0) * SPECIAL_LIMITS[comp.subtype].min : MIN,
           maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
@@ -186,6 +199,35 @@ export function initDrag(svgEl) {
         hasMoved = false;
         e.stopPropagation();
         return;
+      }
+      if (!comp) {
+        const envId = handleEl.dataset.envId;
+        const envItem = envId && state.environment.find(e => e.id === envId);
+        if (envItem && handle.startsWith('resize-')) {
+          const rect = svgEl.getBoundingClientRect();
+          handleDrag = {
+            type: handle,
+            compId: envId,
+            isEnv: true,
+            startPx: e.clientX - rect.left,
+            startPy: e.clientY - rect.top,
+            origSubParts: {},
+            compX: cmToPx(envItem.x), compY: cmToPx(envItem.y),
+            compW: cmToPx(envItem.width), compH: cmToPx(envItem.height),
+            origW: envItem.width, origH: envItem.height,
+            origX: envItem.x, origY: envItem.y,
+            lockAspect: false,
+            maxW: envItem.subtype === 'wall' ? Infinity : envItem.width * 7,
+            maxH: envItem.subtype === 'wall' ? Infinity : envItem.height * 7,
+            centerX: envItem.x + envItem.width / 2,
+            centerY: envItem.y + envItem.height / 2,
+            origRotation: 0,
+            startAngle: 0,
+          };
+          hasMoved = false;
+          e.stopPropagation();
+          return;
+        }
       }
     }
 
@@ -348,7 +390,8 @@ export function initDrag(svgEl) {
 
       const state = getState();
       const comp = state.components.find(c => c.id === handleDrag.compId);
-      if (!comp) { handleDrag = null; return; }
+      const envItem = handleDrag.isEnv ? state.environment.find(e => e.id === handleDrag.compId) : null;
+      if (!comp && !envItem) { handleDrag = null; return; }
 
       if (handleDrag.type === 'end1' || handleDrag.type === 'end2') {
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
@@ -398,8 +441,8 @@ export function initDrag(svgEl) {
         const corner = handleDrag.type.slice(7); // 'nw', 'ne', 'sw', 'se'
         // Project screen drag delta onto component's local axes so resize works
         // correctly at any rotation angle (pulling outward always grows the component).
-        const rad = (comp.rotation || 0) * Math.PI / 180;
-        const fX = comp.flipped ? -1 : 1;
+        const rad = handleDrag.isEnv ? 0 : (comp.rotation || 0) * Math.PI / 180;
+        const fX = handleDrag.isEnv ? 1 : (comp.flipped ? -1 : 1);
         const dxCm = pxToCm(dx * fX * Math.cos(rad) + dy * Math.sin(rad));
         const dyCm = pxToCm(-dx * fX * Math.sin(rad) + dy * Math.cos(rad));
         let newW = handleDrag.origW, newH = handleDrag.origH;
@@ -426,9 +469,15 @@ export function initDrag(svgEl) {
           newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
+        // Lock height for components that only resize horizontally
+        if (handleDrag.lockHeight) {
+          newH = handleDrag.origH;
+          newY = handleDrag.origY;
+        }
+
         // Lock aspect ratio for components that have a fixed physical shape.
         // Drive from width; height follows. Do NOT enforce height MIN — for wide
-        // items (car track, yardstick) the height is naturally smaller than 11cm
+        // items (yardstick) the height is naturally smaller than 11cm
         // and forcing it up causes the width to jump to unreasonably large values.
         if (handleDrag.lockAspect) {
           newW = Math.max(handleDrag.minW, Math.min(maxW, newW));
@@ -439,7 +488,11 @@ export function initDrag(svgEl) {
           if (corner === 'ne' || corner === 'nw') newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
-        updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        if (handleDrag.isEnv) {
+          updateEnvItem(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        } else {
+          updateComponent(handleDrag.compId, { x: newX, y: newY, width: newW, height: newH });
+        }
       }
       render();
       return;

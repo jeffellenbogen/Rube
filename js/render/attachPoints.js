@@ -21,6 +21,11 @@ const ENV_ATTACH = {
     seatCenter:  [0.50,  0.50],
     seatRight:   [0.715, 0.50],
   },
+  wall: {
+    top:    [0.5, 0],
+    center: [0.5, 0.5],
+    bottom: [0.5, 1],
+  },
 };
 
 function computeStairsAttach(item) {
@@ -75,14 +80,19 @@ export const ATTACH_POINTS = {
   ball:          { center: [0.5, 0.5] },
   domino:        { center: [0.5, 0.5] },
   toyCar:        { center: [0.5, 0.5] },
+  dumpTruck:     { center: [0.5, 0.5] },
+  fan:           { center: [0.5, 0.35] },
+  rubiksCube:    { center: [0.5, 0.5] },
   bucket:        { handle: [0.5, 0.05], bottom: [0.5, 1] },
   cup:           { top: [0.325, 0], bottom: [0.325, 1], handle: [0.88, 0.485] },
+  funnel:        { topInput: [0.5, 0], bottomOutput: [0.5, 1] },
   pulley:        { mountTop: [0.5, 0] },
   // inclinedPlane: computed dynamically in getAttachPx (angle-dependent)
   wheelAxle:     { center: [0.5, 0.5] },
   wedge:         { thinEnd: [0, 0.5], thickBase: [1, 1] },
   screw:         { tip: [0.5, 1] },
   book:          { top: [0.5, 0], bottom: [0.5, 1] },
+  spring:        { top: [0.5, 0], bottom: [0.5, 1] },
   yardstick:     { left: [0, 0.5], center: [0.5, 0.5], right: [1, 0.5] },
   protractor:    { base: [0.5, 1], top: [0.5, 0] },
   matchboxTrack: { left: [0, 0.5], right: [1, 0.5] },
@@ -130,6 +140,16 @@ export function getAttachPx(comp) {
     const rdx = dx * Math.cos(deg) - dy * Math.sin(deg);
     const rdy = dx * Math.sin(deg) + dy * Math.cos(deg);
     return { x: cx + rdx * flipX, y: cy + rdy };
+  }
+
+  // Person: hand attachment point varies by pose
+  if (comp.subtype === 'person') {
+    const pose = comp.subParts?.pose || 'push';
+    let handFx, handFy;
+    if (pose === 'push')      { handFx = 0.9; handFy = 0.4; }
+    else if (pose === 'drop') { handFx = 0.6; handFy = 0.7; }
+    else if (pose === 'pull') { handFx = 0.1; handFy = 0.4; }
+    return { hand: applyTransform((handFx - 0.5) * w, (handFy - 0.5) * h) };
   }
 
   // Lever: attach points follow the tilted bar ends.
