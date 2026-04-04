@@ -399,6 +399,12 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
     opacity: strutOpacity, 'stroke-linecap': 'round',
   }, bedG);
   g.appendChild(bedG);
+  // Chassis rail connecting wheel axles
+  el('rect', {
+    x: x + w * 0.22, y: wheelCy - wheelR * 0.3,
+    width: w * 0.58, height: wheelR * 0.3,
+    fill: '#555', rx: 1,
+  }, g);
   // Wheels
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR, fill: '#333' }, g);
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR * 0.5, fill: '#666' }, g);
@@ -408,13 +414,13 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
 
 function drawFan(g, x, y, w, h, subParts) {
   const cx = x + w / 2;
-  const housingR = Math.min(w / 2, h * 0.65);
+  const housingR = Math.min(w / 2, h * 0.40);
   const housingCy = y + housingR;
-  // Stand (bottom 35% of height, centered ~40% width)
-  const standW = w * 0.4;
+  // Stand (bottom 60% of height, centered ~35% width)
+  const standW = w * 0.35;
   const standX = cx - standW / 2;
-  const standY = y + h * 0.65;
-  const standH = h * 0.35;
+  const standY = y + h * 0.40;
+  const standH = h * 0.60;
   el('rect', { x: standX, y: standY, width: standW, height: standH, fill: '#666', rx: 3 }, g);
   // Housing circle background
   el('circle', { cx, cy: housingCy, r: housingR, fill: '#eee', stroke: '#555', 'stroke-width': Math.max(1.5, housingR * 0.06) }, g);

@@ -14,7 +14,7 @@ const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
   'protractor', 'book', 'flag',
-  'fan', 'rubiksCube', 'dumpTruck', 'funnel',
+  'fan', 'rubiksCube', 'dumpTruck', 'funnel', 'spring',
 ]);
 
 // Subtypes that only allow horizontal resizing (height is locked)
@@ -25,7 +25,9 @@ const SPECIAL_LIMITS = {
   yardstick:    { min: 0.5, max: 3.5 },
   matchboxTrack: { min: 0.5, max: 5 },
   flag:         { min: 0.75, max: 3 },
-  dumpTruck:    { min: 0.8, max: 4 },
+  dumpTruck:    { min: 0.8, max: 8 },
+  fan:          { min: 0.5, max: 4 },
+  spring:       { min: 0.8, max: 5 },
   funnel:       { min: 0.5, max: 4 },
   rubiksCube:   { min: 2, max: 5 },
 };
@@ -41,7 +43,8 @@ const DEFAULTS = {
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
-  dumpTruck: { w: 25, h: 12 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 12, h: 12 },
+  dumpTruck: { w: 50, h: 24 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 12, h: 12 },
+  fan: { w: 36, h: 40 }, spring: { w: 10, h: 20 },
 };
 
 let dragging   = null;    // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
@@ -386,7 +389,8 @@ export function initDrag(svgEl) {
 
       const state = getState();
       const comp = state.components.find(c => c.id === handleDrag.compId);
-      if (!comp) { handleDrag = null; return; }
+      const envItem = handleDrag.isEnv ? state.environment.find(e => e.id === handleDrag.compId) : null;
+      if (!comp && !envItem) { handleDrag = null; return; }
 
       if (handleDrag.type === 'end1' || handleDrag.type === 'end2') {
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
@@ -436,8 +440,8 @@ export function initDrag(svgEl) {
         const corner = handleDrag.type.slice(7); // 'nw', 'ne', 'sw', 'se'
         // Project screen drag delta onto component's local axes so resize works
         // correctly at any rotation angle (pulling outward always grows the component).
-        const rad = (comp.rotation || 0) * Math.PI / 180;
-        const fX = comp.flipped ? -1 : 1;
+        const rad = handleDrag.isEnv ? 0 : (comp.rotation || 0) * Math.PI / 180;
+        const fX = handleDrag.isEnv ? 1 : (comp.flipped ? -1 : 1);
         const dxCm = pxToCm(dx * fX * Math.cos(rad) + dy * Math.sin(rad));
         const dyCm = pxToCm(-dx * fX * Math.sin(rad) + dy * Math.cos(rad));
         let newW = handleDrag.origW, newH = handleDrag.origH;
