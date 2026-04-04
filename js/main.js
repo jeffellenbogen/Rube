@@ -42,7 +42,7 @@ const CATALOG = {
     { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 24, defaultH: 24 },
     { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
-    { subtype: 'person', label: 'Person', type: 'marker', defaultW: 20, defaultH: 30 },
+    { subtype: 'person', label: 'Person', type: 'marker', defaultW: 40, defaultH: 60 },
   ],
   environment: [
     { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
