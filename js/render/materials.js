@@ -407,6 +407,30 @@ function drawFan(g, x, y, w, h, subParts) {
   el('circle', { cx, cy: housingCy, r: housingR * 0.15, fill: '#888' }, g);
   // Housing ring on top
   el('circle', { cx, cy: housingCy, r: housingR, fill: 'none', stroke: '#555', 'stroke-width': Math.max(1.5, housingR * 0.06) }, g);
+  // Direction arrow (right by default, left if direction === 'left')
+  const direction = subParts?.direction === 'left' ? 'left' : 'right';
+  const arrowR = housingR * 0.15; // 15% of housing radius
+  if (direction === 'right') {
+    // Right-pointing chevron/arrow: >
+    el('path', {
+      d: `M${cx - arrowR * 0.4},${housingCy - arrowR * 0.5} L${cx + arrowR * 0.4},${housingCy} L${cx - arrowR * 0.4},${housingCy + arrowR * 0.5}`,
+      fill: 'none',
+      stroke: '#555',
+      'stroke-width': Math.max(1, arrowR * 0.2),
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+    }, g);
+  } else {
+    // Left-pointing chevron/arrow: <
+    el('path', {
+      d: `M${cx + arrowR * 0.4},${housingCy - arrowR * 0.5} L${cx - arrowR * 0.4},${housingCy} L${cx + arrowR * 0.4},${housingCy + arrowR * 0.5}`,
+      fill: 'none',
+      stroke: '#555',
+      'stroke-width': Math.max(1, arrowR * 0.2),
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+    }, g);
+  }
 }
 
 const RUBIKS_CLASSIC = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#ffffff', '#fb5607'];
