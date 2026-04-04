@@ -104,10 +104,11 @@ The PNG is the **only** save format. Don't add a separate JSON export without a 
 
 ## Deployment Workflow
 
-- **`main` branch** → GitHub Pages (live, public URL). Never commit directly to main for features.
-- **`New-Features` branch** → active development branch. All feature work and bug fixes go here first.
-- When a feature or fix is ready: open a PR from `New-Features` → `main`, review, merge manually. Keep `New-Features` alive after merging — don't delete it.
-- After merging, pull `main` locally if needed; next work resumes on `New-Features`.
+- **`New-Features` branch** → active development branch. All feature work and bug fixes go here first. Push here to test on GitHub Pages with the source set to `New-Features`.
+- **`main` branch** → stable, student-facing. Only updated via PR from `New-Features` — **never** push or merge to `main` directly. Always wait for the user to request a PR.
+- **Testing flow:** User tests on GitHub Pages pointed at `New-Features`. When satisfied, user requests a PR → `main`. This lets them roll back by switching GitHub Pages source between branches.
+- **Never** run `git merge New-Features`, `git push origin main`, or any equivalent without explicit user confirmation. Even if a plan includes those steps — stop and ask first.
+- Keep `New-Features` alive after merging — don't delete it.
 
 ## Version Convention
 
