@@ -26,6 +26,7 @@ const CATALOG = {
     { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 12, defaultH: 24 },
     { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 18, defaultH: 18 },
     { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 30, defaultH: 18 },
+    { subtype: 'dumpTruck', label: 'Dump Truck', type: 'material', defaultW: 25, defaultH: 12 },
     { subtype: 'string', label: 'String', type: 'material', defaultW: 40, defaultH: 2 },
     { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 22, defaultH: 16 },
     { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 20, defaultH: 24 },
@@ -36,6 +37,8 @@ const CATALOG = {
     { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 20, defaultH: 10 },
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 40, defaultH: 8 },
     { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
+    { subtype: 'fan', label: 'Fan', type: 'material', defaultW: 18, defaultH: 20 },
+    { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 12, defaultH: 12 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
   ],
   environment: [
@@ -150,6 +153,8 @@ function defaultSubParts(subtype) {
     domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
     box:    { colorIndex: Math.floor(Math.random() * 4) },
     book:   { colorIndex: Math.floor(Math.random() * 5) },
+    fan:    { direction: 'right' },
+    rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
   };
   return defaults[subtype] || {};
 }
