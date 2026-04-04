@@ -1,6 +1,6 @@
 import { cmToPx } from '../canvas.js';
-import { getSelected, getConnDrag, getSelectedIds, getRubberBand } from '../drag.js';
-import { getAttachPx, getStringEndpoints } from './attachPoints.js';
+import { getSelected, getConnDrag, getHandleDrag, getSelectedIds, getRubberBand } from '../drag.js';
+import { getAttachPx, getSnapPx, getStringEndpoints } from './attachPoints.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -176,6 +176,48 @@ export function renderUI(state, layer) {
           dot2.setAttribute('stroke', '#fff'); dot2.setAttribute('stroke-width', inSnap2 ? 2.5 : 1.5);
           dot2.setAttribute('opacity', inSnap2 ? 1 : 0.75);
           layer.appendChild(dot2);
+        }
+      }
+    }
+
+    // Snap highlights for cord/string end drags (handleDrag for end1/end2/cordLeft/cordRight)
+    const hd = getHandleDrag();
+    const CORD_END_TYPES = new Set(['end1', 'end2', 'cordLeft', 'cordRight']);
+    if (hd && CORD_END_TYPES.has(hd.type)) {
+      const HOVER_DIST_HD = 40;
+      const SNAP_DIST_HD  = 20;
+      let hdPx, hdPy;
+      const hdComp = state.components.find(c => c.id === hd.compId);
+      if (hdComp) {
+        if (hd.type === 'end1' || hd.type === 'end2') {
+          const sp = hdComp.subParts || {};
+          const ex = hd.type === 'end1' ? (sp.x1 ?? hdComp.x) : (sp.x2 ?? hdComp.x + hdComp.width);
+          const ey = hd.type === 'end1' ? (sp.y1 ?? hdComp.y) : (sp.y2 ?? hdComp.y);
+          hdPx = cmToPx(ex); hdPy = cmToPx(ey);
+        } else {
+          const pt = getAttachPx(hdComp)[hd.type];
+          if (pt) { hdPx = pt.x; hdPy = pt.y; }
+        }
+      }
+      if (hdPx !== undefined) {
+        const ENV_SUBTYPES_HD = new Set(['couch', 'stairs', 'chair', 'desk']);
+        const allItemsHD = [...state.components,
+          ...(state.environment || []).filter(e => ENV_SUBTYPES_HD.has(e.subtype))];
+        for (const otherComp of allItemsHD) {
+          if (otherComp.id === hd.compId) continue;
+          const snapPts = getSnapPx(otherComp);
+          for (const [, pos] of Object.entries(snapPts)) {
+            const dist = Math.hypot(pos.x - hdPx, pos.y - hdPy);
+            if (dist > HOVER_DIST_HD) continue;
+            const inSnap = dist < SNAP_DIST_HD;
+            const dot = document.createElementNS(NS, 'circle');
+            dot.setAttribute('cx', pos.x); dot.setAttribute('cy', pos.y);
+            dot.setAttribute('r', inSnap ? 8 : 6); dot.setAttribute('fill', '#00ff88');
+            dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', inSnap ? 2.5 : 1.5);
+            dot.setAttribute('opacity', inSnap ? 1 : 0.75);
+            dot.setAttribute('pointer-events', 'none');
+            layer.appendChild(dot);
+          }
         }
       }
     }
