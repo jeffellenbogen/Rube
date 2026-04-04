@@ -281,11 +281,11 @@ export function renderUI(state, layer) {
   }
 
   // Subtypes that use a free-rotate yellow dot instead of the 90° ↻ button
-  const FREE_ROTATE_SUBTYPES = new Set(['tube', 'yardstick', 'matchboxTrack']);
+  const FREE_ROTATE_SUBTYPES = new Set(['tube', 'yardstick', 'matchboxTrack', 'funnel']);
 
   // Rotate / Flip buttons (machine and material components only, not env or markers)
   const isComp = !!state.components.find(c => c.id === selId);
-  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'flag' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
+  if (isComp && comp.subtype !== 'start' && comp.subtype !== 'finish' && comp.subtype !== 'flag' && comp.subtype !== 'lever' && comp.subtype !== 'pulley' && comp.subtype !== 'wheelAxle' && comp.subtype !== 'box' && comp.subtype !== 'dumpTruck' && !FREE_ROTATE_SUBTYPES.has(comp.subtype)) {
     // Rotate ↻ — bottom-right in component local space
     const rotPos = L(w2 + pad + 8, h2 + pad + 8);
     const rotBtn = document.createElementNS(NS, 'g');
@@ -419,6 +419,25 @@ export function renderUI(state, layer) {
       btn.appendChild(c);
       layer.appendChild(btn);
     }
+  }
+
+  // Flip-only button for dumpTruck (component)
+  const dumpTruckComp = isComp && comp.subtype === 'dumpTruck' ? comp : null;
+  if (dumpTruckComp) {
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
+    const flipBtn = document.createElementNS(NS, 'g');
+    flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
+    flipBtn.setAttribute('cursor', 'pointer');
+    const fbg = document.createElementNS(NS, 'circle');
+    fbg.setAttribute('cx', flipPos.x); fbg.setAttribute('cy', flipPos.y);
+    fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
+    fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
+    const ft = document.createElementNS(NS, 'text');
+    ft.setAttribute('x', flipPos.x); ft.setAttribute('y', flipPos.y);
+    ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
+    ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
+    flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
+    layer.appendChild(flipBtn);
   }
 
   // Flip-only button for stairs (env item)

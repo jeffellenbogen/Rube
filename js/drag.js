@@ -13,15 +13,21 @@ const CORD_POINTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
 const LOCK_ASPECT = new Set([
   'domino', 'ball', 'toyCar', 'bucket', 'cup',
   'yardstick', 'box', 'pulley', 'wheelAxle', 'screw',
-  'protractor', 'book', 'matchboxTrack', 'flag',
-  'fan', 'rubiksCube',
+  'protractor', 'book', 'flag',
+  'fan', 'rubiksCube', 'dumpTruck', 'funnel',
 ]);
+
+// Subtypes that only allow horizontal resizing (height is locked)
+const LOCK_HEIGHT = new Set(['matchboxTrack']);
 
 // Subtypes with custom min/max fractions of their default size (overrides global 7× max and MIN floor)
 const SPECIAL_LIMITS = {
   yardstick:    { min: 0.5, max: 3.5 },
-  matchboxTrack: { min: 0.5, max: 3.5 },
+  matchboxTrack: { min: 0.5, max: 5 },
   flag:         { min: 0.75, max: 3 },
+  dumpTruck:    { min: 0.8, max: 4 },
+  funnel:       { min: 0.5, max: 4 },
+  rubiksCube:   { min: 2, max: 5 },
 };
 
 const MIN = 11; // cm — keeps components large enough to click on
@@ -35,6 +41,7 @@ const DEFAULTS = {
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
+  dumpTruck: { w: 25, h: 12 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 12, h: 12 },
 };
 
 let dragging   = null;    // component drag: { id, isEnv, startCanvasX, startCanvasY, compX, compY }
@@ -175,6 +182,7 @@ export function initDrag(svgEl) {
           origW: comp.width, origH: comp.height,
           origX: comp.x, origY: comp.y,
           lockAspect: LOCK_ASPECT.has(comp.subtype),
+          lockHeight: LOCK_HEIGHT.has(comp.subtype),
           aspectRatio: comp.height / comp.width,
           minW: SPECIAL_LIMITS[comp.subtype] ? (DEFAULTS[comp.subtype]?.w ?? 0) * SPECIAL_LIMITS[comp.subtype].min : MIN,
           maxW: (DEFAULTS[comp.subtype]?.w ?? Infinity) * (SPECIAL_LIMITS[comp.subtype]?.max ?? 7),
@@ -205,7 +213,8 @@ export function initDrag(svgEl) {
             origW: envItem.width, origH: envItem.height,
             origX: envItem.x, origY: envItem.y,
             lockAspect: false,
-            maxW: envItem.width * 7, maxH: envItem.height * 7,
+            maxW: envItem.subtype === 'wall' ? Infinity : envItem.width * 7,
+            maxH: envItem.subtype === 'wall' ? Infinity : envItem.height * 7,
             centerX: envItem.x + envItem.width / 2,
             centerY: envItem.y + envItem.height / 2,
             origRotation: 0,
@@ -455,9 +464,15 @@ export function initDrag(svgEl) {
           newY = handleDrag.origY + handleDrag.origH - newH;
         }
 
+        // Lock height for components that only resize horizontally
+        if (handleDrag.lockHeight) {
+          newH = handleDrag.origH;
+          newY = handleDrag.origY;
+        }
+
         // Lock aspect ratio for components that have a fixed physical shape.
         // Drive from width; height follows. Do NOT enforce height MIN — for wide
-        // items (car track, yardstick) the height is naturally smaller than 11cm
+        // items (yardstick) the height is naturally smaller than 11cm
         // and forcing it up causes the width to jump to unreasonably large values.
         if (handleDrag.lockAspect) {
           newW = Math.max(handleDrag.minW, Math.min(maxW, newW));

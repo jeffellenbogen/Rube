@@ -391,6 +391,13 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
     r: Math.max(1.5, w * 0.025),
     fill: '#666', opacity: strutOpacity,
   }, bedG);
+  // Second strut — horizontal cross-brace completing the triangle
+  el('line', {
+    x1: hingeX, y1: hingeY - h * 0.35,
+    x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
+    stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
+    opacity: strutOpacity, 'stroke-linecap': 'round',
+  }, bedG);
   g.appendChild(bedG);
   // Wheels
   el('circle', { cx: x + w * 0.22, cy: wheelCy, r: wheelR, fill: '#333' }, g);
