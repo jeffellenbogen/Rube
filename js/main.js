@@ -42,6 +42,7 @@ const CATALOG = {
     { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 12, defaultH: 12 },
     { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'person', label: 'Person', type: 'marker', defaultW: 20, defaultH: 30 },
   ],
   environment: [
     { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
@@ -86,6 +87,7 @@ function makeComponentIcon(item) {
   if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
   else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.subtype === 'person')  drawMaterialIcon('person', g, ox, oy, iw, ih);
   else if (item.subtype === 'flag')     drawFlagIcon(g, ox, oy, iw, ih);
   return svg;
 }
@@ -160,6 +162,7 @@ function defaultSubParts(subtype) {
     rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
     funnel: { openingWidth: 1.0 },
     spring: { state: 'compressed' },
+    person: { pose: 'push' },
   };
   return defaults[subtype] || {};
 }

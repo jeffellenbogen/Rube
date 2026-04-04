@@ -142,6 +142,16 @@ export function getAttachPx(comp) {
     return { x: cx + rdx * flipX, y: cy + rdy };
   }
 
+  // Person: hand attachment point varies by pose
+  if (comp.subtype === 'person') {
+    const pose = comp.subParts?.pose || 'push';
+    let handFx, handFy;
+    if (pose === 'push')      { handFx = 0.9; handFy = 0.4; }
+    else if (pose === 'drop') { handFx = 0.6; handFy = 0.7; }
+    else if (pose === 'pull') { handFx = 0.1; handFy = 0.4; }
+    return { hand: applyTransform((handFx - 0.5) * w, (handFy - 0.5) * h) };
+  }
+
   // Lever: attach points follow the tilted bar ends.
   if (comp.subtype === 'lever') {
     const tiltSide = (comp.subParts && comp.subParts.tiltSide) || 'none';

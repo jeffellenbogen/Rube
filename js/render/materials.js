@@ -118,9 +118,10 @@ function drawMaterial(comp, flagNumber = 0) {
     case 'custom':   drawCustom(g, x, y, w, h, comp.name); break;
     case 'start':    drawMarker(g, x, y, w, h, 'START', '#06d6a0'); break;
     case 'finish':   drawMarker(g, x, y, w, h, 'FINISH', '#ef476f'); break;
+    case 'person':   drawPerson(g, x, y, w, h, comp.subParts); break;
     default: break;
   }
-  if (comp.type !== 'marker') applyTransform(g, comp);
+  if (comp.subtype !== 'start' && comp.subtype !== 'finish') applyTransform(g, comp);
   return g;
 }
 
@@ -567,6 +568,45 @@ function drawMarker(g, x, y, w, h, label, color) {
   g.appendChild(t);
 }
 
+function drawPerson(g, x, y, w, h, subParts) {
+  const pose = subParts?.pose ?? 'push';
+  const cx = x + w / 2;
+  const sw = Math.max(1.5, w * 0.07);
+  const headR = h * 0.12;
+  const headCy = y + headR;
+  const shoulderY = y + h * 0.30;
+  const hipY = y + h * 0.55;
+  const footY = y + h;
+
+  // Head
+  el('circle', { cx, cy: headCy, r: headR, fill: '#555' }, g);
+  // Body
+  el('line', { x1: cx, y1: headCy + headR, x2: cx, y2: hipY, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+  // Legs
+  el('line', { x1: cx, y1: hipY, x2: x + w * 0.2, y2: footY, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+  el('line', { x1: cx, y1: hipY, x2: x + w * 0.8, y2: footY, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+
+  // Arms — vary by pose
+  if (pose === 'push') {
+    // Both arms forward (right), reaching out
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.9, y2: shoulderY + h * 0.08, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.85, y2: shoulderY - h * 0.05, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    // Fist/hand dot at right
+    el('circle', { cx: x + w * 0.9, cy: shoulderY + h * 0.08, r: sw * 1.2, fill: '#555' }, g);
+  } else if (pose === 'drop') {
+    // One arm down, one arm at side
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.8, y2: shoulderY + h * 0.25, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.2, y2: shoulderY + h * 0.08, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    // Drop point dot
+    el('circle', { cx: x + w * 0.8, cy: shoulderY + h * 0.25, r: sw * 1.2, fill: '#555' }, g);
+  } else if (pose === 'pull') {
+    // Both arms backward (left)
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.1, y2: shoulderY + h * 0.08, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    el('line', { x1: cx, y1: shoulderY, x2: x + w * 0.15, y2: shoulderY - h * 0.05, stroke: '#555', 'stroke-width': sw, 'stroke-linecap': 'round' }, g);
+    el('circle', { cx: x + w * 0.1, cy: shoulderY + h * 0.08, r: sw * 1.2, fill: '#555' }, g);
+  }
+}
+
 export function drawMaterialIcon(subtype, g, x, y, w, h) {
   switch (subtype) {
     case 'ball':          drawBall(g, x, y, w, h); break;
@@ -590,5 +630,6 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'book':          drawBook(g, x, y, w, h, 0); break;
     case 'spring':        drawSpring(g, x, y, w, h, null); break;
     case 'custom':        drawCustom(g, x, y, w, h, '?'); break;
+    case 'person':        drawPerson(g, x, y, w, h, null); break;
   }
 }
