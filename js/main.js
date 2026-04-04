@@ -30,6 +30,7 @@ const CATALOG = {
     { subtype: 'string', label: 'String', type: 'material', defaultW: 40, defaultH: 2 },
     { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 22, defaultH: 16 },
     { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 20, defaultH: 24 },
+    { subtype: 'funnel', label: 'Funnel', type: 'material', defaultW: 15, defaultH: 20 },
     { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 40, defaultH: 10 },
     { subtype: 'box', label: 'Crate', type: 'material', defaultW: 24, defaultH: 24 },
     { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 120, defaultH: 60 },
@@ -155,6 +156,7 @@ function defaultSubParts(subtype) {
     book:   { colorIndex: Math.floor(Math.random() * 5) },
     fan:    { direction: 'right' },
     rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
+    funnel: { openingWidth: 1.0 },
   };
   return defaults[subtype] || {};
 }

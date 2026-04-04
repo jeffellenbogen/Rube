@@ -104,6 +104,7 @@ function drawMaterial(comp, flagNumber = 0) {
     case 'string':   break; // handled by drawStringComp above
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
+    case 'funnel':   drawFunnel(g, x, y, w, h, comp.subParts); break;
     case 'tube':     drawTube(g, x, y, w, h); break;
     case 'box':      drawCrate(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
     case 'cardboard':drawCardboard(g, x, y, w, h); break;
@@ -505,6 +506,22 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
   }, g);
 }
 
+function drawFunnel(g, x, y, w, h, subParts) {
+  const tubeW = w * 0.15;
+  const tubeX1 = x + (w - tubeW) / 2;
+  const tubeX2 = tubeX1 + tubeW;
+  const topOW = w * (subParts?.openingWidth ?? 1.0);
+  const topX1 = x + (w - topOW) / 2;
+  const topX2 = topX1 + topOW;
+  const bodyBottom = y + h * 0.8;
+  // Body trapezoid
+  el('path', { d: `M${topX1},${y} L${topX2},${y} L${tubeX2},${bodyBottom} L${tubeX1},${bodyBottom} Z`, fill: '#b0b8c0', stroke: '#707880', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, g);
+  // Tube
+  el('rect', { x: tubeX1, y: bodyBottom, width: tubeW, height: h * 0.2, fill: '#a0a8b0', stroke: '#707880', 'stroke-width': 1.5 }, g);
+  // Rim
+  el('rect', { x: topX1 - 2, y: y - 2, width: topOW + 4, height: 4, fill: '#909098', rx: 1 }, g);
+}
+
 function drawCustom(g, x, y, w, h, name) {
   el('rect', { x, y, width: w, height: h, fill: '#1a3a5c', stroke: '#ff7b2e', 'stroke-width': 2, rx: 4, 'stroke-dasharray': '6 3' }, g);
   const t = document.createElementNS(NS, 'text');
@@ -537,6 +554,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g); break;
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
+    case 'funnel':        drawFunnel(g, x, y, w, h, null); break;
     case 'tube':          drawTube(g, x, y, w, h); break;
     case 'box':           drawCrate(g, x, y, w, h, 0); break;
     case 'cardboard':     drawCardboard(g, x, y, w, h); break;
