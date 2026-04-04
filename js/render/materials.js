@@ -377,26 +377,25 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
   const bedPath = `M${hingeX},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${hingeY} L${hingeX},${hingeY} Z`;
   el('path', { d: bedPath, fill: '#f0a030' }, bedG);
   el('path', { d: bedPath, fill: 'none', stroke: '#a06010', 'stroke-width': 1 }, bedG);
-  // Support strut — more visible when bed is up
-  const strutOpacity = bedUp ? 0.9 : 0.3;
+  // Support strut frame
   el('line', {
     x1: hingeX, y1: hingeY,
     x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
     stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
-    opacity: strutOpacity, 'stroke-linecap': 'round',
+    'stroke-linecap': 'round',
   }, bedG);
   // Small strut cap
   el('circle', {
     cx: hingeX + w * 0.3, cy: hingeY - h * 0.35,
     r: Math.max(1.5, w * 0.025),
-    fill: '#666', opacity: strutOpacity,
+    fill: '#666',
   }, bedG);
   // Second strut — horizontal cross-brace completing the triangle
   el('line', {
     x1: hingeX, y1: hingeY - h * 0.35,
     x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
     stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
-    opacity: strutOpacity, 'stroke-linecap': 'round',
+    'stroke-linecap': 'round',
   }, bedG);
   g.appendChild(bedG);
   // Chassis rail connecting wheel axles
