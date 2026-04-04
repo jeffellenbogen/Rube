@@ -39,7 +39,7 @@ const CATALOG = {
     { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 40, defaultH: 8 },
     { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
     { subtype: 'fan', label: 'Fan', type: 'material', defaultW: 36, defaultH: 40 },
-    { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 12, defaultH: 12 },
+    { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 24, defaultH: 24 },
     { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
     { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
     { subtype: 'person', label: 'Person', type: 'marker', defaultW: 20, defaultH: 30 },

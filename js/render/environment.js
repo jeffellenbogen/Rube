@@ -64,12 +64,79 @@ function svgLine(g, x1, y1, x2, y2, stroke, width) {
 
 function drawWall(g, x, y, w, h) {
   const NS = 'http://www.w3.org/2000/svg';
+
+  // Ensure the orange-peel filter exists in SVG defs (add once, reuse)
+  const svgEl = g.ownerSVGElement;
+  if (svgEl && !svgEl.getElementById('wall-orange-peel')) {
+    let defs = svgEl.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS(NS, 'defs');
+      svgEl.insertBefore(defs, svgEl.firstChild);
+    }
+    const filter = document.createElementNS(NS, 'filter');
+    filter.setAttribute('id', 'wall-orange-peel');
+    filter.setAttribute('x', '0%'); filter.setAttribute('y', '0%');
+    filter.setAttribute('width', '100%'); filter.setAttribute('height', '100%');
+
+    // Fractal noise as bump map
+    const turb = document.createElementNS(NS, 'feTurbulence');
+    turb.setAttribute('type', 'fractalNoise');
+    turb.setAttribute('baseFrequency', '0.65');
+    turb.setAttribute('numOctaves', '3');
+    turb.setAttribute('stitchTiles', 'stitch');
+    turb.setAttribute('result', 'noise');
+    filter.appendChild(turb);
+
+    // Specular lighting gives the bump/sheen look
+    const spec = document.createElementNS(NS, 'feSpecularLighting');
+    spec.setAttribute('in', 'noise');
+    spec.setAttribute('surfaceScale', '4');
+    spec.setAttribute('specularConstant', '1');
+    spec.setAttribute('specularExponent', '20');
+    spec.setAttribute('lighting-color', 'white');
+    spec.setAttribute('result', 'specular');
+    const light = document.createElementNS(NS, 'feDistantLight');
+    light.setAttribute('azimuth', '45');
+    light.setAttribute('elevation', '65');
+    spec.appendChild(light);
+    filter.appendChild(spec);
+
+    // Composite specular over source graphic — preserves cream color
+    const comp = document.createElementNS(NS, 'feComposite');
+    comp.setAttribute('in', 'specular');
+    comp.setAttribute('in2', 'SourceGraphic');
+    comp.setAttribute('operator', 'in');
+    comp.setAttribute('result', 'textured');
+    filter.appendChild(comp);
+
+    // Blend textured highlight at low opacity onto source
+    const blend = document.createElementNS(NS, 'feBlend');
+    blend.setAttribute('in', 'SourceGraphic');
+    blend.setAttribute('in2', 'textured');
+    blend.setAttribute('mode', 'screen');
+    blend.setAttribute('result', 'blended');
+    filter.appendChild(blend);
+
+    // Crop to source shape
+    const crop = document.createElementNS(NS, 'feComposite');
+    crop.setAttribute('in', 'blended');
+    crop.setAttribute('in2', 'SourceGraphic');
+    crop.setAttribute('operator', 'in');
+    filter.appendChild(crop);
+
+    defs.appendChild(filter);
+  }
+
+  // Wall body with texture filter
   const r = document.createElementNS(NS, 'rect');
   r.setAttribute('x', x); r.setAttribute('y', y);
   r.setAttribute('width', w); r.setAttribute('height', h);
   r.setAttribute('fill', '#c8b8a0'); r.setAttribute('stroke', '#8a7a60');
   r.setAttribute('stroke-width', 1.5);
+  r.setAttribute('filter', 'url(#wall-orange-peel)');
   g.appendChild(r);
+
+  // Subtle ledge line at top
   const ledgeY = y + Math.min(3, h * 0.05);
   const l = document.createElementNS(NS, 'line');
   l.setAttribute('x1', x); l.setAttribute('y1', ledgeY);

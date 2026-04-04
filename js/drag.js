@@ -29,7 +29,7 @@ const SPECIAL_LIMITS = {
   fan:          { min: 0.5, max: 4 },
   spring:       { min: 0.8, max: 5 },
   funnel:       { min: 0.5, max: 4 },
-  rubiksCube:   { min: 2, max: 5 },
+  rubiksCube:   { min: 1, max: 5 },
 };
 
 const MIN = 11; // cm — keeps components large enough to click on
@@ -43,7 +43,7 @@ const DEFAULTS = {
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
   book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
-  dumpTruck: { w: 50, h: 24 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 12, h: 12 },
+  dumpTruck: { w: 50, h: 24 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 24, h: 24 },
   fan: { w: 36, h: 40 }, spring: { w: 10, h: 20 },
 };
 
