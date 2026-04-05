@@ -482,28 +482,17 @@ function drawRubiksCube(g, x, y, w, h, subParts) {
   // Build per-cell color arrays for front, top, right (9 cells each)
   const frontColors = [], topColors = [], rightColors = [];
 
-  if (mode === 2) {
+  if (mode === 1) {
     // Solved: each face one solid color
     for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[faceColors[0] % 6] ?? RUBIKS_COLORS[1]);
     for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[faceColors[1] % 6] ?? RUBIKS_COLORS[2]);
     for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[faceColors[2] % 6] ?? RUBIKS_COLORS[3]);
   } else {
-    // Mixed and Partial: scramble all cells from seed
+    // Mixed: scramble all cells from seed
     const rand = rubiksRand(seed);
     for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
     for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
     for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
-
-    if (mode === 1) {
-      // Partial: override bottom row (cells 6,7,8) of each face with solid colors
-      const randB = rubiksRand(seed + 1);
-      const bFront = RUBIKS_COLORS[Math.floor(randB() * 6)];
-      const bTop   = RUBIKS_COLORS[Math.floor(randB() * 6)];
-      const bRight = RUBIKS_COLORS[Math.floor(randB() * 6)];
-      frontColors[6] = frontColors[7] = frontColors[8] = bFront;
-      topColors[6]   = topColors[7]   = topColors[8]   = bTop;
-      rightColors[6] = rightColors[7] = rightColors[8] = bRight;
-    }
   }
 
   // Geometry
