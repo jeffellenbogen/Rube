@@ -666,9 +666,9 @@ export function renderUI(state, layer) {
     }
 
     if (selComp && selComp.subtype === 'rubiksCube') {
-      const colorNames = ['🎨', '🌸', '⚡']; // classic, pastel, neon
+      const colorNames = ['🎨', '🌸', '⚡', '✅']; // classic, pastel, neon, solved
       const ci = (selComp.subParts?.colorIndex ?? 0);
-      const icon = colorNames[ci % 3];
+      const icon = colorNames[ci % 4];
       const pos = L(0, h2 + pad + 8);
       const btn = document.createElementNS(NS, 'g');
       btn.dataset.action = 'rubiks-color'; btn.dataset.targetId = selId;

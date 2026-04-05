@@ -467,9 +467,12 @@ const RUBIKS_CLASSIC = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#ffffff', '
 const RUBIKS_PASTEL  = ['#ffb3c1', '#a9c4eb', '#b5ead7', '#fef9c7', '#e8d5f5', '#ffd8b1'];
 const RUBIKS_NEON    = ['#ff006e', '#3a86ff', '#80b918', '#ffbe0b', '#00f5d4', '#ff4800'];
 const RUBIKS_THEMES  = [RUBIKS_CLASSIC, RUBIKS_PASTEL, RUBIKS_NEON];
+// Solved theme: one solid color per face [front, top, right]
+const RUBIKS_SOLVED  = ['#3a86ff', '#38b000', '#ffd166'];
 
 function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
-  const colors = RUBIKS_THEMES[colorIndex % RUBIKS_THEMES.length];
+  const solved = colorIndex === 3;
+  const colors = solved ? null : RUBIKS_THEMES[colorIndex % RUBIKS_THEMES.length];
   // Front face: left 70% width, top 75% height
   const fw = w * 0.70;
   const fh = h * 0.75;
@@ -491,25 +494,25 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
   const topCellSlantY = topH / 3;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % colors.length;
+      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       const bx = fx + col * topCellW + row * topCellSlantX;
       const by = fy - row * topCellSlantY;
       el('path', {
         d: `M${bx},${by} L${bx+topCellW},${by} L${bx+topCellW+topCellSlantX},${by-topCellSlantY} L${bx+topCellSlantX},${by-topCellSlantY} Z`,
-        fill: colors[(ci + 2) % colors.length], stroke: '#333', 'stroke-width': 0.5,
+        fill: solved ? RUBIKS_SOLVED[1] : colors[(ci + 2) % colors.length], stroke: '#333', 'stroke-width': 0.5,
       }, g);
     }
   }
   // Front face 3x3 grid
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % colors.length;
+      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       el('rect', {
         x: fx + col * cellW + 1,
         y: fy + row * cellH + 1,
         width: cellW - 2,
         height: cellH - 2,
-        fill: colors[ci],
+        fill: solved ? RUBIKS_SOLVED[0] : colors[ci],
         stroke: '#333', 'stroke-width': 0.5, rx: 1,
       }, g);
     }
@@ -521,12 +524,12 @@ function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
   const rightSlantY = topH / 3;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % colors.length;
+      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       const bx = fx + fw + col * (rw / 3);
       const by = fy - col * (topH / 3) + row * rightCellH;
       el('path', {
         d: `M${bx},${by} L${bx+rw/3},${by-rightSlantY} L${bx+rw/3},${by-rightSlantY+rightCellH} L${bx},${by+rightCellH} Z`,
-        fill: colors[(ci + 4) % colors.length], stroke: '#333', 'stroke-width': 0.5,
+        fill: solved ? RUBIKS_SOLVED[2] : colors[(ci + 4) % colors.length], stroke: '#333', 'stroke-width': 0.5,
       }, g);
     }
   }
