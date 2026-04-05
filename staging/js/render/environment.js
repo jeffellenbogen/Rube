@@ -223,7 +223,8 @@ function drawWallClapboard(g, x, y, w, h) {
 // Draws one arching pinnate fern frond with a fiddlehead spiral at the tip.
 // x0,y0: base position (px). angleDeg: direction angle (0=right, -90=up, 180=left).
 // lengthPx: total frond length in px. color: CSS color string.
-function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS) {
+// strokeScale: multiplier for stem/leaf/spiral stroke widths (vary per frond for visual richness)
+function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS, strokeScale = 1) {
   const angle = angleDeg * Math.PI / 180;
   const cos = Math.cos(angle), sin = Math.sin(angle);
   const pCos = Math.cos(angle + Math.PI / 2);
@@ -239,7 +240,7 @@ function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS) {
   // Main stem
   const stem = document.createElementNS(NS, 'path');
   stem.setAttribute('d', `M ${x0},${y0} Q ${ctlX},${ctlY} ${tipX},${tipY}`);
-  stem.setAttribute('stroke', color); stem.setAttribute('stroke-width', 1.7);
+  stem.setAttribute('stroke', color); stem.setAttribute('stroke-width', 1.7 * strokeScale);
   stem.setAttribute('fill', 'none'); stem.setAttribute('stroke-linecap', 'round');
   cg.appendChild(stem);
 
@@ -262,7 +263,7 @@ function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS) {
       const my = (by + ly) / 2 + sin * lLen * 0.15;
       const leaf = document.createElementNS(NS, 'path');
       leaf.setAttribute('d', `M ${bx},${by} Q ${mx},${my} ${lx},${ly}`);
-      leaf.setAttribute('stroke', color); leaf.setAttribute('stroke-width', 0.9);
+      leaf.setAttribute('stroke', color); leaf.setAttribute('stroke-width', 0.9 * strokeScale);
       leaf.setAttribute('fill', 'none');
       cg.appendChild(leaf);
     }
@@ -278,7 +279,7 @@ function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS) {
     `Q ${tipX + pCos*sr*2 + cos*sr*2},${tipY + pSin*sr*2 + sin*sr*2}`,
     `  ${tipX + pCos*sr*0.5 + cos*sr*2},${tipY + pSin*sr*0.5 + sin*sr*2}`,
   ].join(' '));
-  spiral.setAttribute('stroke', color); spiral.setAttribute('stroke-width', 1.2);
+  spiral.setAttribute('stroke', color); spiral.setAttribute('stroke-width', 1.2 * strokeScale);
   spiral.setAttribute('fill', 'none'); spiral.setAttribute('stroke-linecap', 'round');
   cg.appendChild(spiral);
 }
@@ -309,11 +310,17 @@ function drawCoralFlower(cg, cx, cy, size, petalColor, centerColor, NS) {
 function drawWallBotanical(g, x, y, w, h, seed, id) {
   const NS = 'http://www.w3.org/2000/svg';
   const rnd = seededRand(seed);
-  const sc = 15; // fixed px scale — pattern renders at 450×375px regardless of cm scale
+  const sc = 15; // fixed px scale — one tile is 450×375px
 
-  // Clip to wall bounds — clipPath lives inside g so it works before g is in the DOM
+  const tileW = 30 * sc; // 450px
+  const tileH = 25 * sc; // 375px
+
+  // localDefs holds the clipPath (wall bounds) + SVG <pattern> (tiles the motifs)
   const clipId = `wp-clip-${id}`;
+  const patId  = `wp-pat-${id}`;
   const localDefs = document.createElementNS(NS, 'defs');
+
+  // ClipPath — clips the tiled fill to the wall rect
   const clip = document.createElementNS(NS, 'clipPath');
   clip.setAttribute('id', clipId);
   const cr = document.createElementNS(NS, 'rect');
@@ -321,17 +328,13 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
   cr.setAttribute('width', w); cr.setAttribute('height', h);
   clip.appendChild(cr);
   localDefs.appendChild(clip);
-  g.appendChild(localDefs);
 
-  const cg = document.createElementNS(NS, 'g');
-  cg.setAttribute('clip-path', `url(#${clipId})`);
-
-  // Background fills the full wall; motifs are drawn at fixed scale anchored at top-left
-  const bg = document.createElementNS(NS, 'rect');
-  bg.setAttribute('x', x); bg.setAttribute('y', y);
-  bg.setAttribute('width', w); bg.setAttribute('height', h);
-  bg.setAttribute('fill', '#f5f0e4');
-  cg.appendChild(bg);
+  // SVG <pattern> — content drawn at 0,0 relative coords, tiles automatically
+  const pat = document.createElementNS(NS, 'pattern');
+  pat.setAttribute('id', patId);
+  pat.setAttribute('x', x); pat.setAttribute('y', y); // anchor to wall top-left
+  pat.setAttribute('width', tileW); pat.setAttribute('height', tileH);
+  pat.setAttribute('patternUnits', 'userSpaceOnUse');
 
   // Seeded fern greens (3 slight variations)
   const fernH = 110 + rnd() * 20;
@@ -349,48 +352,55 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
   const flower2  = `hsl(${fh2 | 0},${(68 + rnd()*14) | 0}%,${(63 + rnd()*12) | 0}%)`;
   const flower2c = `hsl(${fh2 | 0},${(45 + rnd()*15) | 0}%,${(78 + rnd()*8) | 0}%)`;
 
-  // Branch helper
-  const px = (dx, dy) => `${x + dx*sc},${y + dy*sc}`;
+  // Tile background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+  bg.setAttribute('width', tileW); bg.setAttribute('height', tileH);
+  bg.setAttribute('fill', '#f5f0e4');
+  pat.appendChild(bg);
+
+  // Branch helper — all coords are pattern-relative (0,0 origin)
+  const p = (dx, dy) => `${dx*sc},${dy*sc}`;
   function branch(d, sw) {
-    const p = document.createElementNS(NS, 'path');
-    p.setAttribute('d', d); p.setAttribute('stroke', '#2a2a2a');
-    p.setAttribute('stroke-width', sw); p.setAttribute('fill', 'none');
-    p.setAttribute('stroke-linecap', 'round');
-    cg.appendChild(p);
+    const el = document.createElementNS(NS, 'path');
+    el.setAttribute('d', d); el.setAttribute('stroke', '#2a2a2a');
+    el.setAttribute('stroke-width', sw); el.setAttribute('fill', 'none');
+    el.setAttribute('stroke-linecap', 'round');
+    pat.appendChild(el);
   }
 
-  // Two thin branch structures
-  branch(`M ${px(1.5,25)} Q ${px(1,15)} ${px(2,5)} Q ${px(2.5,1)} ${px(4,-1)}`, 3.5);
-  branch(`M ${px(1.8,18)} Q ${px(-0.5,15)} ${px(-2.5,13)}`, 2);
-  branch(`M ${px(2.2,12)} Q ${px(6,9)} ${px(10,7)}`, 2);
-  branch(`M ${px(18,25)} Q ${px(19,15)} ${px(18,5)} Q ${px(17,1)} ${px(16,-1)}`, 3);
-  branch(`M ${px(18.5,18)} Q ${px(21,15)} ${px(24,13)}`, 1.8);
-  branch(`M ${px(18,12)} Q ${px(14,9)} ${px(11,7)}`, 1.8);
-  branch(`M ${px(11,7)} Q ${px(14,5)} ${px(16,3)}`, 1.5);
+  // Two thin branch structures (pattern-relative coords)
+  branch(`M ${p(1.5,25)} Q ${p(1,15)} ${p(2,5)} Q ${p(2.5,1)} ${p(4,-1)}`, 3.5);
+  branch(`M ${p(1.8,18)} Q ${p(-0.5,15)} ${p(-2.5,13)}`, 2);
+  branch(`M ${p(2.2,12)} Q ${p(6,9)} ${p(10,7)}`, 2);
+  branch(`M ${p(18,25)} Q ${p(19,15)} ${p(18,5)} Q ${p(17,1)} ${p(16,-1)}`, 3);
+  branch(`M ${p(18.5,18)} Q ${p(21,15)} ${p(24,13)}`, 1.8);
+  branch(`M ${p(18,12)} Q ${p(14,9)} ${p(11,7)}`, 1.8);
+  branch(`M ${p(11,7)} Q ${p(14,5)} ${p(16,3)}`, 1.5);
 
-  // Fern fronds (angle: 0=right, -90=up, 180=left, 270=down)
-  const fl = sc * 8; // 8cm frond length
-  drawFernFrond(cg, x - 2*sc,  y + 13*sc, -40,  fl * 1.1, fern1, NS); // sweeps upper-left
-  drawFernFrond(cg, x - 2*sc,  y + 13*sc, -10,  fl * 0.9, fern2, NS); // sweeps up from left
-  drawFernFrond(cg, x + 2.2*sc,y + 12*sc, -70,  fl * 0.95,fern1, NS); // right from branch
-  drawFernFrond(cg, x + 4*sc,  y - 1*sc,  -50,  fl * 0.8, fern3, NS); // trunk tip
-  drawFernFrond(cg, x + 24*sc, y + 13*sc, -140, fl * 1.05,fern2, NS); // right side upper-right
-  drawFernFrond(cg, x + 24*sc, y + 13*sc, -160, fl * 0.9, fern1, NS); // right side up
-  drawFernFrond(cg, x + 18*sc, y + 12*sc, -110, fl * 0.9, fern3, NS); // left from right branch
-  drawFernFrond(cg, x + 1.5*sc,y + 25*sc,  200, fl * 0.65,fern2, NS); // base left
-  drawFernFrond(cg, x + 18*sc, y + 25*sc,  160, fl * 0.65,fern1, NS); // base right
+  // Fern fronds — varied strokeScale for leaf thickness variety
+  const fl = sc * 8;
+  drawFernFrond(pat, -2*sc,   13*sc, -40,  fl * 1.1, fern1, NS, 2.0); // thick
+  drawFernFrond(pat, -2*sc,   13*sc, -10,  fl * 0.9, fern2, NS, 1.0); // normal
+  drawFernFrond(pat,  2.2*sc, 12*sc, -70,  fl * 0.95,fern1, NS, 1.6); // medium-thick
+  drawFernFrond(pat,  4*sc,   -1*sc, -50,  fl * 0.8, fern3, NS, 1.3); // medium
+  drawFernFrond(pat, 24*sc,   13*sc, -140, fl * 1.05,fern2, NS, 1.8); // thick
+  drawFernFrond(pat, 24*sc,   13*sc, -160, fl * 0.9, fern1, NS, 1.0); // normal
+  drawFernFrond(pat, 18*sc,   12*sc, -110, fl * 0.9, fern3, NS, 1.5); // medium
+  drawFernFrond(pat,  1.5*sc, 25*sc,  200, fl * 0.65,fern2, NS, 2.2); // thick base
+  drawFernFrond(pat, 18*sc,   25*sc,  160, fl * 0.65,fern1, NS, 1.8); // thick base
   if (rnd() > 0.3) {
-    drawFernFrond(cg, x + 11*sc, y + 8*sc, -90, fl * 0.7, fern3, NS); // optional center frond
+    drawFernFrond(pat, 11*sc, 8*sc, -90, fl * 0.7, fern3, NS, 1.2);
   }
 
   // Coral flowers
-  drawCoralFlower(cg, x + 12*sc, y + 10*sc, sc * 1.6, flower1, flower1c, NS);
-  drawCoralFlower(cg, x + 7*sc,  y + 17*sc, sc * 1.2, flower2, flower2c, NS);
+  drawCoralFlower(pat, 12*sc, 10*sc, sc * 1.6, flower1, flower1c, NS);
+  drawCoralFlower(pat,  7*sc, 17*sc, sc * 1.2, flower2, flower2c, NS);
   if (rnd() > 0.4) {
-    drawCoralFlower(cg, x + 20*sc, y + 16*sc, sc * 1.1, flower1, flower1c, NS);
+    drawCoralFlower(pat, 20*sc, 16*sc, sc * 1.1, flower1, flower1c, NS);
   }
 
-  // Small line-art daisies scattered in negative space
+  // Small line-art daisies
   function daisy(dcx, dcy, dsize) {
     for (let i = 0; i < 5; i++) {
       const a = (i * 72 - 90) * Math.PI / 180;
@@ -399,18 +409,29 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
       c.setAttribute('cy', dcy + Math.sin(a) * dsize);
       c.setAttribute('r', dsize * 0.55);
       c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#2a2a2a'); c.setAttribute('stroke-width', 0.75);
-      cg.appendChild(c);
+      pat.appendChild(c);
     }
     const cc = document.createElementNS(NS, 'circle');
     cc.setAttribute('cx', dcx); cc.setAttribute('cy', dcy); cc.setAttribute('r', dsize * 0.35);
     cc.setAttribute('fill', 'none'); cc.setAttribute('stroke', '#2a2a2a'); cc.setAttribute('stroke-width', 0.75);
-    cg.appendChild(cc);
+    pat.appendChild(cc);
   }
-  daisy(x + 5*sc,  y + 8*sc,  sc * 0.70);
-  daisy(x + 15*sc, y + 5*sc,  sc * 0.65);
-  daisy(x + 22*sc, y + 9*sc,  sc * 0.60);
-  daisy(x + 9*sc,  y + 20*sc, sc * 0.55);
+  daisy( 5*sc,  8*sc, sc * 0.70);
+  daisy(15*sc,  5*sc, sc * 0.65);
+  daisy(22*sc,  9*sc, sc * 0.60);
+  daisy( 9*sc, 20*sc, sc * 0.55);
 
+  localDefs.appendChild(pat);
+  g.appendChild(localDefs);
+
+  // Clipped group: one wall-sized rect filled with the tiling pattern
+  const cg = document.createElementNS(NS, 'g');
+  cg.setAttribute('clip-path', `url(#${clipId})`);
+  const fill = document.createElementNS(NS, 'rect');
+  fill.setAttribute('x', x); fill.setAttribute('y', y);
+  fill.setAttribute('width', w); fill.setAttribute('height', h);
+  fill.setAttribute('fill', `url(#${patId})`);
+  cg.appendChild(fill);
   g.appendChild(cg);
 
   // Wall border and ledge drawn on top (not clipped)
@@ -484,8 +505,6 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
   // Beams with glow — all positions as fractions of W and H
   const beamGroup = document.createElementNS(NS, 'g');
   beamGroup.setAttribute('filter', `url(#${glowId})`);
-  const bwSrc = W * 0.01;  // half-width at source
-  const bwDst = W * 0.017; // half-width at destination (slight fan)
 
   // Left-origin beams: sources across left 47% of W, raking to right
   for (let i = 0; i < beamCount; i++) {
@@ -493,6 +512,9 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
     const srcX = x + t * 0.467 * W;
     const dstX = x + (0.267 + t * (0.467 + angleVar)) * W;
     const alpha = (0.48 - i * 0.02).toFixed(2);
+    // Per-beam width variation — each cone has its own spread
+    const bwSrc = W * (0.004 + rnd() * 0.022);
+    const bwDst = W * (0.008 + rnd() * 0.045);
     const beam = document.createElementNS(NS, 'polygon');
     beam.setAttribute('points',
       `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
@@ -506,6 +528,8 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
     const srcX = x + (0.533 + t * 0.467) * W;
     const dstX = x + (0.067 + t * (0.467 - angleVar)) * W;
     const alpha = (0.48 - i * 0.02).toFixed(2);
+    const bwSrc = W * (0.004 + rnd() * 0.022);
+    const bwDst = W * (0.008 + rnd() * 0.045);
     const beam = document.createElementNS(NS, 'polygon');
     beam.setAttribute('points',
       `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
