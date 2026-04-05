@@ -8,10 +8,11 @@ const STEPS_REQUIRED = 5;
 export const ITEM_LABELS = {
   lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane',
   wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw',
-  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
-  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
-  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
-  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
+  domino:'Domino', ball:'Ball', toyCar:'Toy Car', dumpTruck:'Dump Truck',
+  string:'String', cup:'Cup', bucket:'Bucket', funnel:'Funnel',
+  tube:'Tube', box:'Crate', cardboard:'Cardboard', yardstick:'Yardstick',
+  protractor:'Protractor', matchboxTrack:'Car Track', book:'Book',
+  fan:'Fan', rubiksCube:"Rubik's Cube", spring:'Spring', custom:'Custom',
 };
 
 export function getRequirements(state) {
