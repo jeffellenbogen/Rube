@@ -309,7 +309,7 @@ function drawCoralFlower(cg, cx, cy, size, petalColor, centerColor, NS) {
 function drawWallBotanical(g, x, y, w, h, seed, id) {
   const NS = 'http://www.w3.org/2000/svg';
   const rnd = seededRand(seed);
-  const sc = cmToPx(1); // 1 cm in pixels
+  const sc = 15; // fixed px scale — pattern renders at 450×375px regardless of cm scale
 
   // Clip to wall bounds — clipPath lives inside g so it works before g is in the DOM
   const clipId = `wp-clip-${id}`;
@@ -433,7 +433,7 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
 function drawWallDisco(g, x, y, w, h, seed, id) {
   const NS = 'http://www.w3.org/2000/svg';
   const rnd = seededRand(seed);
-  const sc = cmToPx(1);
+  const sc = 15; // fixed px scale — pattern renders at 450×375px regardless of cm scale
 
   // clipPath and glow filter live inside g so they work before g is in the DOM
   const clipId = `wp-clip-${id}`;
