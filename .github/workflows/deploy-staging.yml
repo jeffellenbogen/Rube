@@ -1,0 +1,21 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [New-Features]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging subfolder
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          destination_dir: staging
+          exclude_assets: '.github,.claude,docs,theme-previews,screenshots,png plan downloads'
