@@ -341,6 +341,7 @@ export function initDrag(svgEl) {
         if (state.connections.find(c => c.id === sid)) continue;
         const sc = state.components.find(c => c.id === sid) || state.environment.find(e => e.id === sid);
         if (!sc) continue;
+        if (sc.wallLocked) continue; // locked walls don't move in group drag
         const entry = { x: sc.x, y: sc.y, isEnv: !!state.environment.find(e => e.id === sid) };
         if (sc.subtype === 'string' && sc.subParts) {
           entry.isString = true;
@@ -362,6 +363,11 @@ export function initDrag(svgEl) {
     // Normal single-select
     selectedIds = [id];
     render();
+    // Locked walls: select on click so user can access swatches/unlock, but don't drag
+    if (item.wallLocked) {
+      e.stopPropagation();
+      return;
+    }
     const pos = screenToCanvas(e.clientX, e.clientY);
     const isEnvItem = !!state.environment.find(ev => ev.id === id);
     dragging = { id, isEnv: isEnvItem, startCanvasX: pos.x, startCanvasY: pos.y, compX: item.x, compY: item.y };
@@ -740,7 +746,8 @@ export function initDrag(svgEl) {
           height: Math.abs(rb.currentY - rb.startY),
         };
         const s = getState();
-        const found = getItemsInRect(s.components, s.environment, s.connections, rect);
+        const found = getItemsInRect(s.components, s.environment, s.connections, rect)
+          .filter(fid => { const ev = s.environment.find(e => e.id === fid); return !(ev && ev.wallLocked); });
         if (e.shiftKey) {
           const combined = new Set([...selectedIds, ...found]);
           selectedIds = [...combined];
