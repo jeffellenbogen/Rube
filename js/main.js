@@ -159,7 +159,7 @@ function defaultSubParts(subtype) {
     box:    { colorIndex: Math.floor(Math.random() * 4) },
     book:   { colorIndex: Math.floor(Math.random() * 5) },
     fan:    { direction: 'right' },
-    rubiksCube: { colorIndex: Math.floor(Math.random() * 4) },
+    rubiksCube: { colorMode: 0, colorSeed: Math.floor(Math.random() * 1e9), faceColors: [1, 2, 3] },
     dumpTruck: { bedState: 'down' },
     funnel: { openingWidth: 1.0 },
     spring: { state: 'compressed' },
@@ -328,8 +328,14 @@ svgEl.addEventListener('click', e => {
       undoPush();
       const comp = getState().components.find(c => c.id === targetId);
       if (comp) {
-        const ci = (comp.subParts?.colorIndex ?? 0);
-        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 4 } });
+        const nextMode = ((comp.subParts?.colorMode ?? 0) + 1) % 3;
+        const newParts = { ...comp.subParts, colorMode: nextMode };
+        if (nextMode === 2) {
+          // Regenerate solved face colors: pick 3 distinct from 6
+          const indices = [0,1,2,3,4,5].sort(() => Math.random() - 0.5).slice(0, 3);
+          newParts.faceColors = indices;
+        }
+        updateComponent(targetId, { subParts: newParts });
         render();
       }
       return;
