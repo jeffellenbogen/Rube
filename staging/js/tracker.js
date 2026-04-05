@@ -5,6 +5,15 @@ const EXCLUDED_TYPES = ['marker'];
 const MACHINES_REQUIRED = 3;
 const STEPS_REQUIRED = 5;
 
+export const ITEM_LABELS = {
+  lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane',
+  wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw',
+  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
+  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
+  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
+  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
+};
+
 export function getRequirements(state) {
   const components = state.components || [];
   const placed = components.filter(c => c.type === 'simple_machine');
@@ -31,5 +40,9 @@ export function getBOM(state) {
   }
   return Object.entries(counts)
     .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      const la = ITEM_LABELS[a.name] || a.name;
+      const lb = ITEM_LABELS[b.name] || b.name;
+      return la.localeCompare(lb);
+    });
 }
