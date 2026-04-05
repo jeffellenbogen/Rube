@@ -481,15 +481,15 @@ function drawRubiksCube(g, x, y, w, h, subParts) {
 
   // Build per-cell color arrays for front, top, right (9 cells each)
   const frontColors = [], topColors = [], rightColors = [];
-  const rand = rubiksRand(seed);
 
   if (mode === 2) {
     // Solved: each face one solid color
-    for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[faceColors[0]]);
-    for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[faceColors[1]]);
-    for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[faceColors[2]]);
+    for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[faceColors[0] % 6] ?? RUBIKS_COLORS[1]);
+    for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[faceColors[1] % 6] ?? RUBIKS_COLORS[2]);
+    for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[faceColors[2] % 6] ?? RUBIKS_COLORS[3]);
   } else {
     // Mixed and Partial: scramble all cells from seed
+    const rand = rubiksRand(seed);
     for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
     for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
     for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
