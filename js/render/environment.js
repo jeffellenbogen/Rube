@@ -220,6 +220,209 @@ function drawWallClapboard(g, x, y, w, h) {
   g.appendChild(l);
 }
 
+// Draws one arching pinnate fern frond with a fiddlehead spiral at the tip.
+// x0,y0: base position (px). angleDeg: direction angle (0=right, -90=up, 180=left).
+// lengthPx: total frond length in px. color: CSS color string.
+function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS) {
+  const angle = angleDeg * Math.PI / 180;
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  const pCos = Math.cos(angle + Math.PI / 2);
+  const pSin = Math.sin(angle + Math.PI / 2);
+
+  // Tip of stem
+  const tipX = x0 + cos * lengthPx;
+  const tipY = y0 + sin * lengthPx;
+  // Control point arches slightly perpendicular (organic curve)
+  const ctlX = x0 + cos * lengthPx * 0.5 + pCos * lengthPx * 0.08;
+  const ctlY = y0 + sin * lengthPx * 0.5 + pSin * lengthPx * 0.08;
+
+  // Main stem
+  const stem = document.createElementNS(NS, 'path');
+  stem.setAttribute('d', `M ${x0},${y0} Q ${ctlX},${ctlY} ${tipX},${tipY}`);
+  stem.setAttribute('stroke', color); stem.setAttribute('stroke-width', 1.7);
+  stem.setAttribute('fill', 'none'); stem.setAttribute('stroke-linecap', 'round');
+  cg.appendChild(stem);
+
+  // Pinnate leaflets: 8 pairs along the bezier
+  const numPairs = 8;
+  for (let i = 1; i <= numPairs; i++) {
+    const t = i / (numPairs + 1);
+    // Point on quadratic bezier at t
+    const bx = (1-t)*(1-t)*x0 + 2*t*(1-t)*ctlX + t*t*tipX;
+    const by = (1-t)*(1-t)*y0 + 2*t*(1-t)*ctlY + t*t*tipY;
+    // Leaflet length: wider in the middle, tapering toward tip
+    const scale = Math.sin(t * Math.PI) * 0.85 + 0.15;
+    const lLen = lengthPx * 0.22 * scale;
+
+    for (const side of [-1, 1]) {
+      const lx = bx + pCos * lLen * side;
+      const ly = by + pSin * lLen * side;
+      // Slight forward lean along stem direction
+      const mx = (bx + lx) / 2 + cos * lLen * 0.15;
+      const my = (by + ly) / 2 + sin * lLen * 0.15;
+      const leaf = document.createElementNS(NS, 'path');
+      leaf.setAttribute('d', `M ${bx},${by} Q ${mx},${my} ${lx},${ly}`);
+      leaf.setAttribute('stroke', color); leaf.setAttribute('stroke-width', 0.9);
+      leaf.setAttribute('fill', 'none');
+      cg.appendChild(leaf);
+    }
+  }
+
+  // Fiddlehead spiral at tip: small outward-curling hook
+  const sr = lengthPx * 0.055;
+  const spiral = document.createElementNS(NS, 'path');
+  spiral.setAttribute('d', [
+    `M ${tipX},${tipY}`,
+    `Q ${tipX + pCos*sr*2 - cos*sr},${tipY + pSin*sr*2 - sin*sr}`,
+    `  ${tipX + pCos*sr*3},${tipY + pSin*sr*3}`,
+    `Q ${tipX + pCos*sr*2 + cos*sr*2},${tipY + pSin*sr*2 + sin*sr*2}`,
+    `  ${tipX + pCos*sr*0.5 + cos*sr*2},${tipY + pSin*sr*0.5 + sin*sr*2}`,
+  ].join(' '));
+  spiral.setAttribute('stroke', color); spiral.setAttribute('stroke-width', 1.2);
+  spiral.setAttribute('fill', 'none'); spiral.setAttribute('stroke-linecap', 'round');
+  cg.appendChild(spiral);
+}
+
+// Draws a 5-petal flower. size: petal reach from center in px.
+// petalColor/centerColor: CSS color strings.
+function drawCoralFlower(cg, cx, cy, size, petalColor, centerColor, NS) {
+  const fg = document.createElementNS(NS, 'g');
+  fg.setAttribute('transform', `translate(${cx},${cy})`);
+  for (let i = 0; i < 5; i++) {
+    const petal = document.createElementNS(NS, 'ellipse');
+    // Each petal: ellipse above center, rotated i*72° around the flower center
+    petal.setAttribute('cx', 0); petal.setAttribute('cy', -size);
+    petal.setAttribute('rx', size * 0.5); petal.setAttribute('ry', size * 0.8);
+    petal.setAttribute('transform', `rotate(${i * 72})`);
+    petal.setAttribute('fill', petalColor);
+    petal.setAttribute('stroke', '#2a2a2a'); petal.setAttribute('stroke-width', 0.8);
+    fg.appendChild(petal);
+  }
+  const ctr = document.createElementNS(NS, 'circle');
+  ctr.setAttribute('cx', 0); ctr.setAttribute('cy', 0); ctr.setAttribute('r', size * 0.42);
+  ctr.setAttribute('fill', centerColor);
+  ctr.setAttribute('stroke', '#2a2a2a'); ctr.setAttribute('stroke-width', 0.8);
+  fg.appendChild(ctr);
+  cg.appendChild(fg);
+}
+
+function drawWallBotanical(g, x, y, w, h, seed, id) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = g.ownerSVGElement;
+  const rnd = seededRand(seed);
+  const sc = cmToPx(1); // 1 cm in pixels
+
+  // Clip to wall bounds — pattern is drawn at fixed scale beyond wall edges
+  const clipId = `wp-clip-${id}`;
+  ensureClipPath(svgEl, clipId, x, y, w, h, NS);
+
+  const cg = document.createElementNS(NS, 'g');
+  cg.setAttribute('clip-path', `url(#${clipId})`);
+
+  // Background (30cm × 25cm anchored at wall top-left)
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', x); bg.setAttribute('y', y);
+  bg.setAttribute('width', 30 * sc); bg.setAttribute('height', 25 * sc);
+  bg.setAttribute('fill', '#f5f0e4');
+  cg.appendChild(bg);
+
+  // Seeded fern greens (3 slight variations)
+  const fernH = 110 + rnd() * 20;
+  const fernS = 35 + rnd() * 15;
+  const fernL = 28 + rnd() * 12;
+  const fern1 = `hsl(${fernH | 0},${fernS | 0}%,${fernL | 0}%)`;
+  const fern2 = `hsl(${(fernH + 8*rnd()) | 0},${(fernS - 5) | 0}%,${(fernL + 5) | 0}%)`;
+  const fern3 = `hsl(${(fernH - 5*rnd()) | 0},${(fernS + 8) | 0}%,${(fernL - 4) | 0}%)`;
+
+  // Seeded flower colors (pastel coral/rose/peach range)
+  const fh1 = rnd() * 22;
+  const flower1  = `hsl(${fh1 | 0},${(72 + rnd()*14) | 0}%,${(66 + rnd()*10) | 0}%)`;
+  const flower1c = `hsl(${fh1 | 0},${(50 + rnd()*15) | 0}%,${(80 + rnd()*8) | 0}%)`;
+  const fh2 = rnd() * 18;
+  const flower2  = `hsl(${fh2 | 0},${(68 + rnd()*14) | 0}%,${(63 + rnd()*12) | 0}%)`;
+  const flower2c = `hsl(${fh2 | 0},${(45 + rnd()*15) | 0}%,${(78 + rnd()*8) | 0}%)`;
+
+  // Branch helper
+  const px = (dx, dy) => `${x + dx*sc},${y + dy*sc}`;
+  function branch(d, sw) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d); p.setAttribute('stroke', '#2a2a2a');
+    p.setAttribute('stroke-width', sw); p.setAttribute('fill', 'none');
+    p.setAttribute('stroke-linecap', 'round');
+    cg.appendChild(p);
+  }
+
+  // Two thin branch structures
+  branch(`M ${px(1.5,25)} Q ${px(1,15)} ${px(2,5)} Q ${px(2.5,1)} ${px(4,-1)}`, 3.5);
+  branch(`M ${px(1.8,18)} Q ${px(-0.5,15)} ${px(-2.5,13)}`, 2);
+  branch(`M ${px(2.2,12)} Q ${px(6,9)} ${px(10,7)}`, 2);
+  branch(`M ${px(18,25)} Q ${px(19,15)} ${px(18,5)} Q ${px(17,1)} ${px(16,-1)}`, 3);
+  branch(`M ${px(18.5,18)} Q ${px(21,15)} ${px(24,13)}`, 1.8);
+  branch(`M ${px(18,12)} Q ${px(14,9)} ${px(11,7)}`, 1.8);
+  branch(`M ${px(11,7)} Q ${px(14,5)} ${px(16,3)}`, 1.5);
+
+  // Fern fronds (angle: 0=right, -90=up, 180=left, 270=down)
+  const fl = sc * 8; // 8cm frond length
+  drawFernFrond(cg, x - 2*sc,  y + 13*sc, -40,  fl * 1.1, fern1, NS); // sweeps upper-left
+  drawFernFrond(cg, x - 2*sc,  y + 13*sc, -10,  fl * 0.9, fern2, NS); // sweeps up from left
+  drawFernFrond(cg, x + 2.2*sc,y + 12*sc, -70,  fl * 0.95,fern1, NS); // right from branch
+  drawFernFrond(cg, x + 4*sc,  y - 1*sc,  -50,  fl * 0.8, fern3, NS); // trunk tip
+  drawFernFrond(cg, x + 24*sc, y + 13*sc, -140, fl * 1.05,fern2, NS); // right side upper-right
+  drawFernFrond(cg, x + 24*sc, y + 13*sc, -160, fl * 0.9, fern1, NS); // right side up
+  drawFernFrond(cg, x + 18*sc, y + 12*sc, -110, fl * 0.9, fern3, NS); // left from right branch
+  drawFernFrond(cg, x + 1.5*sc,y + 25*sc,  200, fl * 0.65,fern2, NS); // base left
+  drawFernFrond(cg, x + 18*sc, y + 25*sc,  160, fl * 0.65,fern1, NS); // base right
+  if (rnd() > 0.3) {
+    drawFernFrond(cg, x + 11*sc, y + 8*sc, -90, fl * 0.7, fern3, NS); // optional center frond
+  }
+
+  // Coral flowers
+  drawCoralFlower(cg, x + 12*sc, y + 10*sc, sc * 1.6, flower1, flower1c, NS);
+  drawCoralFlower(cg, x + 7*sc,  y + 17*sc, sc * 1.2, flower2, flower2c, NS);
+  if (rnd() > 0.4) {
+    drawCoralFlower(cg, x + 20*sc, y + 16*sc, sc * 1.1, flower1, flower1c, NS);
+  }
+
+  // Small line-art daisies scattered in negative space
+  function daisy(dcx, dcy, dsize) {
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 72 - 90) * Math.PI / 180;
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', dcx + Math.cos(a) * dsize);
+      c.setAttribute('cy', dcy + Math.sin(a) * dsize);
+      c.setAttribute('r', dsize * 0.55);
+      c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#2a2a2a'); c.setAttribute('stroke-width', 0.75);
+      cg.appendChild(c);
+    }
+    const cc = document.createElementNS(NS, 'circle');
+    cc.setAttribute('cx', dcx); cc.setAttribute('cy', dcy); cc.setAttribute('r', dsize * 0.35);
+    cc.setAttribute('fill', 'none'); cc.setAttribute('stroke', '#2a2a2a'); cc.setAttribute('stroke-width', 0.75);
+    cg.appendChild(cc);
+  }
+  daisy(x + 5*sc,  y + 8*sc,  sc * 0.70);
+  daisy(x + 15*sc, y + 5*sc,  sc * 0.65);
+  daisy(x + 22*sc, y + 9*sc,  sc * 0.60);
+  daisy(x + 9*sc,  y + 20*sc, sc * 0.55);
+
+  g.appendChild(cg);
+
+  // Wall border and ledge drawn on top (not clipped)
+  const border = document.createElementNS(NS, 'rect');
+  border.setAttribute('x', x); border.setAttribute('y', y);
+  border.setAttribute('width', w); border.setAttribute('height', h);
+  border.setAttribute('fill', 'none'); border.setAttribute('stroke', '#8a7a60');
+  border.setAttribute('stroke-width', 1.5);
+  g.appendChild(border);
+
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const ledge = document.createElementNS(NS, 'line');
+  ledge.setAttribute('x1', x); ledge.setAttribute('y1', ledgeY);
+  ledge.setAttribute('x2', x + w); ledge.setAttribute('y2', ledgeY);
+  ledge.setAttribute('stroke', '#8a7a60'); ledge.setAttribute('stroke-width', 1);
+  ledge.setAttribute('opacity', '0.5');
+  g.appendChild(ledge);
+}
+
 function drawDesk(g, x, y, w, h) {
   // Tabletop
   svgRect(g, x, y, w, h * 0.12, '#8B4513', '#5a3010');
