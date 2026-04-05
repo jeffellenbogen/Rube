@@ -335,6 +335,15 @@ svgEl.addEventListener('click', e => {
       render(); updateUndoButtons();
       return;
     }
+    if (action === 'wall-lock') {
+      undoPush();
+      const envItem = getState().environment.find(e => e.id === targetId);
+      if (envItem) {
+        updateEnvItem(targetId, { wallLocked: !envItem.wallLocked });
+        render(); updateUndoButtons();
+      }
+      return;
+    }
     if (action === 'rubiks-color') {
       undoPush();
       const comp = getState().components.find(c => c.id === targetId);
@@ -476,7 +485,7 @@ canvasWrapper.addEventListener('drop', e => {
     addEnvItem({
       subtype: item.subtype, ...pos,
       ...(item.subtype === 'stairs' ? { stepCount: 6 } : {}),
-      ...(item.subtype === 'wall'   ? { wallStyle: 'cream', wallSeed: 0 } : {}),
+      ...(item.subtype === 'wall'   ? { wallStyle: 'cream', wallSeed: 0, wallLocked: false } : {}),
     });
   } else {
     const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false, rotation: 0, flipped: false });

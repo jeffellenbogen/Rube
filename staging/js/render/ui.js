@@ -481,6 +481,27 @@ export function renderUI(state, layer) {
       btn.appendChild(c);
       layer.appendChild(btn);
     }
+
+    // Lock/unlock button (rightmost, same row as swatches)
+    const isLocked = wallEnvItem.wallLocked || false;
+    const lockX = startX + wallSwatches.length * spacing;
+    const lockBtn = document.createElementNS(NS, 'g');
+    lockBtn.dataset.action = 'wall-lock';
+    lockBtn.dataset.targetId = selId;
+    lockBtn.setAttribute('cursor', 'pointer');
+    const lbg = document.createElementNS(NS, 'circle');
+    lbg.setAttribute('cx', lockX); lbg.setAttribute('cy', swatchY);
+    lbg.setAttribute('r', swatchR);
+    lbg.setAttribute('fill', isLocked ? '#c04a00' : '#1a3a5c');
+    lbg.setAttribute('stroke', isLocked ? '#ff7b2e' : '#4a6a8a');
+    lbg.setAttribute('stroke-width', isLocked ? 2 : 1);
+    const lt = document.createElementNS(NS, 'text');
+    lt.setAttribute('x', lockX); lt.setAttribute('y', swatchY);
+    lt.setAttribute('text-anchor', 'middle'); lt.setAttribute('dominant-baseline', 'middle');
+    lt.setAttribute('fill', '#ffffff'); lt.setAttribute('font-size', 11);
+    lt.textContent = isLocked ? '🔒' : '🔓';
+    lockBtn.appendChild(lbg); lockBtn.appendChild(lt);
+    layer.appendChild(lockBtn);
   }
 
   // Flip-only button for dumpTruck (component)

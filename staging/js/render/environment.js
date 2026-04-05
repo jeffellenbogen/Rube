@@ -192,14 +192,14 @@ function drawWallClapboard(g, x, y, w, h) {
   bg.setAttribute('stroke-width', 1.5);
   g.appendChild(bg);
 
-  // Vertical board lines at fixed 0.7 cm spacing (windowing: spacing is fixed, wall width is the viewport)
-  const spacing = cmToPx(0.7);
+  // Vertical board lines at fixed 50px spacing
+  const spacing = 50;
   for (let lx = x + spacing; lx < x + w; lx += spacing) {
     // Board edge line
     const line = document.createElementNS(NS, 'line');
     line.setAttribute('x1', lx); line.setAttribute('y1', y);
     line.setAttribute('x2', lx); line.setAttribute('y2', y + h);
-    line.setAttribute('stroke', '#c0c0bc'); line.setAttribute('stroke-width', 1.5);
+    line.setAttribute('stroke', '#909090'); line.setAttribute('stroke-width', 1.5);
     g.appendChild(line);
     // Shadow accent just left of edge
     const shadow = document.createElementNS(NS, 'line');
@@ -308,13 +308,20 @@ function drawCoralFlower(cg, cx, cy, size, petalColor, centerColor, NS) {
 
 function drawWallBotanical(g, x, y, w, h, seed, id) {
   const NS = 'http://www.w3.org/2000/svg';
-  const svgEl = g.ownerSVGElement;
   const rnd = seededRand(seed);
   const sc = cmToPx(1); // 1 cm in pixels
 
-  // Clip to wall bounds — pattern is drawn at fixed scale beyond wall edges
+  // Clip to wall bounds — clipPath lives inside g so it works before g is in the DOM
   const clipId = `wp-clip-${id}`;
-  ensureClipPath(svgEl, clipId, x, y, w, h, NS);
+  const localDefs = document.createElementNS(NS, 'defs');
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  localDefs.appendChild(clip);
+  g.appendChild(localDefs);
 
   const cg = document.createElementNS(NS, 'g');
   cg.setAttribute('clip-path', `url(#${clipId})`);
@@ -425,20 +432,20 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
 
 function drawWallDisco(g, x, y, w, h, seed, id) {
   const NS = 'http://www.w3.org/2000/svg';
-  const svgEl = g.ownerSVGElement;
   const rnd = seededRand(seed);
   const sc = cmToPx(1);
 
-  // Clip to wall bounds
+  // clipPath and glow filter live inside g so they work before g is in the DOM
   const clipId = `wp-clip-${id}`;
-  ensureClipPath(svgEl, clipId, x, y, w, h, NS);
-
-  // Per-wall glow filter in defs
   const glowId = `wp-glow-${id}`;
-  let defs = svgEl.querySelector('defs');
-  if (!defs) { defs = document.createElementNS(NS, 'defs'); svgEl.insertBefore(defs, svgEl.firstChild); }
-  const oldGlow = svgEl.getElementById(glowId);
-  if (oldGlow) oldGlow.remove();
+  const localDefs = document.createElementNS(NS, 'defs');
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  localDefs.appendChild(clip);
   const filt = document.createElementNS(NS, 'filter');
   filt.setAttribute('id', glowId);
   filt.setAttribute('x', '-30%'); filt.setAttribute('y', '-30%');
@@ -450,7 +457,8 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
   const mn2 = document.createElementNS(NS, 'feMergeNode'); mn2.setAttribute('in', 'SourceGraphic');
   merge.appendChild(mn1); merge.appendChild(mn2);
   filt.appendChild(blur); filt.appendChild(merge);
-  defs.appendChild(filt);
+  localDefs.appendChild(filt);
+  g.appendChild(localDefs);
 
   const cg = document.createElementNS(NS, 'g');
   cg.setAttribute('clip-path', `url(#${clipId})`);
