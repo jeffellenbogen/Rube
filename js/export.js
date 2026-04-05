@@ -246,13 +246,14 @@ export async function downloadPNG(svgEl) {
       let drawn = 0;
       for (const { name, count } of items) {
         if (pY + ROW_H > panelBottom) {
-          const remaining = items.length - drawn;
-          ctx.font = `${ITEM_SIZE - 2}px "Courier New", Courier, monospace`;
-          ctx.fillStyle = '#aaaaaa';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillText(`\u2026and ${remaining} more`, panelX + PAD + 4, pY);
-          pY += ROW_H;
+          if (pY < panelBottom) {
+            const remaining = items.length - drawn;
+            ctx.font = `${ITEM_SIZE - 2}px "Courier New", Courier, monospace`;
+            ctx.fillStyle = '#aaaaaa';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`\u2026and ${remaining} more`, panelX + PAD + 4, pY);
+          }
           break;
         }
         ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
