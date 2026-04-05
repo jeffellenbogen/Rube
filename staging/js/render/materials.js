@@ -657,7 +657,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'toyCar':        drawCar(g, x, y, w, h); break;
     case 'dumpTruck':     drawDumpTruck(g, x, y, w, h, null); break;
     case 'fan':           drawFan(g, x, y, w, h, null); break;
-    case 'rubiksCube':    drawRubiksCube(g, x, y, w, h, null); break;
+    case 'rubiksCube':    drawRubiksCube(g, x, y, w, h, { colorMode: 0, colorSeed: 314159265 }); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g); break;
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;
