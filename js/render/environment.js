@@ -28,7 +28,7 @@ function makeEnvItem(item) {
     case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
     case 'couch': drawCouch(g, x, y, w, h, item.couchColor); break;
-    case 'wall': drawWall(g, x, y, w, h); break;
+    case 'wall': drawWall(g, x, y, w, h, item); break;
   }
   const cx = x + w / 2, cy = y + h / 2;
   const rotation = item.rotation || 0;
@@ -62,10 +62,37 @@ function svgLine(g, x1, y1, x2, y2, stroke, width) {
   g.appendChild(l);
 }
 
-function drawWall(g, x, y, w, h) {
-  const NS = 'http://www.w3.org/2000/svg';
+// Mulberry32 seeded PRNG — returns function yielding [0,1) floats
+function seededRand(seed) {
+  let s = (seed >>> 0) || 1;
+  return function() {
+    s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 
-  // Ensure the orange-peel filter exists in SVG defs (add once, reuse)
+// Creates/replaces a <clipPath id=clipId> in SVG defs containing a rect at (x,y,w,h)
+function ensureClipPath(svgEl, clipId, x, y, w, h, NS) {
+  let defs = svgEl.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS(NS, 'defs');
+    svgEl.insertBefore(defs, svgEl.firstChild);
+  }
+  const old = svgEl.getElementById(clipId);
+  if (old) old.remove();
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  defs.appendChild(clip);
+}
+
+function drawWallCream(g, x, y, w, h) {
+  const NS = 'http://www.w3.org/2000/svg';
   const svgEl = g.ownerSVGElement;
   if (svgEl && !svgEl.getElementById('wall-orange-peel')) {
     let defs = svgEl.querySelector('defs');
@@ -143,6 +170,53 @@ function drawWall(g, x, y, w, h) {
   l.setAttribute('x2', x + w); l.setAttribute('y2', ledgeY);
   l.setAttribute('stroke', '#8a7a60'); l.setAttribute('stroke-width', 1);
   l.setAttribute('opacity', 0.5);
+  g.appendChild(l);
+}
+
+function drawWall(g, x, y, w, h, item = {}) {
+  switch (item.wallStyle || 'cream') {
+    case 'botanical': drawWallBotanical(g, x, y, w, h, item.wallSeed || 0, item.id || 'icon'); break;
+    case 'clapboard': drawWallClapboard(g, x, y, w, h); break;
+    case 'disco':     drawWallDisco(g, x, y, w, h, item.wallSeed || 0, item.id || 'icon'); break;
+    default:          drawWallCream(g, x, y, w, h); break;
+  }
+}
+
+function drawWallClapboard(g, x, y, w, h) {
+  const NS = 'http://www.w3.org/2000/svg';
+  // White background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', x); bg.setAttribute('y', y);
+  bg.setAttribute('width', w); bg.setAttribute('height', h);
+  bg.setAttribute('fill', '#f0f0ee'); bg.setAttribute('stroke', '#b0b0aa');
+  bg.setAttribute('stroke-width', 1.5);
+  g.appendChild(bg);
+
+  // Vertical board lines at fixed 0.7 cm spacing (windowing: spacing is fixed, wall width is the viewport)
+  const spacing = cmToPx(0.7);
+  for (let lx = x + spacing; lx < x + w; lx += spacing) {
+    // Board edge line
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', lx); line.setAttribute('y1', y);
+    line.setAttribute('x2', lx); line.setAttribute('y2', y + h);
+    line.setAttribute('stroke', '#c0c0bc'); line.setAttribute('stroke-width', 1.5);
+    g.appendChild(line);
+    // Shadow accent just left of edge
+    const shadow = document.createElementNS(NS, 'line');
+    shadow.setAttribute('x1', lx - 2); shadow.setAttribute('y1', y);
+    shadow.setAttribute('x2', lx - 2); shadow.setAttribute('y2', y + h);
+    shadow.setAttribute('stroke', '#a8a8a4'); shadow.setAttribute('stroke-width', 0.75);
+    shadow.setAttribute('opacity', '0.6');
+    g.appendChild(shadow);
+  }
+
+  // Top ledge
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const l = document.createElementNS(NS, 'line');
+  l.setAttribute('x1', x); l.setAttribute('y1', ledgeY);
+  l.setAttribute('x2', x + w); l.setAttribute('y2', ledgeY);
+  l.setAttribute('stroke', '#b0b0aa'); l.setAttribute('stroke-width', 1);
+  l.setAttribute('opacity', '0.5');
   g.appendChild(l);
 }
 
@@ -331,6 +405,6 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
     case 'stairs':    drawStairs(g, x, y, w, h, 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
     case 'couch':     drawCouch(g, x, y, w, h, 'blue'); break;
-    case 'wall':      drawWall(g, x, y, w, h); break;
+    case 'wall':      drawWall(g, x, y, w, h, { wallStyle: 'cream', wallSeed: 0, id: 'icon' }); break;
   }
 }
