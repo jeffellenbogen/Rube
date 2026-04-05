@@ -328,12 +328,15 @@ svgEl.addEventListener('click', e => {
       undoPush();
       const comp = getState().components.find(c => c.id === targetId);
       if (comp) {
-        const nextMode = ((comp.subParts?.colorMode ?? 0) + 1) % 3;
+        const nextMode = ((comp.subParts?.colorMode ?? 0) + 1) % 2;
         const newParts = { ...comp.subParts, colorMode: nextMode };
-        if (nextMode === 2) {
+        if (nextMode === 1) {
           // Regenerate solved face colors: pick 3 distinct from 6
           const indices = [0,1,2,3,4,5].sort(() => Math.random() - 0.5).slice(0, 3);
           newParts.faceColors = indices;
+        } else {
+          // Regenerate mixed scramble
+          newParts.colorSeed = Math.floor(Math.random() * 1e9);
         }
         updateComponent(targetId, { subParts: newParts });
         render(); updateUndoButtons();
