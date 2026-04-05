@@ -5,13 +5,13 @@ const EXCLUDED_TYPES = ['marker'];
 const MACHINES_REQUIRED = 3;
 const STEPS_REQUIRED = 5;
 
-const ITEM_LABELS = {
+export const ITEM_LABELS = {
   lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane',
   wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw',
   domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
   cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
   cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
-  matchboxTrack:'Car Track', book:'Book',
+  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
 };
 
 export function getRequirements(state) {
