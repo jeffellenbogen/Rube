@@ -349,6 +349,15 @@ export async function downloadPNG(svgEl) {
   ctx.fillText(`${req.steps} of 5+${req.stepsMet ? ' \u2713' : ''}`, panelX + PAD + 4, pY);
   pY += ROW_H;
 
+  // Version footer — bottom of right panel
+  if (savedWithVersion) {
+    ctx.font = `11px "Courier New", Courier, monospace`;
+    ctx.fillStyle = '#4a7a9a';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`Saved with ${savedWithVersion}`, panelX + PANEL_W - PAD, panelTop + panelHeight - PAD);
+  }
+
   // ── SVG CANVAS ───────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
   const svgStr = serializer.serializeToString(svgEl);
@@ -426,7 +435,9 @@ export async function downloadPNG(svgEl) {
   // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
-  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y } };
+  const versionEl = document.getElementById('version-label');
+  const savedWithVersion = versionEl ? versionEl.textContent.trim() : '';
+  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y, savedWithVersion } };
   const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(exportState));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
 
