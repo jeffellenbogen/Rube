@@ -326,10 +326,10 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
   const cg = document.createElementNS(NS, 'g');
   cg.setAttribute('clip-path', `url(#${clipId})`);
 
-  // Background (30cm × 25cm anchored at wall top-left)
+  // Background fills the full wall; motifs are drawn at fixed scale anchored at top-left
   const bg = document.createElementNS(NS, 'rect');
   bg.setAttribute('x', x); bg.setAttribute('y', y);
-  bg.setAttribute('width', 30 * sc); bg.setAttribute('height', 25 * sc);
+  bg.setAttribute('width', w); bg.setAttribute('height', h);
   bg.setAttribute('fill', '#f5f0e4');
   cg.appendChild(bg);
 
@@ -463,34 +463,35 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
   const cg = document.createElementNS(NS, 'g');
   cg.setAttribute('clip-path', `url(#${clipId})`);
 
-  const W = 30 * sc, H = 25 * sc;
+  // Scene always fills the full wall — beams use fractions of w/h so any size looks right
+  const W = w, H = h;
 
   // Seed-derived colors: two complementary hues
   const hue1 = rnd() * 360;
   const hue2 = (hue1 + 115 + rnd() * 90) % 360;
   // Beam count: 4-8 per side (8-16 total)
   const beamCount = Math.floor(4 + rnd() * 5);
-  // Small angle variation for organic feel
-  const angleVar = rnd() * 0.18;
+  // Small angle variation for organic feel (fraction of W)
+  const angleVar = rnd() * 0.06; // fraction of W (was 0.18 * sc / 30*sc)
 
-  // Background
+  // Background fills full wall
   const bg = document.createElementNS(NS, 'rect');
   bg.setAttribute('x', x); bg.setAttribute('y', y);
   bg.setAttribute('width', W); bg.setAttribute('height', H);
   bg.setAttribute('fill', `hsl(${hue1 | 0},20%,4%)`);
   cg.appendChild(bg);
 
-  // Beams with glow
+  // Beams with glow — all positions as fractions of W and H
   const beamGroup = document.createElementNS(NS, 'g');
   beamGroup.setAttribute('filter', `url(#${glowId})`);
-  const bwSrc = sc * 0.3;  // half-width at source
-  const bwDst = sc * 0.5;  // half-width at destination (slight fan)
+  const bwSrc = W * 0.01;  // half-width at source
+  const bwDst = W * 0.017; // half-width at destination (slight fan)
 
-  // Left-origin beams: sources across left 14cm, raking to bottom-right
+  // Left-origin beams: sources across left 47% of W, raking to right
   for (let i = 0; i < beamCount; i++) {
     const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
-    const srcX = x + t * 14 * sc;
-    const dstX = x + (8 + t * (14 + angleVar * 8)) * sc;
+    const srcX = x + t * 0.467 * W;
+    const dstX = x + (0.267 + t * (0.467 + angleVar)) * W;
     const alpha = (0.48 - i * 0.02).toFixed(2);
     const beam = document.createElementNS(NS, 'polygon');
     beam.setAttribute('points',
@@ -499,11 +500,11 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
     beamGroup.appendChild(beam);
   }
 
-  // Right-origin beams: sources across right 14cm (16cm–30cm), raking to bottom-left
+  // Right-origin beams: sources across right 47% of W, raking to left
   for (let i = 0; i < beamCount; i++) {
     const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
-    const srcX = x + (16 + t * 14) * sc;
-    const dstX = x + (2 + t * (14 - angleVar * 8)) * sc;
+    const srcX = x + (0.533 + t * 0.467) * W;
+    const dstX = x + (0.067 + t * (0.467 - angleVar)) * W;
     const alpha = (0.48 - i * 0.02).toFixed(2);
     const beam = document.createElementNS(NS, 'polygon');
     beam.setAttribute('points',
@@ -512,10 +513,10 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
     beamGroup.appendChild(beam);
   }
 
-  // Crossing-zone glow ellipse
+  // Crossing-zone glow at center
   const glow = document.createElementNS(NS, 'ellipse');
-  glow.setAttribute('cx', x + 15 * sc); glow.setAttribute('cy', y + 18 * sc);
-  glow.setAttribute('rx', 4 * sc); glow.setAttribute('ry', 2.5 * sc);
+  glow.setAttribute('cx', x + 0.5 * W); glow.setAttribute('cy', y + 0.72 * H);
+  glow.setAttribute('rx', 0.133 * W);   glow.setAttribute('ry', 0.1 * H);
   glow.setAttribute('fill', `hsla(${((hue1 + hue2) / 2) | 0},60%,90%,0.15)`);
   beamGroup.appendChild(glow);
 
@@ -524,7 +525,7 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
   // Fixture dots: left group (hue1 tinted)
   for (let i = 0; i < beamCount; i++) {
     const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
-    const srcX = x + t * 14 * sc;
+    const srcX = x + t * 0.467 * W;
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
     dot.setAttribute('r', '2.5');
@@ -535,7 +536,7 @@ function drawWallDisco(g, x, y, w, h, seed, id) {
   // Fixture dots: right group (hue2 tinted)
   for (let i = 0; i < beamCount; i++) {
     const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
-    const srcX = x + (16 + t * 14) * sc;
+    const srcX = x + (0.533 + t * 0.467) * W;
     const dot = document.createElementNS(NS, 'circle');
     dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
     dot.setAttribute('r', '2.5');
