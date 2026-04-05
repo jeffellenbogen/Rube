@@ -421,6 +421,68 @@ export function renderUI(state, layer) {
     }
   }
 
+  // Color/style swatches for wall (env item)
+  const wallEnvItem = state.environment.find(e => e.id === selId && e.subtype === 'wall');
+  if (wallEnvItem) {
+    // Rainbow gradient def for disco swatch
+    const wallDefs = document.createElementNS(NS, 'defs');
+    const wallGrad = document.createElementNS(NS, 'linearGradient');
+    wallGrad.setAttribute('id', 'ui-wall-rainbow');
+    wallGrad.setAttribute('x1', '0%'); wallGrad.setAttribute('y1', '0%');
+    wallGrad.setAttribute('x2', '100%'); wallGrad.setAttribute('y2', '0%');
+    for (const [off, col] of [['0%','#e85a5a'],['20%','#e8a050'],['40%','#e8d850'],['60%','#5ab860'],['80%','#5a90e8'],['100%','#9a5ae8']]) {
+      const stop = document.createElementNS(NS, 'stop');
+      stop.setAttribute('offset', off); stop.setAttribute('stop-color', col);
+      wallGrad.appendChild(stop);
+    }
+    wallDefs.appendChild(wallGrad);
+    layer.appendChild(wallDefs);
+
+    const currentStyle = wallEnvItem.wallStyle || 'cream';
+    const wallSwatches = [
+      { key: 'cream',     fill: '#c8b8a0',               label: 'Cream' },
+      { key: 'botanical', fill: '#5a7a40',               label: 'Botanical' },
+      { key: 'clapboard', fill: '#f0f0ee',               label: 'Clapboard' },
+      { key: 'disco',     fill: 'url(#ui-wall-rainbow)', label: 'Disco' },
+    ];
+    const swatchR = 9;
+    const spacing = swatchR * 2 + 6;
+    const totalW = wallSwatches.length * spacing - 6;
+    const swatchCenter = L(0, h2 + 26);
+    const startX = swatchCenter.x - totalW / 2 + swatchR;
+    const swatchY = swatchCenter.y;
+
+    for (let i = 0; i < wallSwatches.length; i++) {
+      const { key, fill } = wallSwatches[i];
+      const isActive = key === currentStyle;
+      const cx = startX + i * spacing;
+
+      const btn = document.createElementNS(NS, 'g');
+      btn.dataset.action = 'wall-style';
+      btn.dataset.style = key;
+      btn.dataset.targetId = selId;
+      btn.setAttribute('cursor', 'pointer');
+
+      if (isActive) {
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', cx); ring.setAttribute('cy', swatchY);
+        ring.setAttribute('r', swatchR + 3.5);
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#ffffff'); ring.setAttribute('stroke-width', 2);
+        btn.appendChild(ring);
+      }
+
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', cx); c.setAttribute('cy', swatchY);
+      c.setAttribute('r', swatchR);
+      c.setAttribute('fill', fill);
+      c.setAttribute('stroke', isActive ? '#ff7b2e' : '#4a6a8a');
+      c.setAttribute('stroke-width', isActive ? 2 : 1);
+      btn.appendChild(c);
+      layer.appendChild(btn);
+    }
+  }
+
   // Flip-only button for dumpTruck (component)
   const dumpTruckComp = isComp && comp.subtype === 'dumpTruck' ? comp : null;
   if (dumpTruckComp) {
