@@ -159,7 +159,7 @@ function defaultSubParts(subtype) {
     box:    { colorIndex: Math.floor(Math.random() * 4) },
     book:   { colorIndex: Math.floor(Math.random() * 5) },
     fan:    { direction: 'right' },
-    rubiksCube: { colorIndex: Math.floor(Math.random() * 3) },
+    rubiksCube: { colorIndex: Math.floor(Math.random() * 4) },
     dumpTruck: { bedState: 'down' },
     funnel: { openingWidth: 1.0 },
     spring: { state: 'compressed' },
@@ -329,7 +329,7 @@ svgEl.addEventListener('click', e => {
       const comp = getState().components.find(c => c.id === targetId);
       if (comp) {
         const ci = (comp.subParts?.colorIndex ?? 0);
-        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 3 } });
+        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 4 } });
         render();
       }
       return;
