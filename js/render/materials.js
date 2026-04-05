@@ -463,12 +463,16 @@ function drawFan(g, x, y, w, h, subParts) {
   }
 }
 
-const RUBIKS_CLASSIC = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#ffffff', '#fb5607'];
-const RUBIKS_PASTEL  = ['#ffb3c1', '#a9c4eb', '#b5ead7', '#fef9c7', '#e8d5f5', '#ffd8b1'];
-const RUBIKS_NEON    = ['#ff006e', '#3a86ff', '#80b918', '#ffbe0b', '#00f5d4', '#ff4800'];
-const RUBIKS_THEMES  = [RUBIKS_CLASSIC, RUBIKS_PASTEL, RUBIKS_NEON];
-// Solved theme: one solid color per face [front, top, right]
-const RUBIKS_SOLVED  = ['#3a86ff', '#38b000', '#ffd166'];
+const RUBIKS_COLORS = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#f5f5f5', '#fb5607'];
+
+function rubiksRand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = Math.imul(s ^ (s >>> 15), s | 1);
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+    return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
   const solved = colorIndex === 3;
