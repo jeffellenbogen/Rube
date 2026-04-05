@@ -516,7 +516,7 @@ document.querySelectorAll('.mode-card[data-mode]').forEach(card => {
 const flagWidget = document.getElementById('flag-drag-widget');
 if (flagWidget) {
   flagWidget.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('catalog', JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 }));
+    e.dataTransfer.setData('catalog', JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 12, defaultH: 36 }));
     e.dataTransfer.effectAllowed = 'copy';
   });
 }
