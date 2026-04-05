@@ -324,6 +324,17 @@ svgEl.addEventListener('click', e => {
       render(); updateUndoButtons();
       return;
     }
+    if (action === 'wall-style') {
+      undoPush();
+      const styleKey = actionEl.dataset.style;
+      // Botanical and disco re-randomize on every swatch click; cream and clapboard are deterministic
+      const newSeed = (styleKey === 'botanical' || styleKey === 'disco')
+        ? Math.floor(Math.random() * 1e9)
+        : 0;
+      updateEnvItem(targetId, { wallStyle: styleKey, wallSeed: newSeed });
+      render(); updateUndoButtons();
+      return;
+    }
     if (action === 'rubiks-color') {
       undoPush();
       const comp = getState().components.find(c => c.id === targetId);
@@ -462,7 +473,11 @@ canvasWrapper.addEventListener('drop', e => {
 
   undoPush();
   if (item.type === 'environment') {
-    addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 6 } : {}) });
+    addEnvItem({
+      subtype: item.subtype, ...pos,
+      ...(item.subtype === 'stairs' ? { stepCount: 6 } : {}),
+      ...(item.subtype === 'wall'   ? { wallStyle: 'cream', wallSeed: 0 } : {}),
+    });
   } else {
     const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false, rotation: 0, flipped: false });
     if (item.subtype === 'custom') promptCustomName(newId);
