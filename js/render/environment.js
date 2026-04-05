@@ -423,6 +423,140 @@ function drawWallBotanical(g, x, y, w, h, seed, id) {
   g.appendChild(ledge);
 }
 
+function drawWallDisco(g, x, y, w, h, seed, id) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = g.ownerSVGElement;
+  const rnd = seededRand(seed);
+  const sc = cmToPx(1);
+
+  // Clip to wall bounds
+  const clipId = `wp-clip-${id}`;
+  ensureClipPath(svgEl, clipId, x, y, w, h, NS);
+
+  // Per-wall glow filter in defs
+  const glowId = `wp-glow-${id}`;
+  let defs = svgEl.querySelector('defs');
+  if (!defs) { defs = document.createElementNS(NS, 'defs'); svgEl.insertBefore(defs, svgEl.firstChild); }
+  const oldGlow = svgEl.getElementById(glowId);
+  if (oldGlow) oldGlow.remove();
+  const filt = document.createElementNS(NS, 'filter');
+  filt.setAttribute('id', glowId);
+  filt.setAttribute('x', '-30%'); filt.setAttribute('y', '-30%');
+  filt.setAttribute('width', '160%'); filt.setAttribute('height', '160%');
+  const blur = document.createElementNS(NS, 'feGaussianBlur');
+  blur.setAttribute('stdDeviation', '5'); blur.setAttribute('result', 'b');
+  const merge = document.createElementNS(NS, 'feMerge');
+  const mn1 = document.createElementNS(NS, 'feMergeNode'); mn1.setAttribute('in', 'b');
+  const mn2 = document.createElementNS(NS, 'feMergeNode'); mn2.setAttribute('in', 'SourceGraphic');
+  merge.appendChild(mn1); merge.appendChild(mn2);
+  filt.appendChild(blur); filt.appendChild(merge);
+  defs.appendChild(filt);
+
+  const cg = document.createElementNS(NS, 'g');
+  cg.setAttribute('clip-path', `url(#${clipId})`);
+
+  const W = 30 * sc, H = 25 * sc;
+
+  // Seed-derived colors: two complementary hues
+  const hue1 = rnd() * 360;
+  const hue2 = (hue1 + 115 + rnd() * 90) % 360;
+  // Beam count: 4-8 per side (8-16 total)
+  const beamCount = Math.floor(4 + rnd() * 5);
+  // Small angle variation for organic feel
+  const angleVar = rnd() * 0.18;
+
+  // Background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', x); bg.setAttribute('y', y);
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', `hsl(${hue1 | 0},20%,4%)`);
+  cg.appendChild(bg);
+
+  // Beams with glow
+  const beamGroup = document.createElementNS(NS, 'g');
+  beamGroup.setAttribute('filter', `url(#${glowId})`);
+  const bwSrc = sc * 0.3;  // half-width at source
+  const bwDst = sc * 0.5;  // half-width at destination (slight fan)
+
+  // Left-origin beams: sources across left 14cm, raking to bottom-right
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + t * 14 * sc;
+    const dstX = x + (8 + t * (14 + angleVar * 8)) * sc;
+    const alpha = (0.48 - i * 0.02).toFixed(2);
+    const beam = document.createElementNS(NS, 'polygon');
+    beam.setAttribute('points',
+      `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
+    beam.setAttribute('fill', `hsla(${hue1 | 0},90%,62%,${alpha})`);
+    beamGroup.appendChild(beam);
+  }
+
+  // Right-origin beams: sources across right 14cm (16cm–30cm), raking to bottom-left
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + (16 + t * 14) * sc;
+    const dstX = x + (2 + t * (14 - angleVar * 8)) * sc;
+    const alpha = (0.48 - i * 0.02).toFixed(2);
+    const beam = document.createElementNS(NS, 'polygon');
+    beam.setAttribute('points',
+      `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
+    beam.setAttribute('fill', `hsla(${hue2 | 0},90%,62%,${alpha})`);
+    beamGroup.appendChild(beam);
+  }
+
+  // Crossing-zone glow ellipse
+  const glow = document.createElementNS(NS, 'ellipse');
+  glow.setAttribute('cx', x + 15 * sc); glow.setAttribute('cy', y + 18 * sc);
+  glow.setAttribute('rx', 4 * sc); glow.setAttribute('ry', 2.5 * sc);
+  glow.setAttribute('fill', `hsla(${((hue1 + hue2) / 2) | 0},60%,90%,0.15)`);
+  beamGroup.appendChild(glow);
+
+  cg.appendChild(beamGroup);
+
+  // Fixture dots: left group (hue1 tinted)
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + t * 14 * sc;
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
+    dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', `hsl(${(hue1 + 40) | 0},90%,80%)`);
+    dot.setAttribute('opacity', '0.9');
+    cg.appendChild(dot);
+  }
+  // Fixture dots: right group (hue2 tinted)
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + (16 + t * 14) * sc;
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
+    dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', `hsl(${(hue2 + 40) | 0},90%,80%)`);
+    dot.setAttribute('opacity', '0.9');
+    cg.appendChild(dot);
+  }
+
+  g.appendChild(cg);
+
+  // Wall border (colored with hue1 for atmosphere)
+  const border = document.createElementNS(NS, 'rect');
+  border.setAttribute('x', x); border.setAttribute('y', y);
+  border.setAttribute('width', w); border.setAttribute('height', h);
+  border.setAttribute('fill', 'none');
+  border.setAttribute('stroke', `hsl(${hue1 | 0},55%,35%)`);
+  border.setAttribute('stroke-width', '1.5');
+  g.appendChild(border);
+
+  // Top ledge
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const ledge = document.createElementNS(NS, 'line');
+  ledge.setAttribute('x1', x); ledge.setAttribute('y1', ledgeY);
+  ledge.setAttribute('x2', x + w); ledge.setAttribute('y2', ledgeY);
+  ledge.setAttribute('stroke', `hsl(${hue1 | 0},55%,35%)`);
+  ledge.setAttribute('stroke-width', '1'); ledge.setAttribute('opacity', '0.5');
+  g.appendChild(ledge);
+}
+
 function drawDesk(g, x, y, w, h) {
   // Tabletop
   svgRect(g, x, y, w, h * 0.12, '#8B4513', '#5a3010');
