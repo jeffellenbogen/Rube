@@ -829,24 +829,27 @@ export function renderUI(state, layer) {
   // Highlight attachment points on other components during a connection drag
   const cd = getConnDrag();
   if (cd) {
-    const HOVER_DIST = 40; // SVG px — lights up before snap (snap is 15px)
+    const HOVER_DIST = 40;
+    const SNAP_DIST  = 20;
+    const ENV_CONN_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
     const allItems = [
       ...state.components,
-      ...(state.environment || []).filter(e => ENV_ATTACH_SUBTYPES.has(e.subtype)),
+      ...(state.environment || []).filter(e => ENV_CONN_SUBTYPES.has(e.subtype)),
     ];
     for (const otherComp of allItems) {
       if (otherComp.id === cd.fromId) continue;
-      const pts = getAttachPx(otherComp);
+      const pts = getSnapPx(otherComp);
       for (const [, pos] of Object.entries(pts)) {
         const dist = Math.hypot(pos.x - cd.curPx, pos.y - cd.curPy);
         if (dist > HOVER_DIST) continue;
-        const inSnap = dist < 15;
+        const inSnap = dist < SNAP_DIST;
         const dot = document.createElementNS(NS, 'circle');
         dot.setAttribute('cx', pos.x); dot.setAttribute('cy', pos.y);
         dot.setAttribute('r', inSnap ? 8 : 6);
         dot.setAttribute('fill', '#00ff88');
         dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', inSnap ? 2.5 : 1.5);
         dot.setAttribute('opacity', inSnap ? 1 : 0.75);
+        dot.setAttribute('pointer-events', 'none');
         layer.appendChild(dot);
       }
     }
