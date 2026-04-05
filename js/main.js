@@ -336,7 +336,7 @@ svgEl.addEventListener('click', e => {
           newParts.faceColors = indices;
         }
         updateComponent(targetId, { subParts: newParts });
-        render();
+        render(); updateUndoButtons();
       }
       return;
     }
