@@ -37,6 +37,7 @@ export function initCanvas(svg) {
   svg.setAttribute('width',   w);
   svg.setAttribute('height',  h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
 }
 
 // ── Pure math helpers (exported for tests) ────────────────────────────────────

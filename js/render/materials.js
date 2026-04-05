@@ -100,7 +100,7 @@ function drawMaterial(comp, flagNumber = 0) {
     case 'toyCar':   drawCar(g, x, y, w, h); break;
     case 'dumpTruck': drawDumpTruck(g, x, y, w, h, comp.subParts); break;
     case 'fan':      drawFan(g, x, y, w, h, comp.subParts); break;
-    case 'rubiksCube': drawRubiksCube(g, x, y, w, h, comp.subParts?.colorIndex ?? 0); break;
+    case 'rubiksCube': drawRubiksCube(g, x, y, w, h, comp.subParts); break;
     case 'string':   break; // handled by drawStringComp above
     case 'cup':      drawCup(g, x, y, w, h); break;
     case 'bucket':   drawBucket(g, x, y, w, h); break;
@@ -463,77 +463,88 @@ function drawFan(g, x, y, w, h, subParts) {
   }
 }
 
-const RUBIKS_CLASSIC = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#ffffff', '#fb5607'];
-const RUBIKS_PASTEL  = ['#ffb3c1', '#a9c4eb', '#b5ead7', '#fef9c7', '#e8d5f5', '#ffd8b1'];
-const RUBIKS_NEON    = ['#ff006e', '#3a86ff', '#80b918', '#ffbe0b', '#00f5d4', '#ff4800'];
-const RUBIKS_THEMES  = [RUBIKS_CLASSIC, RUBIKS_PASTEL, RUBIKS_NEON];
-// Solved theme: one solid color per face [front, top, right]
-const RUBIKS_SOLVED  = ['#3a86ff', '#38b000', '#ffd166'];
+const RUBIKS_COLORS = ['#e5383b', '#3a86ff', '#38b000', '#ffd166', '#f5f5f5', '#fb5607'];
 
-function drawRubiksCube(g, x, y, w, h, colorIndex = 0) {
-  const solved = colorIndex === 3;
-  const colors = solved ? null : RUBIKS_THEMES[colorIndex % RUBIKS_THEMES.length];
-  // Front face: left 70% width, top 75% height
-  const fw = w * 0.70;
-  const fh = h * 0.75;
-  const fx = x;
-  const fy = y + h * 0.25; // starts 25% from top (leaves room for top face)
-  const cellW = fw / 3;
-  const cellH = fh / 3;
-  // Top face: parallelogram slanting from (fx, fy) to (fx+fw+rw, fy) at top, offset up
-  const rw = w * 0.30; // right face width
-  const topH = h * 0.25;
-  // Top face corners: bottom-left, bottom-right, top-right, top-left (slant)
+function rubiksRand(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = Math.imul(s ^ (s >>> 15), s | 1);
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+    return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function drawRubiksCube(g, x, y, w, h, subParts) {
+  const mode = subParts?.colorMode ?? 0;
+  const seed = subParts?.colorSeed ?? (subParts?.colorIndex ?? 0);
+  const faceColors = subParts?.faceColors ?? [1, 2, 3];
+
+  // Build per-cell color arrays for front, top, right (9 cells each)
+  const frontColors = [], topColors = [], rightColors = [];
+
+  if (mode === 1) {
+    // Solved: each face one solid color
+    for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[faceColors[0] % 6] ?? RUBIKS_COLORS[1]);
+    for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[faceColors[1] % 6] ?? RUBIKS_COLORS[2]);
+    for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[faceColors[2] % 6] ?? RUBIKS_COLORS[3]);
+  } else {
+    // Mixed: scramble all cells from seed
+    const rand = rubiksRand(seed);
+    for (let i = 0; i < 9; i++) frontColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
+    for (let i = 0; i < 9; i++) topColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
+    for (let i = 0; i < 9; i++) rightColors.push(RUBIKS_COLORS[Math.floor(rand() * 6)]);
+  }
+
+  // Geometry
+  const fw = w * 0.70, fh = h * 0.75;
+  const fx = x, fy = y + h * 0.25;
+  const cellW = fw / 3, cellH = fh / 3;
+  const rw = w * 0.30, topH = h * 0.25;
+  const topCellW = fw / 3, topCellSlantX = rw / 3, topCellSlantY = topH / 3;
+
+  // Top face background
   el('path', {
     d: `M${fx},${fy} L${fx+fw},${fy} L${fx+fw+rw},${fy-topH} L${fx+rw},${fy-topH} Z`,
     fill: '#f5f5f5', stroke: '#333', 'stroke-width': 1,
   }, g);
-  // Top face 3x3 grid cells — correct isometric parameterization
-  const topCellW = fw / 3;
-  const topCellSlantX = rw / 3;
-  const topCellSlantY = topH / 3;
+
+  // Top face cells
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       const bx = fx + col * topCellW + row * topCellSlantX;
       const by = fy - row * topCellSlantY;
       el('path', {
         d: `M${bx},${by} L${bx+topCellW},${by} L${bx+topCellW+topCellSlantX},${by-topCellSlantY} L${bx+topCellSlantX},${by-topCellSlantY} Z`,
-        fill: solved ? RUBIKS_SOLVED[1] : colors[(ci + 2) % colors.length], stroke: '#333', 'stroke-width': 0.5,
+        fill: topColors[row * 3 + col], stroke: '#333', 'stroke-width': 0.5,
       }, g);
     }
   }
-  // Front face 3x3 grid
+
+  // Front face cells
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       el('rect', {
-        x: fx + col * cellW + 1,
-        y: fy + row * cellH + 1,
-        width: cellW - 2,
-        height: cellH - 2,
-        fill: solved ? RUBIKS_SOLVED[0] : colors[ci],
+        x: fx + col * cellW + 1, y: fy + row * cellH + 1,
+        width: cellW - 2, height: cellH - 2,
+        fill: frontColors[row * 3 + col],
         stroke: '#333', 'stroke-width': 0.5, rx: 1,
       }, g);
     }
   }
-  // Front face border
   el('rect', { x: fx, y: fy, width: fw, height: fh, fill: 'none', stroke: '#333', 'stroke-width': 1 }, g);
-  // Right face: parallelogram from (fx+fw, fy) to (fx+fw+rw, fy-topH) top, down to (fx+fw+rw, fy-topH+fh)
-  const rightCellH = fh / 3;
-  const rightSlantY = topH / 3;
+
+  // Right face cells
+  const rightCellH = fh / 3, rightSlantY = topH / 3;
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 3; col++) {
-      const ci = (row * 3 + col) % (solved ? 1 : colors.length);
       const bx = fx + fw + col * (rw / 3);
       const by = fy - col * (topH / 3) + row * rightCellH;
       el('path', {
         d: `M${bx},${by} L${bx+rw/3},${by-rightSlantY} L${bx+rw/3},${by-rightSlantY+rightCellH} L${bx},${by+rightCellH} Z`,
-        fill: solved ? RUBIKS_SOLVED[2] : colors[(ci + 4) % colors.length], stroke: '#333', 'stroke-width': 0.5,
+        fill: rightColors[row * 3 + col], stroke: '#333', 'stroke-width': 0.5,
       }, g);
     }
   }
-  // Right face border
   el('path', {
     d: `M${fx+fw},${fy} L${fx+fw+rw},${fy-topH} L${fx+fw+rw},${fy-topH+fh} L${fx+fw},${fy+fh} Z`,
     fill: 'none', stroke: '#333', 'stroke-width': 1,
@@ -646,7 +657,7 @@ export function drawMaterialIcon(subtype, g, x, y, w, h) {
     case 'toyCar':        drawCar(g, x, y, w, h); break;
     case 'dumpTruck':     drawDumpTruck(g, x, y, w, h, null); break;
     case 'fan':           drawFan(g, x, y, w, h, null); break;
-    case 'rubiksCube':    drawRubiksCube(g, x, y, w, h, 0); break;
+    case 'rubiksCube':    drawRubiksCube(g, x, y, w, h, { colorMode: 0, colorSeed: 314159265 }); break;
     case 'string':        el('line', { x1: x, y1: y+h/2, x2: x+w, y2: y+h/2, stroke: '#7B3F00', 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g); break;
     case 'cup':           drawCup(g, x, y, w, h); break;
     case 'bucket':        drawBucket(g, x, y, w, h); break;

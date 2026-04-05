@@ -28,7 +28,7 @@ function makeEnvItem(item) {
     case 'stairs': drawStairs(g, x, y, w, h, item.stepCount || 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h); break;
     case 'couch': drawCouch(g, x, y, w, h, item.couchColor); break;
-    case 'wall': drawWall(g, x, y, w, h); break;
+    case 'wall': drawWall(g, x, y, w, h, item); break;
   }
   const cx = x + w / 2, cy = y + h / 2;
   const rotation = item.rotation || 0;
@@ -62,10 +62,37 @@ function svgLine(g, x1, y1, x2, y2, stroke, width) {
   g.appendChild(l);
 }
 
-function drawWall(g, x, y, w, h) {
-  const NS = 'http://www.w3.org/2000/svg';
+// Mulberry32 seeded PRNG — returns function yielding [0,1) floats
+function seededRand(seed) {
+  let s = (seed >>> 0) || 1;
+  return function() {
+    s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 
-  // Ensure the orange-peel filter exists in SVG defs (add once, reuse)
+// Creates/replaces a <clipPath id=clipId> in SVG defs containing a rect at (x,y,w,h)
+function ensureClipPath(svgEl, clipId, x, y, w, h, NS) {
+  let defs = svgEl.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS(NS, 'defs');
+    svgEl.insertBefore(defs, svgEl.firstChild);
+  }
+  const old = svgEl.getElementById(clipId);
+  if (old) old.remove();
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  defs.appendChild(clip);
+}
+
+function drawWallCream(g, x, y, w, h) {
+  const NS = 'http://www.w3.org/2000/svg';
   const svgEl = g.ownerSVGElement;
   if (svgEl && !svgEl.getElementById('wall-orange-peel')) {
     let defs = svgEl.querySelector('defs');
@@ -144,6 +171,423 @@ function drawWall(g, x, y, w, h) {
   l.setAttribute('stroke', '#8a7a60'); l.setAttribute('stroke-width', 1);
   l.setAttribute('opacity', 0.5);
   g.appendChild(l);
+}
+
+function drawWall(g, x, y, w, h, item = {}) {
+  switch (item.wallStyle || 'cream') {
+    case 'botanical': drawWallBotanical(g, x, y, w, h, item.wallSeed || 0, item.id || 'icon'); break;
+    case 'clapboard': drawWallClapboard(g, x, y, w, h); break;
+    case 'disco':     drawWallDisco(g, x, y, w, h, item.wallSeed || 0, item.id || 'icon'); break;
+    default:          drawWallCream(g, x, y, w, h); break;
+  }
+}
+
+function drawWallClapboard(g, x, y, w, h) {
+  const NS = 'http://www.w3.org/2000/svg';
+  // White background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', x); bg.setAttribute('y', y);
+  bg.setAttribute('width', w); bg.setAttribute('height', h);
+  bg.setAttribute('fill', '#f0f0ee'); bg.setAttribute('stroke', '#b0b0aa');
+  bg.setAttribute('stroke-width', 1.5);
+  g.appendChild(bg);
+
+  // Vertical board lines at fixed 50px spacing
+  const spacing = 50;
+  for (let lx = x + spacing; lx < x + w; lx += spacing) {
+    // Board edge line
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', lx); line.setAttribute('y1', y);
+    line.setAttribute('x2', lx); line.setAttribute('y2', y + h);
+    line.setAttribute('stroke', '#909090'); line.setAttribute('stroke-width', 1.5);
+    g.appendChild(line);
+    // Shadow accent just left of edge
+    const shadow = document.createElementNS(NS, 'line');
+    shadow.setAttribute('x1', lx - 2); shadow.setAttribute('y1', y);
+    shadow.setAttribute('x2', lx - 2); shadow.setAttribute('y2', y + h);
+    shadow.setAttribute('stroke', '#a8a8a4'); shadow.setAttribute('stroke-width', 0.75);
+    shadow.setAttribute('opacity', '0.6');
+    g.appendChild(shadow);
+  }
+
+  // Top ledge
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const l = document.createElementNS(NS, 'line');
+  l.setAttribute('x1', x); l.setAttribute('y1', ledgeY);
+  l.setAttribute('x2', x + w); l.setAttribute('y2', ledgeY);
+  l.setAttribute('stroke', '#b0b0aa'); l.setAttribute('stroke-width', 1);
+  l.setAttribute('opacity', '0.5');
+  g.appendChild(l);
+}
+
+// Draws one arching pinnate fern frond with a fiddlehead spiral at the tip.
+// x0,y0: base position (px). angleDeg: direction angle (0=right, -90=up, 180=left).
+// lengthPx: total frond length in px. color: CSS color string.
+// strokeScale: multiplier for stem/leaf/spiral stroke widths (vary per frond for visual richness)
+function drawFernFrond(cg, x0, y0, angleDeg, lengthPx, color, NS, strokeScale = 1) {
+  const angle = angleDeg * Math.PI / 180;
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  const pCos = Math.cos(angle + Math.PI / 2);
+  const pSin = Math.sin(angle + Math.PI / 2);
+
+  // Tip of stem
+  const tipX = x0 + cos * lengthPx;
+  const tipY = y0 + sin * lengthPx;
+  // Control point arches slightly perpendicular (organic curve)
+  const ctlX = x0 + cos * lengthPx * 0.5 + pCos * lengthPx * 0.08;
+  const ctlY = y0 + sin * lengthPx * 0.5 + pSin * lengthPx * 0.08;
+
+  // Main stem
+  const stem = document.createElementNS(NS, 'path');
+  stem.setAttribute('d', `M ${x0},${y0} Q ${ctlX},${ctlY} ${tipX},${tipY}`);
+  stem.setAttribute('stroke', color); stem.setAttribute('stroke-width', 1.7 * strokeScale);
+  stem.setAttribute('fill', 'none'); stem.setAttribute('stroke-linecap', 'round');
+  cg.appendChild(stem);
+
+  // Pinnate leaflets: 8 pairs along the bezier
+  const numPairs = 8;
+  for (let i = 1; i <= numPairs; i++) {
+    const t = i / (numPairs + 1);
+    // Point on quadratic bezier at t
+    const bx = (1-t)*(1-t)*x0 + 2*t*(1-t)*ctlX + t*t*tipX;
+    const by = (1-t)*(1-t)*y0 + 2*t*(1-t)*ctlY + t*t*tipY;
+    // Leaflet length: wider in the middle, tapering toward tip
+    const scale = Math.sin(t * Math.PI) * 0.85 + 0.15;
+    const lLen = lengthPx * 0.22 * scale;
+
+    for (const side of [-1, 1]) {
+      const lx = bx + pCos * lLen * side;
+      const ly = by + pSin * lLen * side;
+      // Slight forward lean along stem direction
+      const mx = (bx + lx) / 2 + cos * lLen * 0.15;
+      const my = (by + ly) / 2 + sin * lLen * 0.15;
+      const leaf = document.createElementNS(NS, 'path');
+      leaf.setAttribute('d', `M ${bx},${by} Q ${mx},${my} ${lx},${ly}`);
+      leaf.setAttribute('stroke', color); leaf.setAttribute('stroke-width', 0.9 * strokeScale);
+      leaf.setAttribute('fill', 'none');
+      cg.appendChild(leaf);
+    }
+  }
+
+  // Fiddlehead spiral at tip: small outward-curling hook
+  const sr = lengthPx * 0.055;
+  const spiral = document.createElementNS(NS, 'path');
+  spiral.setAttribute('d', [
+    `M ${tipX},${tipY}`,
+    `Q ${tipX + pCos*sr*2 - cos*sr},${tipY + pSin*sr*2 - sin*sr}`,
+    `  ${tipX + pCos*sr*3},${tipY + pSin*sr*3}`,
+    `Q ${tipX + pCos*sr*2 + cos*sr*2},${tipY + pSin*sr*2 + sin*sr*2}`,
+    `  ${tipX + pCos*sr*0.5 + cos*sr*2},${tipY + pSin*sr*0.5 + sin*sr*2}`,
+  ].join(' '));
+  spiral.setAttribute('stroke', color); spiral.setAttribute('stroke-width', 1.2 * strokeScale);
+  spiral.setAttribute('fill', 'none'); spiral.setAttribute('stroke-linecap', 'round');
+  cg.appendChild(spiral);
+}
+
+// Draws a 5-petal flower. size: petal reach from center in px.
+// petalColor/centerColor: CSS color strings.
+function drawCoralFlower(cg, cx, cy, size, petalColor, centerColor, NS) {
+  const fg = document.createElementNS(NS, 'g');
+  fg.setAttribute('transform', `translate(${cx},${cy})`);
+  for (let i = 0; i < 5; i++) {
+    const petal = document.createElementNS(NS, 'ellipse');
+    // Each petal: ellipse above center, rotated i*72° around the flower center
+    petal.setAttribute('cx', 0); petal.setAttribute('cy', -size);
+    petal.setAttribute('rx', size * 0.5); petal.setAttribute('ry', size * 0.8);
+    petal.setAttribute('transform', `rotate(${i * 72})`);
+    petal.setAttribute('fill', petalColor);
+    petal.setAttribute('stroke', '#2a2a2a'); petal.setAttribute('stroke-width', 0.8);
+    fg.appendChild(petal);
+  }
+  const ctr = document.createElementNS(NS, 'circle');
+  ctr.setAttribute('cx', 0); ctr.setAttribute('cy', 0); ctr.setAttribute('r', size * 0.42);
+  ctr.setAttribute('fill', centerColor);
+  ctr.setAttribute('stroke', '#2a2a2a'); ctr.setAttribute('stroke-width', 0.8);
+  fg.appendChild(ctr);
+  cg.appendChild(fg);
+}
+
+function drawWallBotanical(g, x, y, w, h, seed, id) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const rnd = seededRand(seed);
+  const sc = 15; // fixed px scale — one tile is 450×375px
+
+  const tileW = 30 * sc; // 450px
+  const tileH = 25 * sc; // 375px
+
+  // localDefs holds the clipPath (wall bounds) + SVG <pattern> (tiles the motifs)
+  const clipId = `wp-clip-${id}`;
+  const patId  = `wp-pat-${id}`;
+  const localDefs = document.createElementNS(NS, 'defs');
+
+  // ClipPath — clips the tiled fill to the wall rect
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  localDefs.appendChild(clip);
+
+  // SVG <pattern> — content drawn at 0,0 relative coords, tiles automatically
+  const pat = document.createElementNS(NS, 'pattern');
+  pat.setAttribute('id', patId);
+  pat.setAttribute('x', x); pat.setAttribute('y', y); // anchor to wall top-left
+  pat.setAttribute('width', tileW); pat.setAttribute('height', tileH);
+  pat.setAttribute('patternUnits', 'userSpaceOnUse');
+
+  // Seeded fern greens (3 slight variations)
+  const fernH = 110 + rnd() * 20;
+  const fernS = 35 + rnd() * 15;
+  const fernL = 28 + rnd() * 12;
+  const fern1 = `hsl(${fernH | 0},${fernS | 0}%,${fernL | 0}%)`;
+  const fern2 = `hsl(${(fernH + 8*rnd()) | 0},${(fernS - 5) | 0}%,${(fernL + 5) | 0}%)`;
+  const fern3 = `hsl(${(fernH - 5*rnd()) | 0},${(fernS + 8) | 0}%,${(fernL - 4) | 0}%)`;
+
+  // Seeded flower colors (pastel coral/rose/peach range)
+  const fh1 = rnd() * 22;
+  const flower1  = `hsl(${fh1 | 0},${(72 + rnd()*14) | 0}%,${(66 + rnd()*10) | 0}%)`;
+  const flower1c = `hsl(${fh1 | 0},${(50 + rnd()*15) | 0}%,${(80 + rnd()*8) | 0}%)`;
+  const fh2 = rnd() * 18;
+  const flower2  = `hsl(${fh2 | 0},${(68 + rnd()*14) | 0}%,${(63 + rnd()*12) | 0}%)`;
+  const flower2c = `hsl(${fh2 | 0},${(45 + rnd()*15) | 0}%,${(78 + rnd()*8) | 0}%)`;
+
+  // Tile background
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+  bg.setAttribute('width', tileW); bg.setAttribute('height', tileH);
+  bg.setAttribute('fill', '#f5f0e4');
+  pat.appendChild(bg);
+
+  // Branch helper — all coords are pattern-relative (0,0 origin)
+  const p = (dx, dy) => `${dx*sc},${dy*sc}`;
+  function branch(d, sw) {
+    const el = document.createElementNS(NS, 'path');
+    el.setAttribute('d', d); el.setAttribute('stroke', '#2a2a2a');
+    el.setAttribute('stroke-width', sw); el.setAttribute('fill', 'none');
+    el.setAttribute('stroke-linecap', 'round');
+    pat.appendChild(el);
+  }
+
+  // Two thin branch structures (pattern-relative coords)
+  branch(`M ${p(1.5,25)} Q ${p(1,15)} ${p(2,5)} Q ${p(2.5,1)} ${p(4,-1)}`, 3.5);
+  branch(`M ${p(1.8,18)} Q ${p(-0.5,15)} ${p(-2.5,13)}`, 2);
+  branch(`M ${p(2.2,12)} Q ${p(6,9)} ${p(10,7)}`, 2);
+  branch(`M ${p(18,25)} Q ${p(19,15)} ${p(18,5)} Q ${p(17,1)} ${p(16,-1)}`, 3);
+  branch(`M ${p(18.5,18)} Q ${p(21,15)} ${p(24,13)}`, 1.8);
+  branch(`M ${p(18,12)} Q ${p(14,9)} ${p(11,7)}`, 1.8);
+  branch(`M ${p(11,7)} Q ${p(14,5)} ${p(16,3)}`, 1.5);
+
+  // Fern fronds — varied strokeScale for leaf thickness variety
+  const fl = sc * 8;
+  drawFernFrond(pat, -2*sc,   13*sc, -40,  fl * 1.1, fern1, NS, 2.0); // thick
+  drawFernFrond(pat, -2*sc,   13*sc, -10,  fl * 0.9, fern2, NS, 1.0); // normal
+  drawFernFrond(pat,  2.2*sc, 12*sc, -70,  fl * 0.95,fern1, NS, 1.6); // medium-thick
+  drawFernFrond(pat,  4*sc,   -1*sc, -50,  fl * 0.8, fern3, NS, 1.3); // medium
+  drawFernFrond(pat, 24*sc,   13*sc, -140, fl * 1.05,fern2, NS, 1.8); // thick
+  drawFernFrond(pat, 24*sc,   13*sc, -160, fl * 0.9, fern1, NS, 1.0); // normal
+  drawFernFrond(pat, 18*sc,   12*sc, -110, fl * 0.9, fern3, NS, 1.5); // medium
+  drawFernFrond(pat,  1.5*sc, 25*sc,  200, fl * 0.65,fern2, NS, 2.2); // thick base
+  drawFernFrond(pat, 18*sc,   25*sc,  160, fl * 0.65,fern1, NS, 1.8); // thick base
+  if (rnd() > 0.3) {
+    drawFernFrond(pat, 11*sc, 8*sc, -90, fl * 0.7, fern3, NS, 1.2);
+  }
+
+  // Coral flowers
+  drawCoralFlower(pat, 12*sc, 10*sc, sc * 1.6, flower1, flower1c, NS);
+  drawCoralFlower(pat,  7*sc, 17*sc, sc * 1.2, flower2, flower2c, NS);
+  if (rnd() > 0.4) {
+    drawCoralFlower(pat, 20*sc, 16*sc, sc * 1.1, flower1, flower1c, NS);
+  }
+
+  // Small line-art daisies
+  function daisy(dcx, dcy, dsize) {
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 72 - 90) * Math.PI / 180;
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', dcx + Math.cos(a) * dsize);
+      c.setAttribute('cy', dcy + Math.sin(a) * dsize);
+      c.setAttribute('r', dsize * 0.55);
+      c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#2a2a2a'); c.setAttribute('stroke-width', 0.75);
+      pat.appendChild(c);
+    }
+    const cc = document.createElementNS(NS, 'circle');
+    cc.setAttribute('cx', dcx); cc.setAttribute('cy', dcy); cc.setAttribute('r', dsize * 0.35);
+    cc.setAttribute('fill', 'none'); cc.setAttribute('stroke', '#2a2a2a'); cc.setAttribute('stroke-width', 0.75);
+    pat.appendChild(cc);
+  }
+  daisy( 5*sc,  8*sc, sc * 0.70);
+  daisy(15*sc,  5*sc, sc * 0.65);
+  daisy(22*sc,  9*sc, sc * 0.60);
+  daisy( 9*sc, 20*sc, sc * 0.55);
+
+  localDefs.appendChild(pat);
+  g.appendChild(localDefs);
+
+  // Clipped group: one wall-sized rect filled with the tiling pattern
+  const cg = document.createElementNS(NS, 'g');
+  cg.setAttribute('clip-path', `url(#${clipId})`);
+  const fill = document.createElementNS(NS, 'rect');
+  fill.setAttribute('x', x); fill.setAttribute('y', y);
+  fill.setAttribute('width', w); fill.setAttribute('height', h);
+  fill.setAttribute('fill', `url(#${patId})`);
+  cg.appendChild(fill);
+  g.appendChild(cg);
+
+  // Wall border and ledge drawn on top (not clipped)
+  const border = document.createElementNS(NS, 'rect');
+  border.setAttribute('x', x); border.setAttribute('y', y);
+  border.setAttribute('width', w); border.setAttribute('height', h);
+  border.setAttribute('fill', 'none'); border.setAttribute('stroke', '#8a7a60');
+  border.setAttribute('stroke-width', 1.5);
+  g.appendChild(border);
+
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const ledge = document.createElementNS(NS, 'line');
+  ledge.setAttribute('x1', x); ledge.setAttribute('y1', ledgeY);
+  ledge.setAttribute('x2', x + w); ledge.setAttribute('y2', ledgeY);
+  ledge.setAttribute('stroke', '#8a7a60'); ledge.setAttribute('stroke-width', 1);
+  ledge.setAttribute('opacity', '0.5');
+  g.appendChild(ledge);
+}
+
+function drawWallDisco(g, x, y, w, h, seed, id) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const rnd = seededRand(seed);
+  const sc = 15; // fixed px scale — pattern renders at 450×375px regardless of cm scale
+
+  // clipPath and glow filter live inside g so they work before g is in the DOM
+  const clipId = `wp-clip-${id}`;
+  const glowId = `wp-glow-${id}`;
+  const localDefs = document.createElementNS(NS, 'defs');
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const cr = document.createElementNS(NS, 'rect');
+  cr.setAttribute('x', x); cr.setAttribute('y', y);
+  cr.setAttribute('width', w); cr.setAttribute('height', h);
+  clip.appendChild(cr);
+  localDefs.appendChild(clip);
+  const filt = document.createElementNS(NS, 'filter');
+  filt.setAttribute('id', glowId);
+  filt.setAttribute('x', '-30%'); filt.setAttribute('y', '-30%');
+  filt.setAttribute('width', '160%'); filt.setAttribute('height', '160%');
+  const blur = document.createElementNS(NS, 'feGaussianBlur');
+  blur.setAttribute('stdDeviation', '5'); blur.setAttribute('result', 'b');
+  const merge = document.createElementNS(NS, 'feMerge');
+  const mn1 = document.createElementNS(NS, 'feMergeNode'); mn1.setAttribute('in', 'b');
+  const mn2 = document.createElementNS(NS, 'feMergeNode'); mn2.setAttribute('in', 'SourceGraphic');
+  merge.appendChild(mn1); merge.appendChild(mn2);
+  filt.appendChild(blur); filt.appendChild(merge);
+  localDefs.appendChild(filt);
+  g.appendChild(localDefs);
+
+  const cg = document.createElementNS(NS, 'g');
+  cg.setAttribute('clip-path', `url(#${clipId})`);
+
+  // Scene always fills the full wall — beams use fractions of w/h so any size looks right
+  const W = w, H = h;
+
+  // Seed-derived colors: two complementary hues
+  const hue1 = rnd() * 360;
+  const hue2 = (hue1 + 115 + rnd() * 90) % 360;
+  // Beam count: 4-8 per side (8-16 total)
+  const beamCount = Math.floor(4 + rnd() * 5);
+  // Small angle variation for organic feel (fraction of W)
+  const angleVar = rnd() * 0.06; // fraction of W (was 0.18 * sc / 30*sc)
+
+  // Background fills full wall
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('x', x); bg.setAttribute('y', y);
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', `hsl(${hue1 | 0},20%,4%)`);
+  cg.appendChild(bg);
+
+  // Beams with glow — all positions as fractions of W and H
+  const beamGroup = document.createElementNS(NS, 'g');
+  beamGroup.setAttribute('filter', `url(#${glowId})`);
+
+  // Left-origin beams: sources across left 47% of W, raking to right
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + t * 0.467 * W;
+    const dstX = x + (0.267 + t * (0.467 + angleVar)) * W;
+    const alpha = (0.48 - i * 0.02).toFixed(2);
+    // Per-beam width variation — each cone has its own spread
+    const bwSrc = W * (0.004 + rnd() * 0.022);
+    const bwDst = W * (0.008 + rnd() * 0.045);
+    const beam = document.createElementNS(NS, 'polygon');
+    beam.setAttribute('points',
+      `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
+    beam.setAttribute('fill', `hsla(${hue1 | 0},90%,62%,${alpha})`);
+    beamGroup.appendChild(beam);
+  }
+
+  // Right-origin beams: sources across right 47% of W, raking to left
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + (0.533 + t * 0.467) * W;
+    const dstX = x + (0.067 + t * (0.467 - angleVar)) * W;
+    const alpha = (0.48 - i * 0.02).toFixed(2);
+    const bwSrc = W * (0.004 + rnd() * 0.022);
+    const bwDst = W * (0.008 + rnd() * 0.045);
+    const beam = document.createElementNS(NS, 'polygon');
+    beam.setAttribute('points',
+      `${srcX - bwSrc},${y} ${srcX + bwSrc},${y} ${dstX + bwDst},${y + H} ${dstX - bwDst},${y + H}`);
+    beam.setAttribute('fill', `hsla(${hue2 | 0},90%,62%,${alpha})`);
+    beamGroup.appendChild(beam);
+  }
+
+  // Crossing-zone glow at center
+  const glow = document.createElementNS(NS, 'ellipse');
+  glow.setAttribute('cx', x + 0.5 * W); glow.setAttribute('cy', y + 0.72 * H);
+  glow.setAttribute('rx', 0.133 * W);   glow.setAttribute('ry', 0.1 * H);
+  glow.setAttribute('fill', `hsla(${((hue1 + hue2) / 2) | 0},60%,90%,0.15)`);
+  beamGroup.appendChild(glow);
+
+  cg.appendChild(beamGroup);
+
+  // Fixture dots: left group (hue1 tinted)
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + t * 0.467 * W;
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
+    dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', `hsl(${(hue1 + 40) | 0},90%,80%)`);
+    dot.setAttribute('opacity', '0.9');
+    cg.appendChild(dot);
+  }
+  // Fixture dots: right group (hue2 tinted)
+  for (let i = 0; i < beamCount; i++) {
+    const t = beamCount > 1 ? i / (beamCount - 1) : 0.5;
+    const srcX = x + (0.533 + t * 0.467) * W;
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', srcX); dot.setAttribute('cy', y + 3);
+    dot.setAttribute('r', '2.5');
+    dot.setAttribute('fill', `hsl(${(hue2 + 40) | 0},90%,80%)`);
+    dot.setAttribute('opacity', '0.9');
+    cg.appendChild(dot);
+  }
+
+  g.appendChild(cg);
+
+  // Wall border (colored with hue1 for atmosphere)
+  const border = document.createElementNS(NS, 'rect');
+  border.setAttribute('x', x); border.setAttribute('y', y);
+  border.setAttribute('width', w); border.setAttribute('height', h);
+  border.setAttribute('fill', 'none');
+  border.setAttribute('stroke', `hsl(${hue1 | 0},55%,35%)`);
+  border.setAttribute('stroke-width', '1.5');
+  g.appendChild(border);
+
+  // Top ledge
+  const ledgeY = y + Math.min(3, h * 0.05);
+  const ledge = document.createElementNS(NS, 'line');
+  ledge.setAttribute('x1', x); ledge.setAttribute('y1', ledgeY);
+  ledge.setAttribute('x2', x + w); ledge.setAttribute('y2', ledgeY);
+  ledge.setAttribute('stroke', `hsl(${hue1 | 0},55%,35%)`);
+  ledge.setAttribute('stroke-width', '1'); ledge.setAttribute('opacity', '0.5');
+  g.appendChild(ledge);
 }
 
 function drawDesk(g, x, y, w, h) {
@@ -331,6 +775,6 @@ export function drawEnvIcon(subtype, g, x, y, w, h) {
     case 'stairs':    drawStairs(g, x, y, w, h, 6); break;
     case 'bookshelf': drawBookshelf(g, x, y, w, h, Math.max(1, Math.min(w, h) * 0.05)); break;
     case 'couch':     drawCouch(g, x, y, w, h, 'blue'); break;
-    case 'wall':      drawWall(g, x, y, w, h); break;
+    case 'wall':      drawWall(g, x, y, w, h, { wallStyle: 'cream', wallSeed: 0, id: 'icon' }); break;
   }
 }
