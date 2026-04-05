@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rube Goldberg Planner</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header id="toolbar">
+    <input id="team-name" type="text" value="Team Name" spellcheck="false">
+    <div id="site-title">
+      <span id="site-title-brand">RUBE GOLDBERG</span>
+      <span id="site-title-sub">Planning Site</span>
+    </div>
+    <div class="toolbar-actions">
+      <button id="btn-undo" disabled>Undo</button>
+      <button id="btn-redo" disabled>Redo</button>
+      <button id="btn-help">? Help</button>
+      <button id="btn-download">Download</button>
+      <label id="btn-upload">Upload<input type="file" accept="image/png" hidden></label>
+    </div>
+  </header>
+  <main>
+    <aside id="library">
+      <section class="lib-section" id="lib-machines">
+        <h3>Simple Machines <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+      <section class="lib-section" id="lib-materials">
+        <h3>Materials <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+      <section class="lib-section" id="lib-environment">
+        <h3>Environment <button class="collapse-btn">▾</button></h3>
+        <div class="lib-items"></div>
+      </section>
+    </aside>
+    <div id="canvas-wrapper">
+      <button id="btn-reset-view" title="Reset view" aria-label="Reset view">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#ff7b2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="1" width="18" height="18" rx="3"/>
+          <path d="M12 4H16V8M16 4L11 9"/>
+          <path d="M8 16H4V12M4 16L9 11"/>
+        </svg>
+      </button>
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+        <g id="viewport">
+          <g id="layer-environment"></g>
+          <g id="layer-materials"></g>
+          <g id="layer-machines"></g>
+          <g id="layer-connections"></g>
+          <g id="layer-ui"></g>
+        </g>
+      </svg>
+      <div id="comment-overlays"></div>
+    </div>
+    <aside id="tracker">
+      <h3>Requirements</h3>
+      <ul id="machine-checklist"></ul>
+      <h3>Steps</h3>
+      <div id="step-mode-cards">
+        <button class="mode-card" id="mode-card-auto" data-mode="auto">
+          <span class="mode-card-title">AUTO</span>
+          <span class="mode-card-desc">Counts connections</span>
+        </button>
+        <button class="mode-card" id="mode-card-flags" data-mode="flags">
+          <span class="mode-card-title">FLAGS</span>
+          <span class="mode-card-desc">You mark steps</span>
+        </button>
+      </div>
+      <div id="step-counter"></div>
+      <div id="flag-drag-widget" class="lib-item" draggable="true"
+           data-subtype="flag" data-type="marker"
+           data-default-w="8" data-default-h="24" hidden>
+        <svg width="20" height="36" viewBox="0 0 8 24" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <rect x="1" y="0" width="6" height="9" rx="1" fill="#ef476f"/>
+          <text id="flag-widget-number" x="4" y="7" text-anchor="middle" font-size="5" fill="white" font-family="monospace" font-weight="bold">1</text>
+          <line x1="4" y1="9" x2="4" y2="22" stroke="#4a7a9a" stroke-width="1.5"/>
+          <circle cx="4" cy="22" r="2" fill="#4a7a9a"/>
+        </svg>
+        <div>
+          <span class="flag-widget-label">STEP FLAG</span>
+          <span class="flag-widget-sub">Drag to canvas</span>
+        </div>
+      </div>
+      <h3>Bill of Materials</h3>
+      <ul id="bom-list"></ul>
+      <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSd_zhFTqrGNFIW_5pb085I43G6E3_0prDMbPdYu8rmgtfO3xg/viewform?usp=dialog" target="_blank" rel="noopener noreferrer">FEEDBACK</a>
+      <div id="version-label">v2.9.8</div>
+    </aside>
+  </main>
+  <!-- Welcome overlay -->
+  <div id="welcome-modal">
+    <div id="welcome-backdrop"></div>
+    <div id="welcome-panel">
+      <button id="welcome-close">✕</button>
+      <!-- Left: illustration -->
+      <div id="welcome-left">
+        <svg width="260" height="220" viewBox="0 0 130 110" xmlns="http://www.w3.org/2000/svg">
+          <!-- Floor -->
+          <line x1="0" y1="90" x2="130" y2="90" stroke="#4a7a9a" stroke-width="2"/>
+          <!-- Lever bar -->
+          <rect x="8" y="66" width="38" height="6" fill="#8B4513" rx="1"/>
+          <!-- Lever fulcrum -->
+          <polygon points="27,72 31,84 23,84" fill="#8B4513"/>
+          <!-- Ball -->
+          <circle cx="60" cy="60" r="9" fill="#e8e8e8" stroke="#aaa" stroke-width="1"/>
+          <!-- Inclined plane -->
+          <polygon points="76,90 118,90 118,52" fill="#7a8a9a" stroke="#556" stroke-width="1"/>
+          <!-- Domino -->
+          <rect x="82" y="80" width="7" height="12" fill="#1a3a5c" stroke="#4a7a9a" stroke-width="1" rx="1"/>
+          <!-- Arrows: lever → ball -->
+          <line x1="46" y1="69" x2="57" y2="64" stroke="#00c9a7" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <polygon points="57,64 51,62 52,68" fill="#00c9a7"/>
+          <!-- Arrows: ball → plane -->
+          <line x1="69" y1="64" x2="76" y2="72" stroke="#00c9a7" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <polygon points="76,72 70,70 72,76" fill="#00c9a7"/>
+        </svg>
+        <div id="welcome-left-caption">Build a chain reaction<br>with simple machines</div>
+      </div>
+      <!-- Right: form -->
+      <div id="welcome-right">
+        <div id="welcome-brand">RUBE GOLDBERG</div>
+        <div id="welcome-title">Planning Site</div>
+        <div id="welcome-desc">Use 3+ simple machines and<br>5+ connected steps.</div>
+        <div class="welcome-field-label">TEAM NAME</div>
+        <input id="welcome-team-input" type="text" placeholder="e.g. Team Rocket" autocomplete="off" spellcheck="false">
+        <div id="welcome-buttons">
+          <button id="welcome-start">START →</button>
+          <button id="welcome-help">? Help</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-modal" class="help-hidden">
+    <div id="help-backdrop"></div>
+    <div id="help-panel">
+      <div id="help-header">
+        <span>? HELP</span>
+        <button id="help-close">✕</button>
+      </div>
+      <div id="help-tabs">
+        <button class="help-tab active" data-tab="guide">GETTING STARTED</button>
+        <button class="help-tab" data-tab="ref">QUICK REFERENCE</button>
+      </div>
+      <div id="help-body"></div>
+    </div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

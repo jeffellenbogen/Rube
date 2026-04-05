@@ -1,0 +1,551 @@
+import { initCanvas, getLayers, cmToPx, pxToCm, getRoomDimensions, screenToCanvas, setOnViewChange, FLOOR_Y, getViewport, setViewport, resetViewport, zoomAtPoint, panBy } from './canvas.js';
+import { getState, addComponent, addEnvItem, removeComponent, removeEnvItem, removeConnection, updateComponent, updateEnvItem, loadState, setTitle, setState } from './state.js';
+import { render } from './render/index.js';
+import { drawMachineIcon } from './render/machines.js';
+import { drawMaterialIcon, drawFlagIcon } from './render/materials.js';
+import { drawEnvIcon } from './render/environment.js';
+import { undo, redo, canUndo, canRedo, push as undoPush, reset as undoReset } from './undo.js';
+import { toggleComment, repositionOverlays } from './comments.js';
+import { updateTrackerUI } from './tracker-ui.js';
+import { initDrag, getSelected, setSelected, getSelectedIds, setSelectedIds, copySelection, pasteSelection } from './drag.js';
+import { deleteConnection } from './connections.js';
+import { downloadPNG, uploadPNG } from './export.js';
+import { initHelp } from './help.js';
+import { initWelcome } from './welcome.js';
+
+const CATALOG = {
+  machines: [
+    { subtype: 'lever', label: 'Lever', type: 'simple_machine', defaultW: 60, defaultH: 16 },
+    { subtype: 'pulley', label: 'Pulley', type: 'simple_machine', defaultW: 15, defaultH: 20 },
+    { subtype: 'inclinedPlane', label: 'Inclined Plane', type: 'simple_machine', defaultW: 80, defaultH: 40 },
+    { subtype: 'wheelAxle', label: 'Wheel & Axle', type: 'simple_machine', defaultW: 20, defaultH: 20 },
+    { subtype: 'wedge', label: 'Wedge', type: 'simple_machine', defaultW: 20, defaultH: 15 },
+    { subtype: 'screw', label: 'Screw', type: 'simple_machine', defaultW: 10, defaultH: 20 },
+  ],
+  materials: [
+    { subtype: 'domino', label: 'Domino', type: 'material', defaultW: 12, defaultH: 24 },
+    { subtype: 'ball', label: 'Ball', type: 'material', defaultW: 18, defaultH: 18 },
+    { subtype: 'toyCar', label: 'Toy Car', type: 'material', defaultW: 30, defaultH: 18 },
+    { subtype: 'dumpTruck', label: 'Dump Truck', type: 'material', defaultW: 50, defaultH: 24 },
+    { subtype: 'string', label: 'String', type: 'material', defaultW: 40, defaultH: 2 },
+    { subtype: 'cup', label: 'Cup', type: 'material', defaultW: 22, defaultH: 16 },
+    { subtype: 'bucket', label: 'Bucket', type: 'material', defaultW: 20, defaultH: 24 },
+    { subtype: 'funnel', label: 'Funnel', type: 'material', defaultW: 15, defaultH: 20 },
+    { subtype: 'tube', label: 'Tube', type: 'material', defaultW: 40, defaultH: 10 },
+    { subtype: 'box', label: 'Crate', type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'cardboard', label: 'Cardboard', type: 'material', defaultW: 120, defaultH: 60 },
+    { subtype: 'yardstick', label: 'Yardstick', type: 'material', defaultW: 108, defaultH: 6 },
+    { subtype: 'protractor', label: 'Protractor', type: 'material', defaultW: 20, defaultH: 10 },
+    { subtype: 'matchboxTrack', label: 'Car Track', type: 'material', defaultW: 40, defaultH: 8 },
+    { subtype: 'book', label: 'Book', type: 'material', defaultW: 10, defaultH: 30 },
+    { subtype: 'fan', label: 'Fan', type: 'material', defaultW: 36, defaultH: 40 },
+    { subtype: 'rubiksCube', label: "Rubik's Cube", type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'spring', label: 'Spring', type: 'material', defaultW: 10, defaultH: 20 },
+    { subtype: 'custom', label: '? Custom', type: 'material', defaultW: 24, defaultH: 24 },
+    { subtype: 'person', label: 'Person', type: 'marker', defaultW: 40, defaultH: 60 },
+  ],
+  environment: [
+    { subtype: 'desk', label: 'Desk', type: 'environment', defaultW: 80, defaultH: 75 },
+    { subtype: 'chair', label: 'Chair', type: 'environment', defaultW: 45, defaultH: 80 },
+    { subtype: 'stairs', label: 'Stairs', type: 'environment', defaultW: 80, defaultH: 60 },
+    { subtype: 'bookshelf', label: 'Bookshelf', type: 'environment', defaultW: 40, defaultH: 120 },
+    { subtype: 'couch', label: 'Couch', type: 'environment', defaultW: 140, defaultH: 55 },
+    { subtype: 'wall', label: 'Wall', type: 'environment', defaultW: 10, defaultH: 80 },
+  ]
+};
+
+function makeComponentIcon(item) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const SIZE = 36, PAD = 3, INNER = SIZE - PAD * 2;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', SIZE);
+  svg.setAttribute('height', SIZE);
+  svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+  svg.setAttribute('overflow', 'hidden');
+  svg.style.flexShrink = '0';
+
+  const scale = Math.min(INNER / item.defaultW, INNER / item.defaultH);
+  let iw = Math.max(item.defaultW * scale, 8);
+  let ih = Math.max(item.defaultH * scale, 8);
+  // Lever is very flat by default; give it more height so the bar and fulcrum are legible
+  if (item.subtype === 'lever') { ih = INNER * 0.65; iw = INNER; }
+  let ox = PAD + (INNER - iw) / 2;
+  let oy = PAD + (INNER - ih) / 2;
+  // Bucket handle arcs 19.6% above the component top; scale to fit full visual height
+  if (item.subtype === 'bucket') {
+    const OVERHANG = 0.196;
+    const bs = Math.min(INNER / item.defaultW, INNER / (item.defaultH * (1 + OVERHANG)));
+    iw = item.defaultW * bs;
+    ih = item.defaultH * bs;
+    ox = PAD + (INNER - iw) / 2;
+    oy = PAD + ih * OVERHANG;
+  }
+
+  const g = document.createElementNS(NS, 'g');
+  svg.appendChild(g);
+
+  if (item.type === 'simple_machine')  drawMachineIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'material')   drawMaterialIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.type === 'environment') drawEnvIcon(item.subtype, g, ox, oy, iw, ih);
+  else if (item.subtype === 'person')  drawMaterialIcon('person', g, ox, oy, iw, ih);
+  else if (item.subtype === 'flag')     drawFlagIcon(g, ox, oy, iw, ih);
+  return svg;
+}
+
+function buildLibrary() {
+  for (const [section, items] of Object.entries(CATALOG)) {
+    const container = document.querySelector(`#lib-${section} .lib-items`);
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = 'lib-item';
+      div.draggable = true;
+      div.dataset.catalog = JSON.stringify(item);
+      div.appendChild(makeComponentIcon(item));
+      const label = document.createElement('span');
+      label.textContent = item.label;
+      div.appendChild(label);
+      div.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('catalog', JSON.stringify(item));
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      container.appendChild(div);
+    }
+  }
+}
+
+function promptCustomName(compId) {
+  const state = getState();
+  const comp = state.components.find(c => c.id === compId);
+  if (!comp) return;
+
+  const wrapper = document.getElementById('canvas-wrapper');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'custom-name-input';
+  input.placeholder = 'Name this item...';
+  input.maxLength = 30;
+  input.value = comp.name || '';
+
+  const rect = wrapper.getBoundingClientRect();
+  import('./canvas.js').then(({ canvasToScreen }) => {
+    const pos = canvasToScreen(comp.x + comp.width / 2, comp.y + comp.height / 2);
+    input.style.left = `${pos.x - rect.left - 60}px`;
+    input.style.top = `${pos.y - rect.top - 12}px`;
+  });
+
+  wrapper.appendChild(input);
+  input.focus();
+
+  const finish = () => {
+    const name = input.value.trim() || '?';
+    updateComponent(compId, { name });
+    input.remove();
+    render();
+  };
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); finish(); } });
+  input.addEventListener('blur', finish);
+}
+
+function defaultSubParts(subtype) {
+  const defaults = {
+    lever: { fulcrumOffset: 0.5, tiltSide: 'none' },
+    pulley: { leftCordLength: 20, rightCordLength: 20, leftCordAngle: 0, rightCordAngle: 0 },
+    inclinedPlane: { angle: 30 },
+    wheelAxle: {},
+    screw: {},
+    matchboxTrack: { angle: 0 },
+    domino: { topValue: Math.floor(Math.random() * 7), bottomValue: Math.floor(Math.random() * 7) },
+    box:    { colorIndex: Math.floor(Math.random() * 4) },
+    book:   { colorIndex: Math.floor(Math.random() * 5) },
+    fan:    { direction: 'right' },
+    rubiksCube: { colorIndex: Math.floor(Math.random() * 4) },
+    dumpTruck: { bedState: 'down' },
+    funnel: { openingWidth: 1.0 },
+    spring: { state: 'compressed' },
+    person: { pose: 'push' },
+  };
+  return defaults[subtype] || {};
+}
+
+const svgEl = document.getElementById('canvas');
+const canvasWrapper = document.getElementById('canvas-wrapper');
+initCanvas(svgEl);
+setOnViewChange(repositionOverlays());
+initDrag(svgEl);
+
+// Wheel on canvas area (SVG + comment overlays): handle zoom and pan.
+// Allow textarea scroll (two-finger scroll on comment bubbles) but intercept pinch.
+canvasWrapper.addEventListener('wheel', e => {
+  if (e.ctrlKey) {
+    // Pinch-to-zoom: Mac trackpad fires ctrlKey=true for pinch gesture
+    e.preventDefault();
+    zoomAtPoint(e.clientX, e.clientY, -e.deltaY * 0.01);
+    render();
+  } else if (!e.target.closest('textarea')) {
+    // Two-finger scroll → pan canvas; let textareas scroll normally
+    e.preventDefault();
+    const { zoom } = getViewport();
+    const bPx = svgEl.clientWidth / 800;
+    panBy(-e.deltaX / (bPx * zoom), -e.deltaY / (bPx * zoom));
+    render();
+  }
+}, { passive: false });
+
+// Block browser pinch-zoom anywhere outside the canvas (panels, header, etc.)
+document.addEventListener('wheel', e => {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
+
+// Draw floor (always present, not in state)
+function drawFloor() {
+  const { roomW } = getRoomDimensions();
+  const layers = getLayers();
+  const floorYpx = cmToPx(FLOOR_Y);
+  let floor = layers.environment.querySelector('.floor-line');
+  if (!floor) {
+    floor = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    floor.classList.add('floor-line');
+    floor.setAttribute('stroke', '#4a7a9a');
+    floor.setAttribute('stroke-width', '4');
+    layers.environment.prepend(floor);
+  }
+  floor.setAttribute('x1', 0);
+  floor.setAttribute('y1', floorYpx);
+  floor.setAttribute('x2', cmToPx(roomW));
+  floor.setAttribute('y2', floorYpx);
+}
+
+drawFloor();
+initMarkers();
+render();
+
+
+svgEl.addEventListener('click', e => {
+  // Action buttons take priority (including delete-conn on connections)
+  const actionEl = e.target.closest('[data-action]');
+  if (actionEl) {
+    const { action, targetId, connId } = actionEl.dataset;
+    if (action === 'delete-conn') {
+      undoPush();
+      // If it's a cord connection, retract the cord end slightly so it jumps away visually
+      const CORD_PTS = new Set(['cordLeft', 'cordRight', 'end1', 'end2']);
+      const s0 = getState();
+      const conn0 = s0.connections.find(c => c.id === connId);
+      if (conn0) {
+        const cordPoint = CORD_PTS.has(conn0.fromPoint) ? conn0.fromPoint : CORD_PTS.has(conn0.toPoint) ? conn0.toPoint : null;
+        const cordCompId = cordPoint === conn0.fromPoint ? conn0.fromId : conn0.toId;
+        const cordComp = cordPoint && s0.components.find(c => c.id === cordCompId);
+        if (cordComp) {
+          const sp = cordComp.subParts || {};
+          if (cordPoint === 'cordLeft') {
+            updateComponent(cordCompId, { subParts: { ...sp, leftCordLength: Math.max(5, (sp.leftCordLength || 20) - 15) } });
+          } else if (cordPoint === 'cordRight') {
+            updateComponent(cordCompId, { subParts: { ...sp, rightCordLength: Math.max(5, (sp.rightCordLength || 20) - 15) } });
+          } else if (cordPoint === 'end1' || cordPoint === 'end2') {
+            const x1 = sp.x1 ?? cordComp.x, y1 = sp.y1 ?? (cordComp.y + cordComp.height / 2);
+            const x2 = sp.x2 ?? (cordComp.x + cordComp.width), y2 = sp.y2 ?? (cordComp.y + cordComp.height / 2);
+            const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+            const r = Math.min(10, len * 0.2);
+            if (cordPoint === 'end1') {
+              updateComponent(cordCompId, { subParts: { ...sp, x1: x1 + (x2 - x1) / len * r, y1: y1 + (y2 - y1) / len * r } });
+            } else {
+              updateComponent(cordCompId, { subParts: { ...sp, x2: x2 + (x1 - x2) / len * r, y2: y2 + (y1 - y2) / len * r } });
+            }
+          }
+        }
+      }
+      deleteConnection(connId);
+      setSelectedIds(getSelectedIds().filter(id => id !== connId));
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    // fall through to handle other actions below
+    if (action === 'delete') {
+      undoPush();
+      const state = getState();
+      if (state.environment.find(en => en.id === targetId)) removeEnvItem(targetId);
+      else removeComponent(targetId);
+      setSelected(null);
+      render(); updateUndoButtons(); updateTrackerUI();
+      return;
+    }
+    if (action === 'step-inc' || action === 'step-dec') {
+      const state = getState();
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) {
+        const oldCount = envItem.stepCount || 6;
+        const newCount = action === 'step-inc' ? Math.min(12, oldCount + 1) : Math.max(3, oldCount - 1);
+        if (newCount !== oldCount) {
+          undoPush();
+          const newWidth = newCount * (envItem.width / oldCount);
+          const newHeight = newCount * (envItem.height / oldCount);
+          const bottomY = envItem.y + envItem.height;
+          updateEnvItem(targetId, { stepCount: newCount, width: newWidth, height: newHeight, y: bottomY - newHeight });
+          render(); updateUndoButtons();
+        }
+      }
+      return;
+    }
+    if (action === 'comment') { toggleComment(targetId); render(); return; }
+    if (action === 'rotate') {
+      undoPush();
+      const state = getState();
+      const comp = state.components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { rotation: ((comp.rotation || 0) + 90) % 360 }); render(); return; }
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) { updateEnvItem(targetId, { rotation: ((envItem.rotation || 0) + 90) % 360 }); render(); }
+      return;
+    }
+    if (action === 'flip') {
+      undoPush();
+      const state = getState();
+      const comp = state.components.find(c => c.id === targetId);
+      if (comp) { updateComponent(targetId, { flipped: !comp.flipped }); render(); return; }
+      const envItem = state.environment.find(e => e.id === targetId);
+      if (envItem) { updateEnvItem(targetId, { flipped: !envItem.flipped }); render(); }
+      return;
+    }
+
+    if (action === 'tilt') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const current = (comp.subParts && comp.subParts.tiltSide) || 'none';
+        const next = current === 'none' ? 'left' : current === 'left' ? 'right' : 'none';
+        updateComponent(targetId, { subParts: { ...comp.subParts, tiltSide: next } });
+        render();
+      }
+      return;
+    }
+    if (action === 'couch-color') {
+      undoPush();
+      updateEnvItem(targetId, { couchColor: actionEl.dataset.color });
+      render(); updateUndoButtons();
+      return;
+    }
+    if (action === 'rubiks-color') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const ci = (comp.subParts?.colorIndex ?? 0);
+        updateComponent(targetId, { subParts: { ...comp.subParts, colorIndex: (ci + 1) % 4 } });
+        render();
+      }
+      return;
+    }
+    if (action === 'spring-state') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.state ?? 'compressed';
+        updateComponent(targetId, { subParts: { ...comp.subParts, state: cur === 'compressed' ? 'extended' : 'compressed' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'dump-bed') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const cur = comp.subParts?.bedState ?? 'down';
+        updateComponent(targetId, { subParts: { ...comp.subParts, bedState: cur === 'down' ? 'up' : 'down' } });
+        render();
+      }
+      return;
+    }
+    if (action === 'person-pose') {
+      undoPush();
+      const comp = getState().components.find(c => c.id === targetId);
+      if (comp) {
+        const pose = actionEl.dataset.pose;
+        updateComponent(targetId, { subParts: { ...comp.subParts, pose } });
+        render();
+      }
+      return;
+    }
+    return;
+  }
+});
+
+svgEl.addEventListener('dblclick', e => {
+  const comp = e.target.closest('[data-id]');
+  if (!comp) return;
+  const id = comp.dataset.id;
+  const s = getState();
+  const item = s.components.find(c => c.id === id && c.subtype === 'custom');
+  if (item) promptCustomName(id);
+});
+
+const btnUndo = document.getElementById('btn-undo');
+const btnRedo = document.getElementById('btn-redo');
+
+function updateUndoButtons() {
+  btnUndo.disabled = !canUndo();
+  btnRedo.disabled = !canRedo();
+}
+
+updateUndoButtons(); // set initial disabled state
+btnUndo.addEventListener('click', () => { undo(); render(); updateUndoButtons(); });
+btnRedo.addEventListener('click', () => { redo(); render(); updateUndoButtons(); });
+document.getElementById('btn-reset-view').addEventListener('click', () => {
+  resetViewport();
+  render();
+});
+
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) { redo(); } else { undo(); }
+    render(); updateUndoButtons();
+  }
+
+  if (e.key === 'Escape') {
+    setSelectedIds([]);
+    render();
+  }
+
+  if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+    e.preventDefault();
+    copySelection();
+  }
+
+  if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+    e.preventDefault();
+    pasteSelection();
+    updateUndoButtons();
+    updateTrackerUI();
+  }
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    undoPush();
+    const s = getState();
+    const connIds = new Set(s.connections.map(c => c.id));
+    ids.forEach(id => {
+      if (connIds.has(id)) {
+        deleteConnection(id);
+      } else if (s.components.find(c => c.id === id && (c.subtype === 'start' || c.subtype === 'finish'))) {
+        // skip — start/finish markers cannot be deleted
+      } else if (s.environment.find(e => e.id === id)) {
+        removeEnvItem(id);
+      } else {
+        removeComponent(id);
+      }
+    });
+    setSelectedIds([]);
+    render(); updateUndoButtons(); updateTrackerUI();
+  }
+});
+
+canvasWrapper.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+canvasWrapper.addEventListener('drop', e => {
+  e.preventDefault();
+  const data = e.dataTransfer.getData('catalog');
+  if (!data) return;
+  const item = JSON.parse(data);
+  const { x, y } = screenToCanvas(e.clientX, e.clientY);
+  const pos = { x: x - item.defaultW/2, y: y - item.defaultH/2, width: item.defaultW, height: item.defaultH };
+
+  undoPush();
+  if (item.type === 'environment') {
+    addEnvItem({ subtype: item.subtype, ...pos, ...(item.subtype === 'stairs' ? { stepCount: 6 } : {}) });
+  } else {
+    const newId = addComponent({ type: item.type, subtype: item.subtype, name: '', ...pos, subParts: defaultSubParts(item.subtype), comment: '', commentVisible: false, rotation: 0, flipped: false });
+    if (item.subtype === 'custom') promptCustomName(newId);
+  }
+  render(); updateUndoButtons();
+});
+
+document.querySelectorAll('.collapse-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const items = btn.closest('.lib-section').querySelector('.lib-items');
+    items.style.display = items.style.display === 'none' ? '' : 'none';
+    btn.textContent = items.style.display === 'none' ? '▸' : '▾';
+  });
+});
+
+buildLibrary();
+initHelp();
+initWelcome();
+
+document.querySelectorAll('.mode-card[data-mode]').forEach(card => {
+  card.addEventListener('click', () => {
+    setState({ mode: card.dataset.mode });
+    render();
+  });
+});
+
+const flagWidget = document.getElementById('flag-drag-widget');
+if (flagWidget) {
+  flagWidget.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('catalog', JSON.stringify({ subtype: 'flag', type: 'marker', defaultW: 8, defaultH: 24 }));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+}
+
+function initMarkers() {
+  const state = getState();
+  const { roomW } = getRoomDimensions();
+  const markerH = 21, markerW = 27;
+  const markerY = FLOOR_Y - markerH;
+  if (!state.components.find(c => c.subtype === 'start')) {
+    addComponent({ type: 'marker', subtype: 'start', name: '', x: 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+  }
+  if (!state.components.find(c => c.subtype === 'finish')) {
+    addComponent({ type: 'marker', subtype: 'finish', name: '', x: roomW - markerW - 5, y: markerY, width: markerW, height: markerH, subParts: {}, comment: '', commentVisible: false });
+  }
+}
+
+function clampMarkers() {
+  const state = getState();
+  const { roomW, roomH } = getRoomDimensions();
+  for (const comp of state.components) {
+    if (comp.subtype !== 'start' && comp.subtype !== 'finish') continue;
+    const clampedX = Math.max(0, Math.min(roomW - comp.width, comp.x));
+    const clampedY = Math.max(0, Math.min(roomH - comp.height, comp.y));
+    if (clampedX !== comp.x || clampedY !== comp.y) {
+      updateComponent(comp.id, { x: clampedX, y: clampedY });
+    }
+  }
+}
+
+function migrateFloorY(parsedState) {
+  // Only migrate if the state carries an explicit floorY (set on export from v2.6.1+).
+  // Old PNGs without meta.floorY load as-is — marker positions are unreliable
+  // because students can drag markers anywhere.
+  const savedFloor = parsedState.meta?.floorY;
+  if (!savedFloor || Math.abs(savedFloor - FLOOR_Y) < 1) return;
+  const shift = FLOOR_Y - savedFloor;
+  for (const comp of parsedState.components || []) comp.y += shift;
+  for (const item of parsedState.environment || []) item.y += shift;
+}
+
+
+// Task 22: Download, Upload, Team Name
+document.getElementById('btn-download').addEventListener('click', () => {
+  downloadPNG(document.getElementById('canvas'));
+});
+
+document.querySelector('#btn-upload input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const result = await uploadPNG(file);
+  if (result.error) { alert(result.error); return; }
+  undoReset();
+  migrateFloorY(result.state);
+  loadState(result.state);
+  clampMarkers();
+  resetViewport();
+  const loaded = getState();
+  document.getElementById('team-name').value = loaded.meta.title || '';
+  drawFloor();
+  render(); updateUndoButtons(); updateTrackerUI();
+  e.target.value = '';
+});
+
+document.getElementById('team-name').addEventListener('input', e => setTitle(e.target.value));
