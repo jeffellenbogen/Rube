@@ -690,6 +690,38 @@ export function renderUI(state, layer) {
         ball.setAttribute('cursor', 'grab');
         layer.appendChild(ball);
       }
+
+      // Snap highlights during pulley cord end drag
+      const hdCord = getHandleDrag();
+      if (hdCord && (hdCord.type === 'cordLeft' || hdCord.type === 'cordRight') && hdCord.compId === selId) {
+        const cordPt = getAttachPx(selComp)[hdCord.type];
+        if (cordPt) {
+          const HOVER_DIST_CORD = 40;
+          const SNAP_DIST_CORD  = 20;
+          const ENV_CORD_SUBTYPES = new Set(['couch', 'stairs', 'chair', 'desk']);
+          const allCordItems = [
+            ...state.components,
+            ...(state.environment || []).filter(e => ENV_CORD_SUBTYPES.has(e.subtype)),
+          ];
+          for (const otherComp of allCordItems) {
+            if (otherComp.id === selId) continue;
+            const snapPts = getSnapPx(otherComp);
+            for (const [, pos] of Object.entries(snapPts)) {
+              const dist = Math.hypot(pos.x - cordPt.x, pos.y - cordPt.y);
+              if (dist > HOVER_DIST_CORD) continue;
+              const inSnap = dist < SNAP_DIST_CORD;
+              const dot = document.createElementNS(NS, 'circle');
+              dot.setAttribute('cx', pos.x); dot.setAttribute('cy', pos.y);
+              dot.setAttribute('r', inSnap ? 8 : 6);
+              dot.setAttribute('fill', '#00ff88');
+              dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', inSnap ? 2.5 : 1.5);
+              dot.setAttribute('opacity', inSnap ? 1 : 0.75);
+              dot.setAttribute('pointer-events', 'none');
+              layer.appendChild(dot);
+            }
+          }
+        }
+      }
     }
 
     if (selComp.subtype === 'lever') {
