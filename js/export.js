@@ -105,6 +105,8 @@ export async function downloadPNG(svgEl) {
   render();
 
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
+  const versionEl = document.getElementById('version-label');
+  const savedWithVersion = versionEl ? versionEl.textContent.trim() : '';
 
   // Build BOM (components only — env items excluded per spec)
   const bom = (() => {
@@ -435,8 +437,6 @@ export async function downloadPNG(svgEl) {
   // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
-  const versionEl = document.getElementById('version-label');
-  const savedWithVersion = versionEl ? versionEl.textContent.trim() : '';
   const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y, savedWithVersion } };
   const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(exportState));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
