@@ -1,14 +1,7 @@
-import { getRequirements, getBOM } from './tracker.js';
+import { getRequirements, getBOM, ITEM_LABELS } from './tracker.js';
 import { getState } from './state.js';
 
 const MACHINE_LABELS = { lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane', wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw' };
-const ITEM_LABELS = {
-  ...MACHINE_LABELS,
-  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
-  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
-  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
-  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
-};
 
 export function updateTrackerUI() {
   const state = getState();

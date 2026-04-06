@@ -135,3 +135,16 @@ test('getBOM excludes flag markers', () => {
   assert(!bom.find(b => b.name === 'flag'));
   assert(bom.find(b => b.name === 'ball'));
 });
+
+test('BOM sorts by display label, not subtype key', () => {
+  const comps = [
+    { type: 'material', subtype: 'matchboxTrack' }, // label: Car Track
+    { type: 'material', subtype: 'box' },            // label: Crate
+    { type: 'material', subtype: 'ball' },           // label: Ball
+  ];
+  const bom = getBOM({ components: comps });
+  // Ball < Car Track < Crate alphabetically
+  assertEqual(bom[0].name, 'ball');
+  assertEqual(bom[1].name, 'matchboxTrack');
+  assertEqual(bom[2].name, 'box');
+});
