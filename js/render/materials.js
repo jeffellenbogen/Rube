@@ -368,32 +368,32 @@ function drawDumpTruck(g, x, y, w, h, subParts) {
   el('rect', { x: x + w * 0.04, y: y + h * 0.08, width: w * 0.28, height: h * 0.22, fill: '#c87820', rx: 2 }, g);
   // Windshield
   el('rect', { x: x + w * 0.06, y: y + h * 0.10, width: w * 0.20, height: h * 0.17, fill: '#a8d4f0', rx: 1 }, g);
-  // Dump bed — rotated if bedUp
-  const hingeX = x + w * 0.35;
+  // Dump bed — hinge at rear (right), cab end lifts when bedUp to dump backward
+  const hingeX = x + w * 0.96;
   const hingeY = y + h * 0.78;
   const bedG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  if (bedUp) bedG.setAttribute('transform', `rotate(-40,${hingeX},${hingeY})`);
-  // Bed fill
-  const bedPath = `M${hingeX},${y+h*0.15} L${x+w},${y+h*0.05} L${x+w},${hingeY} L${hingeX},${hingeY} Z`;
+  if (bedUp) bedG.setAttribute('transform', `rotate(40,${hingeX},${hingeY})`);
+  // Bed fill (trapezoid extending leftward from rear hinge toward cab)
+  const bedPath = `M${x+w*0.35},${y+h*0.05} L${hingeX},${y+h*0.15} L${hingeX},${hingeY} L${x+w*0.35},${hingeY} Z`;
   el('path', { d: bedPath, fill: '#f0a030' }, bedG);
   el('path', { d: bedPath, fill: 'none', stroke: '#a06010', 'stroke-width': 1 }, bedG);
-  // Support strut frame
+  // Support strut frame — extends leftward from hinge (hydraulic ram side)
   el('line', {
     x1: hingeX, y1: hingeY,
-    x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
+    x2: hingeX - w * 0.3, y2: hingeY - h * 0.35,
     stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
     'stroke-linecap': 'round',
   }, bedG);
   // Small strut cap
   el('circle', {
-    cx: hingeX + w * 0.3, cy: hingeY - h * 0.35,
+    cx: hingeX - w * 0.3, cy: hingeY - h * 0.35,
     r: Math.max(1.5, w * 0.025),
     fill: '#666',
   }, bedG);
   // Second strut — horizontal cross-brace completing the triangle
   el('line', {
     x1: hingeX, y1: hingeY - h * 0.35,
-    x2: hingeX + w * 0.3, y2: hingeY - h * 0.35,
+    x2: hingeX - w * 0.3, y2: hingeY - h * 0.35,
     stroke: '#777', 'stroke-width': Math.max(1.5, w * 0.03),
     'stroke-linecap': 'round',
   }, bedG);

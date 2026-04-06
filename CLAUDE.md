@@ -109,6 +109,7 @@ The PNG is the **only** save format. Don't add a separate JSON export without a 
 - **Testing flow:** User tests on GitHub Pages pointed at `New-Features`. When satisfied, user requests a PR → `main`. This lets them roll back by switching GitHub Pages source between branches.
 - **Never** run `git merge New-Features`, `git push origin main`, or any equivalent without explicit user confirmation. Even if a plan includes those steps — stop and ask first.
 - Keep `New-Features` alive after merging — don't delete it.
+- **Always commit and push to `New-Features` automatically after every change** — do not wait to be asked. The user relies on GitHub Pages (pointed at `New-Features`) as their live preview environment.
 
 ## Version Convention
 
