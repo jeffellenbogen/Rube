@@ -1,6 +1,6 @@
 import { getState, loadState } from './state.js';
 import { cmToPx, getViewport, setViewport, resetViewport, FLOOR_Y } from './canvas.js';
-import { getRequirements } from './tracker.js';
+import { getRequirements, ITEM_LABELS } from './tracker.js';
 import { render } from './render/index.js';
 
 const KEYWORD = 'RubeGoldbergState';
@@ -86,14 +86,6 @@ function injectChunk(pngBuffer, chunkBuf) {
 }
 
 const MACHINE_SUBTYPES = new Set(['lever','pulley','inclinedPlane','wheelAxle','wedge','screw']);
-const ITEM_LABELS = {
-  lever:'Lever', pulley:'Pulley', inclinedPlane:'Inclined Plane',
-  wheelAxle:'Wheel & Axle', wedge:'Wedge', screw:'Screw',
-  domino:'Domino', ball:'Ball', toyCar:'Toy Car', string:'String',
-  cup:'Cup', bucket:'Bucket', tube:'Tube', box:'Crate',
-  cardboard:'Cardboard', yardstick:'Yardstick', protractor:'Protractor',
-  matchboxTrack:'Car Track', book:'Book', custom:'Custom',
-};
 
 export async function downloadPNG(svgEl) {
   const state = getState();
@@ -105,6 +97,8 @@ export async function downloadPNG(svgEl) {
   render();
 
   const teamName = (state.meta?.title && state.meta.title !== 'Team Name') ? state.meta.title : 'Team Name';
+  const versionEl = document.getElementById('version-label');
+  const savedWithVersion = versionEl ? versionEl.textContent.trim() : '';
 
   // Build BOM (components only — env items excluded per spec)
   const bom = (() => {
@@ -126,6 +120,11 @@ export async function downloadPNG(svgEl) {
   const MARGIN = 54;
   const HEADER_H = 130;
   const FRAME = MARGIN - 12;
+
+  // Panel geometry — hoisted here so the header rules can stop at the canvas boundary
+  const PANEL_W = 260, PANEL_GAP = 12;
+  const panelX = PAGE_W - MARGIN - PANEL_W;
+  const canvasAreaW = panelX - MARGIN - PANEL_GAP;
 
   const canvas = document.createElement('canvas');
   canvas.width = PAGE_W * 2; canvas.height = PAGE_H * 2;
@@ -149,7 +148,7 @@ export async function downloadPNG(svgEl) {
 
   // ── HEADER ───────────────────────────────────────────────────────────────
   ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, MARGIN, PAGE_W - 2*MARGIN, 4); // top rule
+  ctx.fillRect(MARGIN, MARGIN, canvasAreaW, 4); // top rule — canvas area only
 
   const titleAreaW = PAGE_W - 2*MARGIN - 140; // leave room for date on right
   const TITLE_TEXT = 'RUBE GOLDBERG PLAN';
@@ -171,7 +170,7 @@ export async function downloadPNG(svgEl) {
   ctx.fillStyle = '#4a7a9a';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'top';
-  ctx.fillText(dateStr, PAGE_W - MARGIN, MARGIN + 10);
+  ctx.fillText(dateStr, panelX - PANEL_GAP, MARGIN + 10);
 
   // Title
   ctx.font = mono(titleSize);
@@ -186,23 +185,25 @@ export async function downloadPNG(svgEl) {
 
   // Header bottom rule
   ctx.fillStyle = '#0d1f35';
-  ctx.fillRect(MARGIN, MARGIN + HEADER_H, PAGE_W - 2*MARGIN, 2);
+  ctx.fillRect(MARGIN, MARGIN + HEADER_H, canvasAreaW, 2);
 
   // ── MAIN AREA: canvas (left) + unified materials panel (right) ───────────
   const mainY = MARGIN + HEADER_H + 10;
   const mainH = PAGE_H - mainY - MARGIN - 10;
-  const PANEL_W = 260, PANEL_GAP = 12;
-  const panelX = PAGE_W - MARGIN - PANEL_W;
-  const canvasAreaW = panelX - MARGIN - PANEL_GAP;
 
-  // Panel border
+  const panelTop = MARGIN;
+  const panelHeight = PAGE_H - 2 * MARGIN;
+  // Reserve 20px at the bottom for the version footer line
+  const PAD = 10;
+  const panelBottom = panelTop + panelHeight - PAD - 20;
+
+  // Panel border — full page height
   ctx.strokeStyle = '#b0c8e0';
   ctx.lineWidth = 1;
-  ctx.strokeRect(panelX, mainY, PANEL_W, mainH);
+  ctx.strokeRect(panelX, panelTop, PANEL_W, panelHeight);
 
-  const PAD = 10;
   const COUNT_COL = panelX + PANEL_W - PAD;
-  let pY = mainY + PAD;
+  let pY = panelTop + PAD;
 
   // Panel title
   ctx.font = mono(PANEL_TITLE_SIZE);
@@ -236,16 +237,29 @@ export async function downloadPNG(svgEl) {
       ctx.fillText('none added', panelX + PAD + 4, pY);
       pY += ROW_H;
     } else {
+      let drawn = 0;
       for (const { name, count } of items) {
+        if (pY + ROW_H > panelBottom) {
+          if (pY < panelBottom) {
+            const remaining = items.length - drawn;
+            ctx.font = `${ITEM_SIZE - 2}px "Courier New", Courier, monospace`;
+            ctx.fillStyle = '#aaaaaa';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`\u2026and ${remaining} more`, panelX + PAD + 4, pY);
+          }
+          break;
+        }
         ctx.font = `${ITEM_SIZE}px "Courier New", Courier, monospace`;
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#4a7a9a';
         ctx.textAlign = 'right';
-        ctx.fillText(`${count}×`, COUNT_COL, pY);
+        ctx.fillText(`${count}\u00d7`, COUNT_COL, pY);
         ctx.fillStyle = '#1a1a3a';
         ctx.textAlign = 'left';
         ctx.fillText(name, panelX + PAD + 4, pY);
         pY += ROW_H;
+        drawn++;
       }
     }
     pY += SECTION_GAP;
@@ -329,6 +343,15 @@ export async function downloadPNG(svgEl) {
   ctx.fillText(`${req.steps} of 5+${req.stepsMet ? ' \u2713' : ''}`, panelX + PAD + 4, pY);
   pY += ROW_H;
 
+  // Version footer — bottom of right panel
+  if (savedWithVersion) {
+    ctx.font = `11px "Courier New", Courier, monospace`;
+    ctx.fillStyle = '#4a7a9a';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`Saved with ${savedWithVersion}`, panelX + PANEL_W - PAD, panelTop + panelHeight - PAD);
+  }
+
   // ── SVG CANVAS ───────────────────────────────────────────────────────────
   const serializer = new XMLSerializer();
   const svgStr = serializer.serializeToString(svgEl);
@@ -406,7 +429,7 @@ export async function downloadPNG(svgEl) {
   // ── INJECT METADATA & SAVE ───────────────────────────────────────────────
   const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
   const pngBuffer = await pngBlob.arrayBuffer();
-  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y } };
+  const exportState = { ...state, meta: { ...state.meta, floorY: FLOOR_Y, savedWithVersion } };
   const chunkBuf = encodeITXt(KEYWORD, JSON.stringify(exportState));
   const finalBuf = injectChunk(pngBuffer, chunkBuf);
 

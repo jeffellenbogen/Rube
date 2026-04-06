@@ -32,10 +32,10 @@ function makeEnvItem(item) {
   }
   const cx = x + w / 2, cy = y + h / 2;
   const rotation = item.rotation || 0;
-  if (item.flipped && !rotation) {
-    g.setAttribute('transform', `translate(${cx},0) scale(-1,1) translate(${-cx},0)`);
-  } else if (rotation) {
-    g.setAttribute('transform', `rotate(${rotation},${cx},${cy})`);
+  const flipX = item.flipped ? -1 : 1;
+  if (item.flipped || rotation) {
+    g.setAttribute('transform',
+      `translate(${cx},${cy}) rotate(${rotation}) scale(${flipX},1) translate(${-cx},${-cy})`);
   }
   return g;
 }

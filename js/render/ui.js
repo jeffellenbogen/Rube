@@ -319,6 +319,40 @@ export function renderUI(state, layer) {
     layer.appendChild(flipBtn);
   }
 
+  // Rotate + Flip buttons for chair and desk (env items)
+  const isChairOrDesk = !!state.environment.find(e => e.id === selId && (e.subtype === 'chair' || e.subtype === 'desk'));
+  if (isChairOrDesk) {
+    const rotPos = L(w2 + pad + 8, h2 + pad + 8);
+    const rotBtn = document.createElementNS(NS, 'g');
+    rotBtn.dataset.action = 'rotate'; rotBtn.dataset.targetId = selId;
+    rotBtn.setAttribute('cursor', 'pointer');
+    const rbg = document.createElementNS(NS, 'circle');
+    rbg.setAttribute('cx', rotPos.x); rbg.setAttribute('cy', rotPos.y);
+    rbg.setAttribute('r', 8); rbg.setAttribute('fill', '#1a3a5c');
+    rbg.setAttribute('stroke', '#ff7b2e'); rbg.setAttribute('stroke-width', 1);
+    const rt = document.createElementNS(NS, 'text');
+    rt.setAttribute('x', rotPos.x); rt.setAttribute('y', rotPos.y);
+    rt.setAttribute('text-anchor', 'middle'); rt.setAttribute('dominant-baseline', 'middle');
+    rt.setAttribute('fill', '#fff'); rt.setAttribute('font-size', 11); rt.textContent = '↻';
+    rotBtn.appendChild(rbg); rotBtn.appendChild(rt);
+    layer.appendChild(rotBtn);
+
+    const flipPos = L(-w2 - pad - 8, h2 + pad + 8);
+    const flipBtn = document.createElementNS(NS, 'g');
+    flipBtn.dataset.action = 'flip'; flipBtn.dataset.targetId = selId;
+    flipBtn.setAttribute('cursor', 'pointer');
+    const fbg = document.createElementNS(NS, 'circle');
+    fbg.setAttribute('cx', flipPos.x); fbg.setAttribute('cy', flipPos.y);
+    fbg.setAttribute('r', 8); fbg.setAttribute('fill', '#1a3a5c');
+    fbg.setAttribute('stroke', '#ff7b2e'); fbg.setAttribute('stroke-width', 1);
+    const ft = document.createElementNS(NS, 'text');
+    ft.setAttribute('x', flipPos.x); ft.setAttribute('y', flipPos.y);
+    ft.setAttribute('text-anchor', 'middle'); ft.setAttribute('dominant-baseline', 'middle');
+    ft.setAttribute('fill', '#fff'); ft.setAttribute('font-size', 11); ft.textContent = '↔';
+    flipBtn.appendChild(fbg); flipBtn.appendChild(ft);
+    layer.appendChild(flipBtn);
+  }
+
   // Rotate-only button for bookshelf (env item)
   const isBookshelf = !!state.environment.find(e => e.id === selId && e.subtype === 'bookshelf');
   if (isBookshelf) {

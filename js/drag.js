@@ -24,7 +24,7 @@ const LOCK_HEIGHT = new Set(['matchboxTrack']);
 const SPECIAL_LIMITS = {
   yardstick:    { min: 0.5, max: 3.5 },
   matchboxTrack: { min: 0.5, max: 5 },
-  flag:         { min: 0.75, max: 3 },
+  flag:         { min: 1.0, max: 3 },
   dumpTruck:    { min: 0.8, max: 8 },
   fan:          { min: 0.5, max: 4 },
   spring:       { min: 0.8, max: 5 },
@@ -43,7 +43,7 @@ const DEFAULTS = {
   string: { w: 40, h: 2 }, cup: { w: 22, h: 16 }, bucket: { w: 20, h: 24 },
   tube: { w: 40, h: 10 }, box: { w: 24, h: 24 }, cardboard: { w: 120, h: 60 },
   yardstick: { w: 108, h: 6 }, protractor: { w: 20, h: 10 }, matchboxTrack: { w: 40, h: 8 },
-  book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 8, h: 24 },
+  book: { w: 10, h: 30 }, custom: { w: 24, h: 24 }, flag: { w: 12, h: 36 },
   dumpTruck: { w: 50, h: 24 }, funnel: { w: 15, h: 20 }, rubiksCube: { w: 24, h: 24 },
   fan: { w: 36, h: 40 }, spring: { w: 10, h: 20 }, person: { w: 40, h: 60 },
 };
